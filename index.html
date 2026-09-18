@@ -343,12 +343,12 @@
       </div>
       <form id="loginForm" class="modal-body-form">
         <div class="form-group">
-          <label class="form-label">Email or Username</label>
-          <input type="email" class="form-input" placeholder="name@example.com" required>
+          <label for="loginEmail" class="form-label">Email or Username</label>
+          <input type="email" id="loginEmail" name="email" class="form-input" placeholder="name@example.com" required autocomplete="username">
         </div>
         <div class="form-group">
-          <label class="form-label">Password</label>
-          <input type="password" class="form-input" placeholder="••••••••" required>
+          <label for="loginPassword" class="form-label">Password</label>
+          <input type="password" id="loginPassword" name="password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
         </div>
         <div class="modal-footer-actions">
           <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
@@ -359,7 +359,7 @@
   </div>
 
 
-<!-- Modal 3: Register Modal -->
+  <!-- Modal 3: Register Modal -->
   <div id="registerModal" class="modal-backdrop">
     <div class="modal-dialog" style="max-width: 480px;">
       <div class="modal-header">
@@ -368,16 +368,16 @@
       </div>
       <form id="registerForm" class="modal-body-form">
         <div class="form-group">
-          <label class="form-label">Full Name</label>
-          <input type="text" class="form-input" placeholder="Ahmed Ali" required>
+          <label for="registerName" class="form-label">Full Name</label>
+          <input type="text" id="registerName" name="fullName" class="form-input" placeholder="Ahmed Ali" required autocomplete="name">
         </div>
         <div class="form-group">
-          <label class="form-label">Email Address</label>
-          <input type="email" class="form-input" placeholder="name@example.com" required>
+          <label for="registerEmail" class="form-label">Email Address</label>
+          <input type="email" id="registerEmail" name="email" class="form-input" placeholder="name@example.com" required autocomplete="email">
         </div>
         <div class="form-group">
-          <label class="form-label">Password</label>
-          <input type="password" class="form-input" placeholder="••••••••" required>
+          <label for="registerPassword" class="form-label">Password</label>
+          <input type="password" id="registerPassword" name="password" class="form-input" placeholder="••••••••" required autocomplete="new-password">
         </div>
         <div class="modal-footer-actions">
           <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
