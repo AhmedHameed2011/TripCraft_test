@@ -1,25 +1,14 @@
 // supabase-config.js
+// Replace these with your actual Supabase Project URL and Anon Key
 const SUPABASE_URL = "https://oowrmsisgogscqgnnahp.supabase.co";
-// تأكد من نسخ المفتاح كاملاً من لوحة تحكم Supabase (Project Settings -> API -> anon public)
-const SUPABASE_ANON_KEY = "sb_publishable_iTDs1RBLyJifkqng8cnQvw_Q8V1NTyU"; 
+const SUPABASE_ANON_KEY = "sb_publishable_iTDs1RBLyJifkqng8cnQvw_Q8V1NTyU";
 
 let supabaseClient = null;
 
-// التحقق من تحميل المكتبة وجودة المفاتيح
-if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY) {
-  try {
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true
-      }
-    });
-    // إتاحة الكائن عالمياً ليتمكن auth.js من الوصول إليه
-    window.supabaseClient = supabaseClient; 
-    console.log("Supabase Client initialized successfully.");
-  } catch (err) {
-    console.error("Error creating Supabase client:", err);
-  }
+// Initialize Supabase client if SDK is loaded and keys are provided
+if (typeof supabase !== 'undefined' && SUPABASE_URL !== "https://oowrmsisgogscqgnnahp.supabase.co") {
+  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  console.log("Supabase Client initialized successfully.");
 } else {
   console.warn("Supabase credentials not set or SDK not loaded. App will fall back to localStorage/mock mode.");
 }
