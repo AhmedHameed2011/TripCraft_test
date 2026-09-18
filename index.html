@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TripCraft — Intelligent Travel Planning Studio</title>
+  <meta name="description"
+    content="TripCraft is a personalized, multilingual travel planner that crafts organized itineraries with weather adaptation, accessibility flags, and local food discovery.">
+
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- App Wrapper -->
+  <div class="app-layout">
+
+    <!-- Header / Navbar -->
+    <header class="navbar">
+      <div class="nav-brand-group">
+        <div class="brand-logo">
+          <div class="brand-icon-wrapper">
+            <svg class="brand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
+            </svg>
+          </div>
+          <div class="brand-headings">
+            <span class="brand-title">Trip<span class="gradient-text">Craft</span></span>
+            <span class="brand-tagline" data-i18n="tagline">Personal Travel Planner</span>
+          </div>
+        </div>
+
+        <!-- Current Trip Switcher -->
+        <div class="trip-quick-selector">
+          <label for="tripSelect" class="sr-only" data-i18n="selectTrip">Select Trip</label>
+          <div class="select-pill-wrapper">
+            <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <select id="tripSelect" class="trip-dropdown" aria-label="Select Trip">
+              <!-- Populated via JavaScript -->
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nav Controls -->
+      <div class="nav-controls">
+        <!-- New Trip CTA Button -->
+        <button id="btnNewTrip" class="btn btn-primary" type="button">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span data-i18n="navNewTrip">Plan New Trip</span>
+        </button>
+
+        <!-- Auth Navigation Controls (Logged Out) -->
+        <div id="authNavGroup" class="auth-nav-group" style="display: flex; align-items: center; gap: 0.5rem;">
+          <button id="btnLoginModal" class="btn btn-secondary" type="button">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+            <span data-i18n="btnLogin">Login</span>
+          </button>
+          
+          <button id="btnRegisterModal" class="btn btn-primary" type="button">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <line x1="20" y1="8" x2="20" y2="14" />
+              <line x1="23" y1="11" x2="17" y2="11" />
+            </svg>
+            <span data-i18n="btnRegister">Register</span>
+          </button>
+        </div>
+
+        <!-- User Profile Nav Group (Logged In) -->
+        <div id="userNavGroup" class="auth-nav-group" style="display: none; align-items: center; gap: 0.75rem;">
+          <span id="userDisplayName" style="font-weight: 600; font-size: 0.9rem;"></span>
+          <button id="btnLogout" class="btn btn-secondary" type="button">
+            <span data-i18n="btnLogout">Logout</span>
+          </button>
+        </div>
+
+        <!-- Language Selector -->
+        <div class="dropdown-control">
+          <label for="langSelect" class="sr-only">Language</label>
+          <div class="select-pill-wrapper">
+            <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <select id="langSelect" class="icon-dropdown" aria-label="Select Language">
+              <option value="en">English (EN)</option>
+              <option value="ar">العربية (AR)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Currency Selector -->
+        <div class="dropdown-control">
+          <label for="currencySelect" class="sr-only">Currency</label>
+          <div class="select-pill-wrapper">
+            <span class="currency-badge" id="currencySymbolBadge">$</span>
+            <select id="currencySelect" class="icon-dropdown" aria-label="Select Currency">
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="JPY">JPY (¥)</option>
+              <option value="SAR">SAR (ر.س)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button id="themeToggleBtn" class="icon-btn" type="button" aria-label="Toggle Dark/Light Mode"
+          title="Toggle Theme">
+          <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </svg>
+          <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Trip Banner & Overview -->
+    <section class="trip-hero-section">
+      <div class="hero-image-backdrop" id="heroBackdrop"></div>
+      <div class="hero-glass-overlay">
+        <div class="hero-content">
+          <div class="hero-badges-row">
+            <span class="badge badge-primary" id="heroTripType">Family Vacation</span>
+            <span class="badge badge-accent" id="heroDuration">5 Days</span>
+            <span class="badge badge-weather" id="heroWeatherBadge">
+              <span class="weather-icon">☀️</span>
+              <span id="heroWeatherText">24°C • Weather Optimized</span>
+            </span>
+          </div>
+
+          <h1 class="hero-destination-title" id="heroTitle">Tokyo Neon & Heritage</h1>
+          <p class="hero-description" id="heroSubtitle">A personalized voyage balancing vibrant pop-culture districts,
+            historic Shinto shrines, and serene imperial gardens.</p>
+
+          <!-- Quick Metrics Matrix -->
+          <div class="hero-metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-label" data-i18n="labelTravelers">Travelers</span>
+                <span class="metric-value" id="metricTravelers">4 People (2 Adults, 2 Kids)</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-label" data-i18n="labelStay">Recommended Stay</span>
+                <span class="metric-value" id="metricStay">Mimaru Tokyo Asakusa Station</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-label" data-i18n="labelBudget">Est. Daily Spending</span>
+                <span class="metric-value" id="metricDailySpend">$320 / day</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-label" data-i18n="labelNeighborhood">Current District</span>
+                <span class="metric-value" id="metricNeighborhood">Asakusa & Ueno</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="app-tab-navigation" aria-label="Trip Views">
+      <div class="tab-list-container">
+        <button class="tab-btn active" data-tab="itinerary" type="button">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span data-i18n="tabItinerary">Day-by-Day Itinerary</span>
+        </button>
+
+        <button class="tab-btn" data-tab="stays" type="button">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          <span data-i18n="tabStays">Recommended Stays</span>
+        </button>
+
+        <button class="tab-btn" data-tab="budget" type="button">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+          <span data-i18n="tabBudget">Cost Estimates & Budget</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Tab 1: Day-by-Day Itinerary -->
+      <section id="itinerary" class="tab-content-panel active">
+        <!-- Itinerary Content Populated via JavaScript -->
+      </section>
+
+      <!-- Tab 2: Recommended Stays -->
+      <section id="stays" class="tab-content-panel">
+        <!-- Stays Content Populated via JavaScript -->
+      </section>
+
+      <!-- Tab 3: Cost Estimates & Budget -->
+      <section id="budget" class="tab-content-panel">
+        <!-- Budget Content Populated via JavaScript -->
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-container">
+        <div class="footer-brand">
+          <strong>TripCraft Studio</strong> &mdash; <span data-i18n="footerText">Crafting personalized journeys worldwide.</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Toast Stack -->
+  <div id="toastStack" class="toast-stack"></div>
+
+  <!-- Modal 1: Plan New Trip Modal -->
+  <div id="newTripModal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <h2 class="modal-title" data-i18n="modalNewTripTitle">Plan a New Personalized Journey</h2>
+        </div>
+        <button class="modal-close-btn" type="button" data-close-modal>&times;</button>
+      </div>
+      <form id="newTripForm" class="modal-body-form">
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label class="form-label" data-i18n="formLabelDestination">Destination City & Country *</label>
+            <input type="text" id="inputDestination" class="form-input" placeholder="e.g. Kyoto, Japan" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="formLabelDuration">Duration (Days) *</label>
+            <input type="number" id="inputDuration" class="form-input" min="1" max="30" value="5" required>
+          </div>
+        </div>
+
+        <div class="form-section-title" data-i18n="formSectionTravelers">Who is traveling? (Group size & age breakdown)</div>
+        <div class="form-row three-col">
+          <div class="form-group">
+            <label class="form-label" data-i18n="formLabelAdults">Adults (18-64)</label>
+            <input type="number" id="inputAdults" class="form-input" min="1" value="2">
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="formLabelChildren">Children (0-17)</label>
+            <input type="number" id="inputChildren" class="form-input" min="0" value="2">
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="formLabelSeniors">Seniors (65+)</label>
+            <input type="number" id="inputSeniors" class="form-input" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label class="form-label" data-i18n="formLabelTripType">Type of Visit *</label>
+            <select id="selectTripType" class="form-input">
+              <option value="Family Vacation">Family Vacation</option>
+              <option value="Cultural Exploration">Cultural Exploration</option>
+              <option value="Relaxation & Wellness">Relaxation & Wellness</option>
+              <option value="Adventure">Adventure</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="formLabelBudgetPref">Budget Preference *</label>
+            <select id="selectBudgetPref" class="form-input">
+              <option value="economy">Budget / Economy</option>
+              <option value="moderate" selected>Moderate / Comfort</option>
+              <option value="luxury">Luxury / Premium</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btnGeneratePlan">Generate Complete Trip Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Login Modal -->
+  <div id="loginModal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2 class="modal-title" data-i18n="btnLogin">Login</h2>
+        <button class="modal-close-btn" type="button" data-close-modal>&times;</button>
+      </div>
+      <form id="loginForm" class="modal-body-form">
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="name@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+        </div>
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btnLogin">Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Register Modal -->
+  <div id="registerModal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 class="modal-title" data-i18n="btnRegister">Register</h2>
+        <button class="modal-close-btn" type="button" data-close-modal>&times;</button>
+      </div>
+      <form id="registerForm" class="modal-body-form">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="regFullName" class="form-input" placeholder="Ahmed Ali" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" id="regEmail" class="form-input" placeholder="name@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="regPassword" class="form-input" placeholder="••••••••" required>
+        </div>
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btnRegister">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Supabase JS Client Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="supabase-config.js" defer></script>
+
+  <!-- Script with type="module" to allow ES6 Import/Export -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
