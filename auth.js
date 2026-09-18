@@ -1,166 +1,174 @@
 /**
- * TripCraft — Independent Modal Authentication Engine
+ * auth.js - Manages Supabase Authentication, Session State, and Header UI integration.
  */
 
-(function() {
-  'use strict';
-
-  const supabase = window.supabaseClient || null;
-  let currentUser = null;
-
-  // ==========================================================================
-  // 1. Modal Toggle Handlers
-  // ==========================================================================
-  function openModal(modalEl) {
-    if (!modalEl) return;
-    
-    // Close any active modal first to keep popups distinct
-    document.querySelectorAll('.modal-backdrop.active').forEach(m => closeModal(m));
-
-    modalEl.classList.add('active');
-    modalEl.setAttribute('aria-hidden', 'false');
-    
-    const autofocusInput = modalEl.querySelector('input:not([type="hidden"])');
-    if (autofocusInput) autofocusInput.focus();
+document.addEventListener('DOMContentLoaded', async () => {
+  // Ensure supabase client is available globally from supabase-config.js
+  if (typeof supabase === 'undefined') {
+    console.error('Supabase client is not initialized. Make sure supabase-config.js is loaded before auth.js.');
+    return;
   }
 
-  function closeModal(modalEl) {
-    if (!modalEl) return;
-    modalEl.classList.remove('active');
-    modalEl.setAttribute('aria-hidden', 'true');
-    const form = modalEl.querySelector('form');
-    if (form) form.reset();
+  // DOM Elements
+  const authNavGroup = document.getElementById('authNavGroup');
+  const userNavGroup = document.getElementById('userNavGroup');
+  
+  const loginModal = document.getElementById('loginModal');
+  const registerModal = document.getElementById('registerModal');
+  const newTripModal = document.getElementById('newTripModal');
+
+  const btnLoginModal = document.getElementById('btnLoginModal');
+  const btnRegisterModal = document.getElementById('btnRegisterModal');
+  
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+
+  // --- Modal Utilities ---
+  function openModal(modal) {
+    if (modal) modal.style.display = 'flex';
   }
 
-  // ==========================================================================
-  // 2. Auth State Sync & UI Updates
-  // ==========================================================================
-  async function initAuth() {
-    if (!supabase) return;
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      updateAuthUI(session ? session.user : null);
-
-      supabase.auth.onAuthStateChange((_event, session) => {
-        updateAuthUI(session ? session.user : null);
-      });
-    } catch (err) {
-      console.error('Supabase Auth error:', err);
-    }
+  function closeModal(modal) {
+    if (modal) modal.style.display = 'none';
   }
 
-  function updateAuthUI(user) {
-    currentUser = user;
-    const authNavGroup = document.getElementById('authNavGroup');
-    const userNavGroup = document.getElementById('userNavGroup');
-    const userNameSpan = document.getElementById('userDisplayName');
-
-    if (user) {
-      if (authNavGroup) authNavGroup.style.display = 'none';
-      if (userNavGroup) userNavGroup.style.display = 'flex';
-      const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Traveler';
-      if (userNameSpan) userNameSpan.textContent = `Welcome, ${name}`;
-    } else {
-      if (authNavGroup) authNavGroup.style.display = 'flex';
-      if (userNavGroup) userNavGroup.style.display = 'none';
-      if (userNameSpan) userNameSpan.textContent = '';
-    }
+  // Open Login / Register Modals
+  if (btnLoginModal) {
+    btnLoginModal.addEventListener('click', () => openModal(loginModal));
+  }
+  if (btnRegisterModal) {
+    btnRegisterModal.addEventListener('click', () => openModal(registerModal));
   }
 
-  // ==========================================================================
-  // 3. Form Submission Handling
-  // ==========================================================================
-  function initEventListeners() {
-    // Open Independent Modals
-    const btnLoginModal = document.getElementById('btnLoginModal');
-    if (btnLoginModal) {
-      btnLoginModal.addEventListener('click', () => openModal(document.getElementById('loginModal')));
-    }
-
-    const btnRegisterModal = document.getElementById('btnRegisterModal');
-    if (btnRegisterModal) {
-      btnRegisterModal.addEventListener('click', () => openModal(document.getElementById('registerModal')));
-    }
-
-    // Modal Close Controls
-    document.querySelectorAll('[data-close-modal]').forEach(btn => {
-      btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal-backdrop')));
+  // Close Modals via Close Button or Backdrop Click
+  document.querySelectorAll('[data-close-modal]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeModal(loginModal);
+      closeModal(registerModal);
+      closeModal(newTripModal);
     });
+  });
 
-    document.querySelectorAll('.modal-backdrop').forEach(modal => {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal(modal);
-      });
-    });
+  window.addEventListener('click', (e) => {
+    if (e.target === loginModal) closeModal(loginModal);
+    if (e.target === registerModal) closeModal(registerModal);
+    if (e.target === newTripModal) closeModal(newTripModal);
+  });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        const activeModal = document.querySelector('.modal-backdrop.active');
-        if (activeModal) closeModal(activeModal);
+  // --- UI State Management for Authentication ---
+  function updateAuthUI(session) {
+    if (!authNavGroup || !userNavGroup) return;
+
+    if (session && session.user) {
+      // User is logged in: Hide auth buttons, show user greeting and Logout button
+      authNavGroup.style.display = 'none';
+      userNavGroup.style.display = 'flex';
+
+      const userEmail = session.user.email;
+      const displayName = session.user.user_metadata?.full_name || userEmail.split('@')[0];
+
+      userNavGroup.innerHTML = `
+        <span class="user-greeting" style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary);">
+          👋 Hi, <strong style="color: var(--text-primary);">${displayName}</strong>
+        </span>
+        <button id="btnLogout" class="btn btn-secondary btn-sm" data-i18n="btnLogout">Logout</button>
+      `;
+
+      // Attach Logout event listener dynamically
+      const btnLogout = document.getElementById('btnLogout');
+      if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+          const { error } = await supabase.auth.signOut();
+          if (error) {
+            console.error('Error signing out:', error.message);
+          } else {
+            window.location.reload();
+          }
+        });
       }
-    });
 
-    // Independent Login Action
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail')?.value;
-        const password = document.getElementById('loginPassword')?.value;
-
-        if (!supabase) return showToast('Authentication service offline.');
-
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          showToast(`Login failed: ${error.message}`);
-        } else {
-          showToast('Successfully logged in!');
-          closeModal(document.getElementById('loginModal'));
-        }
-      });
+      // If app.js defines a trip loader function, call it with the user ID
+      if (typeof window.loadUserTrips === 'function') {
+        window.loadUserTrips(session.user.id);
+      }
+    } else {
+      // User is logged out: Show login/register buttons, hide user profile group
+      authNavGroup.style.display = 'flex';
+      userNavGroup.style.display = 'none';
+      userNavGroup.innerHTML = '';
     }
+  }
 
-    // Independent Register Action
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-      registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fullName = document.getElementById('registerName')?.value;
-        const email = document.getElementById('registerEmail')?.value;
-        const password = document.getElementById('registerPassword')?.value;
+  // --- Check Initial Session on Page Load ---
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    updateAuthUI(session);
+  } catch (err) {
+    console.error('Error fetching initial session:', err.message);
+  }
 
-        if (!supabase) return showToast('Authentication service offline.');
+  // --- Listen to Real-time Auth State Changes ---
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth state event:', event);
+    updateAuthUI(session);
+  });
 
-        const { error } = await supabase.auth.signUp({
+  // --- Handle Login Form Submission ---
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
-          password,
-          options: { data: { full_name: fullName } }
+          password
         });
 
-        if (error) {
-          showToast(`Registration error: ${error.message}`);
-        } else {
-          showToast('Account created successfully!');
-          closeModal(document.getElementById('registerModal'));
-        }
-      });
-    }
+        if (error) throw error;
 
-    // Logout Trigger
-    const btnLogout = document.getElementById('btnLogout');
-    if (btnLogout) {
-      btnLogout.addEventListener('click', async () => {
-        if (supabase) {
-          await supabase.auth.signOut();
-          showToast('Logged out.');
-        }
-      });
-    }
+        closeModal(loginModal);
+        loginForm.reset();
+      } catch (err) {
+        alert('Login failed: ' + err.message);
+      }
+    });
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    initEventListeners();
-    initAuth();
-  });
-})();
+  // --- Handle Register Form Submission ---
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fullName = document.getElementById('registerName').value.trim();
+      const email = document.getElementById('registerEmail').value.trim();
+      const password = document.getElementById('registerPassword').value;
+
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName
+            }
+          }
+        });
+
+        if (error) throw error;
+
+        if (data?.session) {
+          alert('Registration successful! Welcome to TripCraft.');
+        } else {
+          alert('Registration successful! Please check your email to confirm your account.');
+        }
+
+        closeModal(registerModal);
+        registerForm.reset();
+      } catch (err) {
+        alert('Registration failed: ' + err.message);
+      }
+    });
+  }
+});
