@@ -334,47 +334,43 @@
   </div>
 
   <!-- Login Modal -->
-<div id="loginModal" class="modal-backdrop">
+<div id="loginModal" class="modal-overlay hidden">
   <div class="modal-card">
-    <button type="button" class="modal-close" data-close-modal>&times;</button>
-    <h2>Login</h2>
-    <div id="loginFeedback"></div>
-    
-    <form id="loginForm">
+    <button type="button" class="modal-close" id="closeLoginModal">&times;</button>
+    <h2 class="modal-title">Login</h2>
+    <form id="loginForm" class="auth-form">
       <div class="form-group">
         <label for="loginEmail">Email</label>
-        <input type="email" id="loginEmail" required />
+        <input type="email" id="loginEmail" class="form-input" placeholder="Enter your email" required />
       </div>
       <div class="form-group">
         <label for="loginPassword">Password</label>
-        <input type="password" id="loginPassword" required />
+        <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required />
       </div>
-      <button type="submit" class="btn-primary">Sign In</button>
+      <button type="submit" class="btn-primary w-full">Sign In</button>
     </form>
   </div>
 </div>
 
 <!-- Register Modal -->
-<div id="registerModal" class="modal-backdrop">
+<div id="registerModal" class="modal-overlay hidden">
   <div class="modal-card">
-    <button type="button" class="modal-close" data-close-modal>&times;</button>
-    <h2>Create Account</h2>
-    <div id="signupFeedback"></div>
-    
-    <form id="registerForm">
+    <button type="button" class="modal-close" id="closeRegisterModal">&times;</button>
+    <h2 class="modal-title">Create Account</h2>
+    <form id="registerForm" class="auth-form">
       <div class="form-group">
         <label for="registerName">Full Name</label>
-        <input type="text" id="registerName" required />
+        <input type="text" id="registerName" class="form-input" placeholder="Enter your full name" required />
       </div>
       <div class="form-group">
         <label for="registerEmail">Email</label>
-        <input type="email" id="registerEmail" required />
+        <input type="email" id="registerEmail" class="form-input" placeholder="Enter your email" required />
       </div>
       <div class="form-group">
         <label for="registerPassword">Password</label>
-        <input type="password" id="registerPassword" required />
+        <input type="password" id="registerPassword" class="form-input" placeholder="Create a password" required />
       </div>
-      <button type="submit" class="btn-primary">Register</button>
+      <button type="submit" class="btn-primary w-full">Register</button>
     </form>
   </div>
 </div>
