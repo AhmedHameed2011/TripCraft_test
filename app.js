@@ -3,16 +3,15 @@
  * Master Client Application Script
  */
 
-(function() {
+(function () {
   'use strict';
 
-// الاستفادة من عميل Supabase المنشأ في supabase-config.js
+  // ==========================================================================
+  // 1. Supabase & Authentication Engine
+  // ==========================================================================
   const supabase = window.supabaseClient || null;
   let currentUser = null;
 
-  // ==========================================================================
-  // 1. إدارة الهوية والتحقق (Authentication Engine)
-  // ==========================================================================
   async function initAuth() {
     if (!supabase) return;
 
@@ -82,13 +81,8 @@
             PRESET_TRIPS.unshift(ct);
           }
         });
-        populateTripSelector();
-        renderTripHero();
-        renderItinerary();
-        renderStays();
-        renderBudget();
-        renderCustomizeConsole();
-        renderPacking();
+        populateTripDropdown();
+        renderAllViews();
       }
     } catch (err) {
       console.error('Error syncing trips:', err);
@@ -110,21 +104,17 @@
 
       if (error) {
         console.error('Error saving trip to Supabase:', error);
-        showToast('Error syncing trip to cloud.', 'error');
+        showToast('Error syncing trip to cloud.');
       } else {
-        showToast('Trip synced to your account successfully!', 'success');
+        showToast('Trip synced to your account successfully!');
       }
     } catch (err) {
       console.error('Save to Supabase error:', err);
     }
   }
 
-
-
-
-
   // ==========================================================================
-  // 1. Currency & Conversion
+  // 2. Currency & Conversion Engine
   // ==========================================================================
   const CURRENCIES = {
     USD: { symbol: '$', rate: 1.0 },
@@ -149,7 +139,7 @@
   }
 
   // ==========================================================================
-  // 2. Multilingual Localization Engine
+  // 3. Multilingual Localization Engine
   // ==========================================================================
   const TRANSLATIONS = {
     en: {
@@ -163,9 +153,23 @@
       tabItinerary: "Day-by-Day Itinerary",
       tabStays: "Recommended Stays",
       tabBudget: "Cost Estimates & Budget",
+      tabCustomize: "Customize Plan",
+      tabPacking: "Packing List",
+      btnAdjustPace: "Adjust Pace",
+      btnPrint: "Print / PDF",
       labelNeighborhoodCluster: "Geographic Neighborhood Cluster",
       transitOptimizedSubtext: "Activities grouped within 1.2km to minimize walking and transit time for families.",
       labelWeatherAdaptation: "Weather Adaptation Plan",
+      customizePlanTitle: "Customize Day Schedule",
+      customizePlanSubtitle: "Swap activities, substitute restaurants, or adjust pace.",
+      actionSwapActivity: "Swap Activity",
+      actionSwapActivityDesc: "Discover alternative attractions in this neighborhood",
+      actionChangeRestaurant: "Change Restaurant",
+      actionChangeRestaurantDesc: "Choose local, vegetarian, or kid-friendly options",
+      actionAdjustPace: "Adjust Pace of Day",
+      actionAdjustPaceDesc: "Choose between relaxed, balanced, or active",
+      actionBookingGuide: "Booking Guide & Links",
+      actionBookingGuideDesc: "Official passes, transit cards, and direct reservations",
       staysHeaderTitle: "Recommended Places to Stay",
       staysHeaderSubtitle: "Curated accommodations tailored to your group size, traveler ages, accessibility needs, and budget preference.",
       filterBy: "Filter by:",
@@ -196,6 +200,34 @@
       thTickets: "Attractions & Entries",
       thTransit: "Transit",
       thDailyTotal: "Daily Total",
+      customizeHeaderTitle: "TripCraft Customization Studio",
+      customizeHeaderSubtitle: "Adapt the itinerary to your group's energy level and preferences.",
+      paceControlTitle: "Pace & Daily Cadence",
+      paceControlSubtitle: "Adjust activity density for everyone's well-being.",
+      paceRelaxedName: "🌿 Relaxed & Easygoing",
+      paceRelaxedTag: "Families & Seniors",
+      paceRelaxedDesc: "Late mornings, max 2 main visits daily, and plenty of coffee breaks.",
+      paceBalancedName: "⚖️ Balanced & Curated",
+      paceBalancedTag: "Recommended",
+      paceBalancedDesc: "Morning and afternoon exploration with flexible evenings.",
+      pacePackedName: "⚡ Active & Packed",
+      pacePackedTag: "Energetic Explorers",
+      pacePackedDesc: "Early start, 4-5 major spots daily, and maximum sights.",
+      btnApplyPace: "Apply Pace to Itinerary",
+      swapConsoleTitle: "Swap Activities or Dining",
+      swapConsoleSubtitle: "Select a time slot to see curated alternates in the same area.",
+      labelTargetDay: "Select Day to Modify",
+      labelTimeSlot: "Slot to Replace",
+      slotMorning: "Morning Activity",
+      slotLunch: "Lunch & Street Food",
+      slotAfternoon: "Afternoon Activity",
+      slotEvening: "Evening Stroll & Dinner",
+      labelCuratedAlternates: "Curated Alternates:",
+      bookingGuidanceTitle: "Official Booking Guidance",
+      bookingGuidanceSubtitle: "Avoid scalper surcharges with official direct portals.",
+      packingHeaderTitle: "Smart Packing Checklist",
+      packingHeaderSubtitle: "Weather-adaptive, age-tailored list for your journey.",
+      packed: "Packed",
       footerText: "Crafting personalized, weather-adaptive journeys worldwide.",
       modalNewTripTitle: "Plan a New Personalized Journey",
       formLabelDestination: "Destination City & Country *",
@@ -212,9 +244,11 @@
       markCompleted: "Mark Done",
       btnSwap: "Swap",
       btnBook: "Booking Info",
+      btnSelectThis: "Select This",
       perNight: "/ night",
       btnLogin: "Login",
-      btnRegister: "Register"
+      btnRegister: "Register",
+      welcomeUser: "Welcome,"
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -227,9 +261,23 @@
       tabItinerary: "جدول الأيام خطوة بخطوة",
       tabStays: "خيارات الإقامة الموصى بها",
       tabBudget: "تقديرات التكلفة والميزانية",
+      tabCustomize: "تخصيص الخطة",
+      tabPacking: "قائمة الأمتعة",
+      btnAdjustPace: "تعديل وتيرة الرحلة",
+      btnPrint: "طباعة / PDF",
       labelNeighborhoodCluster: "التجمع الجغرافي للحي",
       transitOptimizedSubtext: "تم تجميع الأنشطة في نطاق 1.2 كم لتقليل وقت التنقل والمشي للعائلات.",
       labelWeatherAdaptation: "خطة التكيف مع الطقس",
+      customizePlanTitle: "تخصيص جدول اليوم",
+      customizePlanSubtitle: "استبدل الأنشطة والمطاعم أو اضبط الوتيرة بسهولة.",
+      actionSwapActivity: "تغيير النشاط",
+      actionSwapActivityDesc: "استكشف معالم بديلة في نفس الحي",
+      actionChangeRestaurant: "تغيير المطعم",
+      actionChangeRestaurantDesc: "اختر مطاعم محلية، نباتية، أو مناسبة للأطفال",
+      actionAdjustPace: "ضبط وتيرة اليوم",
+      actionAdjustPaceDesc: "اختر بين هادئة، متوازنة، أو مليئة بالحيوية",
+      actionBookingGuide: "دليل وروابط الحجز",
+      actionBookingGuideDesc: "التذاكر الرسمية، بطاقات المواصلات، والحجوزات المباشرة",
       staysHeaderTitle: "أماكن الإقامة الموصى بها",
       staysHeaderSubtitle: "أماكن إقامة مختارة بعناية لتناسب حجم مجموعتك وأعمار المسافرين وسهولة الوصول وميزانيتك.",
       filterBy: "تصفية حسب:",
@@ -260,6 +308,34 @@
       thTickets: "المعالم والتذاكر",
       thTransit: "المواصلات",
       thDailyTotal: "المجموع اليومي",
+      customizeHeaderTitle: "استوديو تخصيص TripCraft",
+      customizeHeaderSubtitle: "قم بتعديل الجدول الزمني وفقًا لطاقة مجموعتك وتفضيلاتها.",
+      paceControlTitle: "الوتيرة والإيقاع اليومي",
+      paceControlSubtitle: "اضبط كثافة الأنشطة لراحة الجميع.",
+      paceRelaxedName: "🌿 هادئ ومريح",
+      paceRelaxedTag: "العائلات وكبار السن",
+      paceRelaxedDesc: "صباح متأخر، زيارتان رئيسيتان كحد أقصى يوميًا، واستراحات مقاهي متعددة.",
+      paceBalancedName: "⚖️ متوازن ومعد بعناية",
+      paceBalancedTag: "موصى به",
+      paceBalancedDesc: "استكشاف صباحي ومسائي مع أوقات راحة مرنة.",
+      pacePackedName: "⚡ نشط ومكثف",
+      pacePackedTag: "للمستكشفين الشغوفين",
+      pacePackedDesc: "بداية مبكرة، 4-5 معالم رئيسية يوميًا، وأقصى استكشاف.",
+      btnApplyPace: "تطبيق الوتيرة على الرحلة",
+      swapConsoleTitle: "تبديل الأنشطة أو المطاعم",
+      swapConsoleSubtitle: "اختر الفترة الزمنية لعرض الخيارات البديلة المتاحة في نفس المنطقة.",
+      labelTargetDay: "اختر اليوم للتعديل",
+      labelTimeSlot: "الفترة المراد تغييرها",
+      slotMorning: "نشاط الصباح",
+      slotLunch: "الغداء والأكلات الشعبية",
+      slotAfternoon: "نشاط الظهيرة",
+      slotEvening: "جولة المساء والعشاء",
+      labelCuratedAlternates: "الخيارات البديلة المتاحة:",
+      bookingGuidanceTitle: "دليل الحجز الرسمي",
+      bookingGuidanceSubtitle: "تجنب الرسوم الإضافية عبر البوابات الرسمية المباشرة.",
+      packingHeaderTitle: "قائمة الأمتعة الذكية",
+      packingHeaderSubtitle: "قائمة مخصصة وفقًا للطقس وأعمار المسافرين والأنشطة.",
+      packed: "تم التجهيز",
       footerText: "نصمم رحلات مخصصة ومتكيفة مع الطقس حول العالم.",
       modalNewTripTitle: "تخطيط رحلة جديدة ومخصصة",
       formLabelDestination: "المدينة والدولة *",
@@ -276,14 +352,16 @@
       markCompleted: "تحديد كمكتمل",
       btnSwap: "تبديل",
       btnBook: "معلومات الحجز",
+      btnSelectThis: "اختيار هذا",
       perNight: "/ ليلة",
       btnLogin: "تسجيل الدخول",
-      btnRegister: "إنشاء حساب"
+      btnRegister: "إنشاء حساب",
+      welcomeUser: "مرحباً،"
     },
     es: {
       tagline: "Planificador Personal de Viajes",
       selectTrip: "Seleccionar Viaje",
-      NewTrip: "Planificar Nuevo Viaje",
+      navNewTrip: "Planificar Nuevo Viaje",
       labelTravelers: "Viajeros",
       labelStay: "Alojamiento Recomendado",
       labelBudget: "Gasto Diario Estimado",
@@ -367,7 +445,6 @@
       packingHeaderSubtitle: "Lista adaptada al clima, edades del grupo y actividades.",
       packed: "Empacado",
       footerText: "Diseñando viajes personalizados y adaptados al clima en todo el mundo.",
-      footerLangSupport: "Compatible con todos los idiomas • Enfoque familiar y accesible",
       modalNewTripTitle: "Planificar un Nuevo Viaje Personalizado",
       formLabelDestination: "Ciudad y País de Destino *",
       formLabelDuration: "Duración (Días) *",
@@ -376,17 +453,7 @@
       formLabelChildren: "Niños / Jóvenes (0-17 años)",
       formLabelSeniors: "Adultos Mayores (65+ años)",
       formLabelTripType: "Tipo de Visita *",
-      typeFamily: "Vacaciones Familiares (Apto para niños)",
-      typeCulture: "Exploración Cultural e Historia",
-      typeRelaxation: "Relajación y Naturaleza",
-      typeCelebration: "Celebración y Luna de Miel",
-      typeAdventure: "Aventura y Senderismo",
       formLabelBudgetPref: "Preferencia de Presupuesto *",
-      budgetOptionEconomy: "Económico (Hostales, comida callejera, metro)",
-      budgetOptionModerate: "Moderado / Confort (Hoteles familiares, buenos restaurantes)",
-      budgetOptionLuxury: "Lujo / Premium (Hoteles 5 estrellas, alta cocina, traslados)",
-      formLabelStartDate: "Fecha de Inicio",
-      formLabelSpecialNotes: "Preferencias especiales / Accesibilidad",
       btnCancel: "Cancelar",
       btnGeneratePlan: "Generar Plan Completo",
       completed: "Completado",
@@ -396,12 +463,13 @@
       btnSelectThis: "Elegir este",
       perNight: "/ noche",
       btnLogin: "Iniciar Sesión",
-      btnRegister: "Registrarse"
+      btnRegister: "Registrarse",
+      welcomeUser: "Bienvenido,"
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
       selectTrip: "Sélectionner le Voyage",
-      NewTrip: "Nouveau Voyage",
+      navNewTrip: "Nouveau Voyage",
       labelTravelers: "Voyageurs",
       labelStay: "Hébergement Recommandé",
       labelBudget: "Dépense Quotidienne Estimée",
@@ -485,7 +553,6 @@
       packingHeaderSubtitle: "Liste adaptée à la météo, à l'âge des voyageurs et aux visites prévues.",
       packed: "Préparé",
       footerText: "Création de voyages personnalisés et adaptés à la météo dans le monde entier.",
-      footerLangSupport: "Compatible avec toutes les langues • Axé sur la famille et l'accessibilité",
       modalNewTripTitle: "Créer un Nouveau Voyage Personnalisé",
       formLabelDestination: "Ville & Pays de Destination *",
       formLabelDuration: "Durée (Jours) *",
@@ -494,17 +561,7 @@
       formLabelChildren: "Enfants / Ados (0-17 ans)",
       formLabelSeniors: "Seniors (65+ ans)",
       formLabelTripType: "Type de Séjour *",
-      typeFamily: "Vacances en Famille (Adapté aux enfants)",
-      typeCulture: "Découverte Culturelle & Histoire",
-      typeRelaxation: "Détente, Paysages & Bien-être",
-      typeCelebration: "Célébration & Voyage de Noces",
-      typeAdventure: "Aventure & Randonnée",
       formLabelBudgetPref: "Préférence Budgétaire *",
-      budgetOptionEconomy: "Économique (Auberges, cuisine de rue, métro)",
-      budgetOptionModerate: "Modéré / Confort (Hôtels familiaux, bons restaurants)",
-      budgetOptionLuxury: "Luxe / Prestige (Hôtels 5 étoiles, gastronomie, transferts)",
-      formLabelStartDate: "Date de Début",
-      formLabelSpecialNotes: "Préférences particulières / Accessibilité",
       btnCancel: "Annuler",
       btnGeneratePlan: "Générer le Plan Complet",
       completed: "Effectué",
@@ -514,12 +571,13 @@
       btnSelectThis: "Choisir cet élément",
       perNight: "/ nuit",
       btnLogin: "Connexion",
-      btnRegister: "S'inscrire"
+      btnRegister: "S'inscrire",
+      welcomeUser: "Bienvenue,"
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
       selectTrip: "旅行を選択",
-      NewTrip: "新しい旅を計画",
+      navNewTrip: "新しい旅を計画",
       labelTravelers: "旅行者",
       labelStay: "おすすめの宿泊先",
       labelBudget: "1日の目安支出",
@@ -535,7 +593,7 @@
       transitOptimizedSubtext: "徒歩や移動時間を最小限に抑えるため、半径1.2km以内で活動をまとめています。",
       labelWeatherAdaptation: "気候・天候適応プラン",
       customizePlanTitle: "この日のプランをカスタマイズ",
-      customizePlanSubtitle: "観光スポットの入れ替え、食事場所の変更、ペース調整、直接予約案内を簡単に行えます。",
+      customizePlanSubtitle: "観光スポットの入れ替え、食事場所の変更、ペース調整を行えます。",
       actionSwapActivity: "アクティビティの入れ替え",
       actionSwapActivityDesc: "同じエリア内のおすすめ観光スポットから選択",
       actionChangeRestaurant: "食事処の変更",
@@ -603,7 +661,6 @@
       packingHeaderSubtitle: "現地の天候、旅行者の年齢層、訪問先に合わせた安心リストです。",
       packed: "準備済み",
       footerText: "世界中の旅行者に寄り添う、天候適応型の旅行計画をデザインします。",
-      footerLangSupport: "全言語対応 • ファミリー＆アクセシビリティ対応",
       modalNewTripTitle: "新しい旅行プランを作成",
       formLabelDestination: "旅行先の都市・国 *",
       formLabelDuration: "旅行日数 *",
@@ -612,17 +669,7 @@
       formLabelChildren: "子供・若者 (0-17歳)",
       formLabelSeniors: "シニア (65歳以上)",
       formLabelTripType: "旅行の目的 *",
-      typeFamily: "家族旅行 (子供も楽しめるバランス型)",
-      typeCulture: "歴史・文化探訪",
-      typeRelaxation: "リゾート・温泉・癒やし",
-      typeCelebration: "記念日・ハネムーン",
-      typeAdventure: "自然体験・アクティビティ",
       formLabelBudgetPref: "予算設定 *",
-      budgetOptionEconomy: "エコノミー（手頃な宿、ローカル食堂、公共交通）",
-      budgetOptionModerate: "スタンダード・快適（快適ホテル、名物料理、周遊パス）",
-      budgetOptionLuxury: "プレミアム・高級（高級ホテル、特別ディナー、専用車）",
-      formLabelStartDate: "出発日",
-      formLabelSpecialNotes: "特記事項 / バリアフリーのご要望",
       btnCancel: "キャンセル",
       btnGeneratePlan: "旅行プランを自動生成",
       completed: "完了",
@@ -632,12 +679,13 @@
       btnSelectThis: "これに変更",
       perNight: "/ 泊",
       btnLogin: "ログイン",
-      btnRegister: "新規登録"
+      btnRegister: "新規登録",
+      welcomeUser: "ようこそ、"
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
       selectTrip: "Reise Auswählen",
-      NewTrip: "Neue Reise Planen",
+      navNewTrip: "Neue Reise Planen",
       labelTravelers: "Reisende",
       labelStay: "Empfohlene Unterkunft",
       labelBudget: "Geschätzte Tagesausgaben",
@@ -721,7 +769,6 @@
       packingHeaderSubtitle: "Abgestimmt auf Wetter, Altersgruppen und geplante Aktivitäten.",
       packed: "Gepackt",
       footerText: "Personalisierte und wetterangepasste Reiseplanung weltweit.",
-      footerLangSupport: "Kompatibel mit allen Sprachen • Fokus auf Familien & Barrierefreiheit",
       modalNewTripTitle: "Neue Reise Planen",
       formLabelDestination: "Zielstadt & Land *",
       formLabelDuration: "Dauer (Tage) *",
@@ -730,17 +777,7 @@
       formLabelChildren: "Kinder / Jugendliche (0-17 J.)",
       formLabelSeniors: "Senioren (65+ J.)",
       formLabelTripType: "Art der Reise *",
-      typeFamily: "Familienurlaub (Kinderfreundlich & ausgewogen)",
-      typeCulture: "Kultur & Geschichte",
-      typeRelaxation: "Erholung & Natur",
-      typeCelebration: "Feier & Flitterwochen",
-      typeAdventure: "Abenteuer & Wandern",
       formLabelBudgetPref: "Budget-Präferenz *",
-      budgetOptionEconomy: "Günstig (Einfache Hotels, Streetfood, ÖPNV)",
-      budgetOptionModerate: "Mittel / Komfortabel (Familienhotels, gute Lokale)",
-      budgetOptionLuxury: "Gehoben / Luxus (5-Sterne, Gourmetküche, Privattransfers)",
-      formLabelStartDate: "Reisebeginn",
-      formLabelSpecialNotes: "Besondere Wünsche / Barrierefreiheit",
       btnCancel: "Abbrechen",
       btnGeneratePlan: "Kompletten Reiseplan Erstellen",
       completed: "Erledigt",
@@ -750,9 +787,9 @@
       btnSelectThis: "Auswählen",
       perNight: "/ Nacht",
       btnLogin: "Anmelden",
-      btnRegister: "Registrieren"
+      btnRegister: "Registrieren",
+      welcomeUser: "Willkommen,"
     }
-  
   };
 
   let currentLang = localStorage.getItem('tripcraft_lang') || 'en';
@@ -784,7 +821,7 @@
   }
 
   // ==========================================================================
-  // 3. Preset Rich Trips Data Store
+  // 4. Preset Rich Trips Data Store
   // ==========================================================================
   const PRESET_TRIPS = [
     {
@@ -822,6 +859,18 @@
           features: ['👶 Stroller-Friendly', '♿ Elevator & Level Entry', '👨‍👩‍👧 Family Kitchen', '📍 2-min Walk to Asakusa Station'],
           bookingUrl: 'https://mimaruhotels.com/en/hotel/asakusa-station/',
           description: 'Spacious Japanese apartment hotel tailor-made for families with separate living spaces, coin laundry, and immediate access to the Ginza line.'
+        },
+        {
+          id: 'stay-gracery-shinjuku',
+          name: 'Hotel Gracery Shinjuku',
+          type: 'City Hotel',
+          neighborhood: 'Shinjuku',
+          rating: '4.68',
+          pricePerNight: 190,
+          fitBanner: '✓ Central Transit Hub',
+          features: ['🚅 Direct Subway Connection', '♿ Accessible Elevator', '🗼 Godzilla View Deck'],
+          bookingUrl: 'https://gracery.com/shinjuku/',
+          description: 'Modern central hotel located right above Shinjuku entertainment district with direct connections to all city transit lines.'
         }
       ],
       days: [
@@ -870,7 +919,60 @@
             cost: 50,
             completed: false
           }
+        },
+        {
+          dayNumber: 2,
+          dateLabel: 'Day 2',
+          neighborhood: 'Ueno Park, Museums & Akihabara Electric Town',
+          weatherPlan: '🌳 Shaded Morning: Ueno Park Woods • 🏛️ Midday Indoor: Tokyo National Museum • ⚡ Evening Neon: Akihabara Arcade',
+          morning: {
+            dualName: '上野恩賜公園 (Ueno Park & Shinobazu Pond)',
+            category: 'Nature & Parks',
+            time: '09:30 - 11:30',
+            desc: 'Sprawling public park with lotus ponds, serene walkways, and historic shrines.',
+            weatherBadge: '🌳 Shaded Park Paths',
+            accessibility: ['👶 Stroller Paths', '♿ Paved Ramps'],
+            cost: 0,
+            completed: false
+          },
+          lunch: {
+            dualName: '伊豆栄 本店 (Izuei Unagi Restuarant)',
+            category: 'Traditional Dining',
+            time: '12:00 - 13:30',
+            desc: 'Serving charcoal-grilled unagidon eel for over 260 years in Ueno.',
+            weatherBadge: '❄️ Indoor Air-Conditioned',
+            accessibility: ['👨‍👩‍👧 Private Tatami Rooms'],
+            cost: 70,
+            completed: false
+          },
+          afternoon: {
+            dualName: '秋葉原電気街 (Akihabara Tech & Anime Quarter)',
+            category: 'Pop Culture & Gadgets',
+            time: '14:30 - 17:30',
+            desc: 'Multi-level tech hubs, vintage game arcades, and manga flagship stores.',
+            weatherBadge: '🏢 Indoor Arcades',
+            accessibility: ['♿ Elevator Access'],
+            cost: 40,
+            completed: false
+          },
+          evening: {
+            dualName: '神田まつや (Kanda Matsuya Soba)',
+            category: 'Authentic Dinner',
+            time: '18:30 - 20:00',
+            desc: 'Classic handmade buckwheat noodle house housed in a showa-era wooden building.',
+            weatherBadge: '🛋️ Cozy Indoor',
+            accessibility: ['♿ Ground Level Access'],
+            cost: 35,
+            completed: false
+          }
         }
+      ],
+      packingList: [
+        { id: 'p1', item: 'Comfortable walking sneakers (10k+ steps/day)', checked: true, category: 'Footwear' },
+        { id: 'p2', item: 'Universal Type A/B power adapters & power bank', checked: false, category: 'Electronics' },
+        { id: 'p3', item: 'Digital Suica / Pasmo transit pass loaded on Apple/Google Wallet', checked: true, category: 'Essentials' },
+        { id: 'p4', item: 'Light breathable rain jacket or compact umbrella', checked: false, category: 'Clothing' },
+        { id: 'p5', item: 'Small hand towel & coin pouch (many Japanese restrooms carry no paper towels)', checked: false, category: 'Daily Use' }
       ],
       budgetBreakdown: {
         totalTripCost: 2450,
@@ -897,15 +999,23 @@
   }
 
   // ==========================================================================
-  // 4. Toast Notification Engine
+  // 5. Toast Notification Engine
   // ==========================================================================
   function showToast(message) {
-    const stack = document.getElementById('toastStack');
-    if (!stack) return;
+    let stack = document.getElementById('toastStack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.id = 'toastStack';
+      stack.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none;';
+      document.body.appendChild(stack);
+    }
+
     const toast = document.createElement('div');
     toast.className = 'toast';
+    toast.style.cssText = 'background: #1e293b; color: #fff; padding: 12px 18px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 8px; font-size: 0.9rem; pointer-events: auto; transition: all 0.3s ease;';
     toast.innerHTML = `<span>✨</span><span>${message}</span>`;
     stack.appendChild(toast);
+
     setTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateY(8px)';
@@ -914,12 +1024,12 @@
   }
 
   // ==========================================================================
-  // 5. Render Functions
+  // 6. Rendering Functions
   // ==========================================================================
   function populateTripDropdown() {
     const tripSelect = document.getElementById('tripSelect');
     if (!tripSelect) return;
-    tripSelect.innerHTML = PRESET_TRIPS.map((trip, idx) => 
+    tripSelect.innerHTML = PRESET_TRIPS.map((trip, idx) =>
       `<option value="${idx}">${trip.destination} (${trip.durationDays} Days)</option>`
     ).join('');
     tripSelect.value = currentTripIndex;
@@ -1065,6 +1175,7 @@
           day[slotKey].completed = e.target.checked;
           renderItinerary();
           showToast(e.target.checked ? 'Marked as completed' : 'Marked as pending');
+          saveTripToSupabase(trip);
         }
       });
     });
@@ -1077,40 +1188,31 @@
     const trip = getCurrentTrip();
 
     let staysCardsHtml = trip.stays.map(stay => `
-      <div class="stay-card">
-        <div class="stay-image-wrap">
-          <div class="stay-rating-overlay">★ ${stay.rating}</div>
-        </div>
+      <div class="stay-card" style="border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; background: var(--bg-card, #1e293b);">
         <div class="stay-body">
-          <div class="stay-header-row">
-            <h3 class="stay-title">${stay.name}</h3>
+          <div class="stay-header-row" style="display: flex; justify-content: space-between; align-items: baseline;">
+            <h3 class="stay-title" style="margin: 0;">${stay.name}</h3>
             <div>
-              <span class="stay-rate">${formatMoney(stay.pricePerNight)}</span>
+              <span class="stay-rate" style="font-weight: 700; color: #10b981; font-size: 1.2rem;">${formatMoney(stay.pricePerNight)}</span>
               <span class="stay-rate-sub"> ${t('perNight')}</span>
             </div>
           </div>
-          <div class="stay-fit-banner">${stay.fitBanner}</div>
-          <p class="stay-desc">${stay.description}</p>
-          <div class="stay-features-list">
-            ${stay.features.map(f => `<span class="flag-chip family-chip">${f}</span>`).join('')}
+          <p style="color: #94a3b8; margin: 0.25rem 0 0.75rem 0; font-size: 0.9rem;">${stay.neighborhood} • Rating: ★ ${stay.rating}</p>
+          <div class="stay-fit-banner" style="color: #3b82f6; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">${stay.fitBanner}</div>
+          <p class="stay-desc" style="color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem;">${stay.description}</p>
+          <div class="stay-features-list" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+            ${stay.features.map(f => `<span class="flag-chip family-chip" style="background: rgba(59,130,246,0.1); color: #60a5fa; padding: 4px 10px; border-radius: 100px; font-size: 0.8rem;">${f}</span>`).join('')}
           </div>
-          <a href="${stay.bookingUrl}" target="_blank" rel="noopener" class="btn btn-primary btn-block">${t('btnBook')}</a>
+          <a href="${stay.bookingUrl}" target="_blank" rel="noopener" class="btn btn-primary" style="display: inline-block; padding: 8px 18px; text-decoration: none; border-radius: 6px;">${t('btnBook')}</a>
         </div>
       </div>
     `).join('');
 
     container.innerHTML = `
-      <div class="panel-header">
+      <div class="panel-header" style="margin-bottom: 1.5rem;">
         <div>
           <h2 class="panel-title">${t('staysHeaderTitle')}</h2>
-          <p class="panel-subtitle">${t('staysHeaderSubtitle')}</p>
-        </div>
-        <div class="stays-filter-pill-bar">
-          <span class="filter-label">${t('filterBy')}</span>
-          <button class="pill-btn active" type="button">${t('filterAll')}</button>
-          <button class="pill-btn" type="button">${t('filterFamilySuites')}</button>
-          <button class="pill-btn" type="button">${t('filterAccessible')}</button>
-          <button class="pill-btn" type="button">${t('filterCentral')}</button>
+          <p class="panel-subtitle" style="color: #94a3b8;">${t('staysHeaderSubtitle')}</p>
         </div>
       </div>
       <div class="stays-grid">${staysCardsHtml}</div>
@@ -1125,75 +1227,59 @@
     const b = trip.budgetBreakdown;
 
     container.innerHTML = `
-      <div class="panel-header">
+      <div class="panel-header" style="margin-bottom: 1.5rem;">
         <div>
           <h2 class="panel-title">${t('budgetHeaderTitle')}</h2>
-          <p class="panel-subtitle">${t('budgetHeaderSubtitle')}</p>
+          <p class="panel-subtitle" style="color: #94a3b8;">${t('budgetHeaderSubtitle')}</p>
         </div>
       </div>
 
-      <div class="budget-kpi-row">
-        <div class="kpi-card">
-          <span class="kpi-label">${t('totalEstTripCost')}</span>
-          <div class="kpi-number">${formatMoney(b.totalTripCost)}</div>
-          <span class="kpi-caption">${t('includesAllExpenses')}</span>
+      <div class="budget-kpi-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('totalEstTripCost')}</span>
+          <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.totalTripCost)}</div>
+          <span class="kpi-caption" style="font-size: 0.8rem; color: #64748b;">${t('includesAllExpenses')}</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">${t('dailySpendAverage')}</span>
-          <div class="kpi-number">${formatMoney(b.dailyAverage)}</div>
-          <span class="kpi-caption">Per day across group</span>
+        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('dailySpendAverage')}</span>
+          <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.dailyAverage)}</div>
+          <span class="kpi-caption" style="font-size: 0.8rem; color: #64748b;">Per day across group</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">${t('perPersonEstimate')}</span>
-          <div class="kpi-number">${formatMoney(b.perPersonTotal)}</div>
-          <span class="kpi-caption">${t('perTravelerTotal')}</span>
+        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('perPersonEstimate')}</span>
+          <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.perPersonTotal)}</div>
+          <span class="kpi-caption" style="font-size: 0.8rem; color: #64748b;">${t('perTravelerTotal')}</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">${t('budgetStatus')}</span>
-          <div class="kpi-number text-success">${t('onTrack')}</div>
-          <span class="kpi-caption">${t('alignedWithTier')}</span>
-        </div>
-      </div>
-
-      <div class="expense-breakdown-card">
-        <h3 class="card-title">${t('categoryBreakdownTitle')}</h3>
-        <div class="progress-bar-segmented">
-          <div class="seg-lodging" style="width: ${b.lodgingPct}%"></div>
-          <div class="seg-dining" style="width: ${b.diningPct}%"></div>
-          <div class="seg-tickets" style="width: ${b.ticketsPct}%"></div>
-          <div class="seg-transit" style="width: ${b.transitPct}%"></div>
-        </div>
-        <div class="expense-legend-row">
-          <div class="legend-item"><span class="dot lodging"></span> ${t('catLodging')} (${b.lodgingPct}%) - ${formatMoney(b.lodgingTotal)}</div>
-          <div class="legend-item"><span class="dot dining"></span> ${t('catDining')} (${b.diningPct}%) - ${formatMoney(b.diningTotal)}</div>
-          <div class="legend-item"><span class="dot tickets"></span> ${t('catTickets')} (${b.ticketsPct}%) - ${formatMoney(b.ticketsTotal)}</div>
-          <div class="legend-item"><span class="dot transit"></span> ${t('catTransit')} (${b.transitPct}%) - ${formatMoney(b.transitTotal)}</div>
+        <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+          <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('budgetStatus')}</span>
+          <div class="kpi-number text-success" style="font-size: 1.6rem; font-weight: 700; color: #10b981; margin: 0.25rem 0;">${t('onTrack')}</div>
+          <span class="kpi-caption" style="font-size: 0.8rem; color: #64748b;">${t('alignedWithTier')}</span>
         </div>
       </div>
 
-      <div class="table-card">
-        <h3 class="card-title">${t('dailyCostBreakdownTitle')}</h3>
+      <div class="table-card" style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+        <h3 class="card-title" style="margin-top: 0;">${t('dailyCostBreakdownTitle')}</h3>
         <div class="table-responsive">
-          <table class="cost-table">
+          <table class="cost-table" style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
-              <tr>
-                <th>${t('thDay')}</th>
-                <th>${t('thNeighborhood')}</th>
-                <th>${t('thMeals')}</th>
-                <th>${t('thTickets')}</th>
-                <th>${t('thTransit')}</th>
-                <th>${t('thDailyTotal')}</th>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
+                <th style="padding: 10px;">${t('thDay')}</th>
+                <th style="padding: 10px;">${t('thNeighborhood')}</th>
+                <th style="padding: 10px;">${t('thMeals')}</th>
+                <th style="padding: 10px;">${t('thTickets')}</th>
+                <th style="padding: 10px;">${t('thTransit')}</th>
+                <th style="padding: 10px;">${t('thDailyTotal')}</th>
               </tr>
             </thead>
             <tbody>
               ${trip.days.map(d => `
-                <tr>
-                  <td><strong>${d.dateLabel}</strong></td>
-                  <td>${d.neighborhood}</td>
-                  <td>${formatMoney(120)}</td>
-                  <td>${formatMoney(75)}</td>
-                  <td>${formatMoney(35)}</td>
-                  <td><strong>${formatMoney(230)}</strong></td>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <td style="padding: 10px;"><strong>${d.dateLabel}</strong></td>
+                  <td style="padding: 10px; color: #cbd5e1;">${d.neighborhood}</td>
+                  <td style="padding: 10px; color: #cbd5e1;">${formatMoney(120)}</td>
+                  <td style="padding: 10px; color: #cbd5e1;">${formatMoney(75)}</td>
+                  <td style="padding: 10px; color: #cbd5e1;">${formatMoney(35)}</td>
+                  <td style="padding: 10px;"><strong>${formatMoney(230)}</strong></td>
                 </tr>
               `).join('')}
             </tbody>
@@ -1203,18 +1289,90 @@
     `;
   }
 
-  function renderCustomizeConsole() {}
-  function renderPacking() {}
+  function renderCustomizeConsole() {
+    const container = document.getElementById('customize');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="panel-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h2 class="panel-title">${t('customizeHeaderTitle')}</h2>
+          <p class="panel-subtitle" style="color: #94a3b8;">${t('customizeHeaderSubtitle')}</p>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.08);">
+        <h3 style="margin-top: 0;">${t('paceControlTitle')}</h3>
+        <p style="color: #94a3b8; font-size: 0.9rem;">${t('paceControlSubtitle')}</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
+          <div style="border: 1px solid #3b82f6; padding: 1rem; border-radius: 8px; background: rgba(59,130,246,0.05);">
+            <div style="font-weight: 700; margin-bottom: 0.25rem;">${t('paceRelaxedName')}</div>
+            <span style="font-size: 0.75rem; background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 4px;">${t('paceRelaxedTag')}</span>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 0.5rem;">${t('paceRelaxedDesc')}</p>
+          </div>
+          <div style="border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+            <div style="font-weight: 700; margin-bottom: 0.25rem;">${t('paceBalancedName')}</div>
+            <span style="font-size: 0.75rem; background: #059669; color: #fff; padding: 2px 8px; border-radius: 4px;">${t('paceBalancedTag')}</span>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 0.5rem;">${t('paceBalancedDesc')}</p>
+          </div>
+          <div style="border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+            <div style="font-weight: 700; margin-bottom: 0.25rem;">${t('pacePackedName')}</div>
+            <span style="font-size: 0.75rem; background: #d97706; color: #fff; padding: 2px 8px; border-radius: 4px;">${t('pacePackedTag')}</span>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 0.5rem;">${t('pacePackedDesc')}</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top: 1.25rem; padding: 8px 20px;" onclick="window.showToast('Pace applied to schedule!')">${t('btnApplyPace')}</button>
+      </div>
+    `;
+  }
+
+  function renderPacking() {
+    const container = document.getElementById('packing');
+    if (!container) return;
+
+    const trip = getCurrentTrip();
+    const items = trip.packingList || [
+      { id: '1', item: 'Passport & Visa Documents', checked: true },
+      { id: '2', item: 'Universal Power Adapter', checked: true },
+      { id: '3', item: 'Comfortable Walking Shoes', checked: false }
+    ];
+
+    container.innerHTML = `
+      <div class="panel-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h2 class="panel-title">${t('packingHeaderTitle')}</h2>
+          <p class="panel-subtitle" style="color: #94a3b8;">${t('packingHeaderSubtitle')}</p>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${items.map(p => `
+            <li style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: ${p.checked ? '#94a3b8' : '#f8fafc'}; text-decoration: ${p.checked ? 'line-through' : 'none'};">
+                <input type="checkbox" ${p.checked ? 'checked' : ''} onchange="window.showToast('Packing item updated')" style="width: 18px; height: 18px; cursor: pointer;">
+                <span>${p.item}</span>
+              </label>
+              ${p.category ? `<span style="font-size: 0.75rem; background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 4px; color: #94a3b8;">${p.category}</span>` : ''}
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `;
+  }
 
   function renderAllViews() {
+    populateTripDropdown();
     renderTripHero();
     renderItinerary();
     renderStays();
     renderBudget();
+    renderCustomizeConsole();
+    renderPacking();
   }
 
   // ==========================================================================
-  // 6. Modal Engine & Navigation Handlers
+  // 7. Modal Engine & Navigation Handlers
   // ==========================================================================
   function openModal(modalEl) {
     if (modalEl) modalEl.classList.add('active');
@@ -1225,7 +1383,6 @@
   }
 
   function initEventListeners() {
-    // Global toast helper
     window.showToast = showToast;
 
     // Tab Navigation
@@ -1234,7 +1391,7 @@
         const targetTab = e.currentTarget.getAttribute('data-tab');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
-        
+
         e.currentTarget.classList.add('active');
         const panel = document.getElementById(targetTab);
         if (panel) panel.classList.add('active');
@@ -1256,6 +1413,7 @@
     // Language Selector
     const langSelect = document.getElementById('langSelect');
     if (langSelect) {
+      langSelect.value = currentLang;
       langSelect.addEventListener('change', (e) => {
         applyLanguage(e.target.value);
       });
@@ -1326,11 +1484,11 @@
     if (newTripForm) {
       newTripForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const dest = document.getElementById('inputDestination').value || 'Custom Voyage';
-        const duration = parseInt(document.getElementById('inputDuration').value, 10) || 3;
-        const adults = parseInt(document.getElementById('inputAdults').value, 10) || 2;
-        const children = parseInt(document.getElementById('inputChildren').value, 10) || 0;
-        const type = document.getElementById('selectTripType').value;
+        const dest = document.getElementById('inputDestination')?.value || 'Custom Voyage';
+        const duration = parseInt(document.getElementById('inputDuration')?.value, 10) || 3;
+        const adults = parseInt(document.getElementById('inputAdults')?.value, 10) || 2;
+        const children = parseInt(document.getElementById('inputChildren')?.value, 10) || 0;
+        const type = document.getElementById('selectTripType')?.value || 'Family Vacation';
 
         const newTripObj = {
           id: `trip-custom-${Date.now()}`,
@@ -1409,10 +1567,15 @@
               completed: false
             }
           })),
+          packingList: [
+            { id: '1', item: 'Travel documents & IDs', checked: true, category: 'Essentials' },
+            { id: '2', item: 'Weather-appropriate apparel', checked: false, category: 'Clothing' },
+            { id: '3', item: 'Mobile devices & chargers', checked: true, category: 'Electronics' }
+          ],
           budgetBreakdown: {
             totalTripCost: duration * 220,
             dailyAverage: 220,
-            perPersonTotal: Math.round((duration * 220) / (adults + children)),
+            perPersonTotal: Math.round((duration * 220) / Math.max(1, adults + children)),
             lodgingTotal: Math.round(duration * 110),
             diningTotal: Math.round(duration * 60),
             ticketsTotal: Math.round(duration * 30),
@@ -1426,7 +1589,7 @@
 
         PRESET_TRIPS.push(newTripObj);
         currentTripIndex = PRESET_TRIPS.length - 1;
-        populateTripDropdown();
+        saveTripToSupabase(newTripObj);
         renderAllViews();
 
         closeModal(document.getElementById('newTripModal'));
@@ -1434,38 +1597,18 @@
         newTripForm.reset();
       });
     }
-
-    // Login Form Submit
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-      loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        closeModal(document.getElementById('loginModal'));
-        showToast('Logged in successfully!');
-      });
-    }
-
-    // Register Form Submit
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-      registerForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        closeModal(document.getElementById('registerModal'));
-        showToast('Account created successfully!');
-      });
-    }
   }
 
   // Initial Boot
   document.addEventListener('DOMContentLoaded', () => {
-    // Restore Saved Theme
     const savedTheme = localStorage.getItem('tripcraft_theme');
     if (savedTheme) {
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
-    populateTripDropdown();
+    initAuth();
     applyLanguage(currentLang);
     initEventListeners();
   });
+
 })();
