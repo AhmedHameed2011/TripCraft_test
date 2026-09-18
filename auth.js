@@ -23,13 +23,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
 
-  // --- Modal Utilities ---
+  // --- Modal Utilities (Bulletproof CSS override) ---
   function openModal(modal) {
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+      modal.style.removeProperty('display');
+      modal.style.cssText = 'display: flex !important; opacity: 1; visibility: visible;';
+      modal.classList.add('active', 'show');
+    }
   }
 
   function closeModal(modal) {
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.style.cssText = 'display: none !important; opacity: 0; visibility: hidden;';
+      modal.classList.remove('active', 'show', 'open');
+    }
   }
 
   if (btnLoginModal) btnLoginModal.addEventListener('click', () => openModal(loginModal));
@@ -130,12 +137,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.log('🔑 Login successful!');
         
-        // Forcefully hide the login modal using important override
-        if (loginModal) {
-          loginModal.style.setProperty('display', 'none', 'important');
-          loginModal.classList.remove('active');
-        }
-        
+        // Force close the modal
+        closeModal(loginModal);
         loginForm.reset();
       } catch (err) {
         console.error('❌ Login error:', err.message);
