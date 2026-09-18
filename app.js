@@ -12,81 +12,98 @@
   const supabase = window.supabaseClient || null;
   let currentUser = null;
 
-  async function initAuth() {
-    if (!supabase) return;
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        currentUser = session.user;
-        updateAuthUI(currentUser);
-        await syncUserTripsFromSupabase();
-      } else {
-        updateAuthUI(null);
-      }
-
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        if (session) {
-          currentUser = session.user;
-          updateAuthUI(currentUser);
-          await syncUserTripsFromSupabase();
-        } else {
-          currentUser = null;
-          updateAuthUI(null);
-        }
-      });
-    } catch (err) {
-      console.error('Error initializing Supabase Auth:', err);
-    }
-  }
-
-  function updateAuthUI(user) {
+  // Make handleLogout globally available for inline onclick attributes
+  window.handleLogout = function() {
+    localStorage.removeItem('tripcraft_user');
+    
+    // Revert UI elements
     const authNavGroup = document.getElementById('authNavGroup');
     const userNavGroup = document.getElementById('userNavGroup');
-    const userNameSpan = document.getElementById('userDisplayName');
-
-    if (user) {
-      if (authNavGroup) authNavGroup.style.display = 'none';
-      if (userNavGroup) userNavGroup.style.display = 'flex';
-      const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Traveler';
-      if (userNameSpan) userNameSpan.textContent = `${t('welcomeUser') || 'Welcome,'} ${name}`;
-    } else {
-      if (authNavGroup) authNavGroup.style.display = 'flex';
-      if (userNavGroup) userNavGroup.style.display = 'none';
-      if (userNameSpan) userNameSpan.textContent = '';
+    if (authNavGroup) authNavGroup.style.display = 'flex';
+    if (userNavGroup) userNavGroup.style.display = 'none';
+    
+    // Sign out from Supabase if connected
+    if (supabase) {
+      supabase.auth.signOut();
     }
+    
+    // Reload default demo state
+    showToast('Logged out successfully');
+    setTimeout(() => {
+      location.reload(); 
+    }, 800);
+  };
+
+  function handleLoginSuccess(user) {
+    // 1. Persist session data
+    localStorage.setItem('tripcraft_user', JSON.stringify(user));
+    currentUser = user;
+
+    // 2. Hide Login/Register, Show User Menu
+    const authNavGroup = document.getElementById('authNavGroup');
+    if (authNavGroup) authNavGroup.style.display = 'none';
+    
+    const userGroup = document.getElementById('userNavGroup');
+    if (userGroup) {
+      userGroup.style.display = 'flex';
+      const displayName = user.name || user.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Traveler';
+      userGroup.innerHTML = `
+        <span class="user-display-name">👤 ${displayName}</span>
+        <button class="btn btn-secondary btn-sm" onclick="handleLogout()">Logout</button>
+      `;
+    }
+
+    // 3. Fetch user's saved trips from database
+    loadUserTrips(user.id);
   }
 
-  async function syncUserTripsFromSupabase() {
-    if (!supabase || !currentUser) return;
-    try {
-      const { data, error } = await supabase
-        .from('trips')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
+  async function loadUserTrips(userId) {
+    if (!supabase) return;
+    
+    // Fetch from Supabase API
+    const { data: trips, error } = await supabase
+      .from('trips')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Failed to fetch user trips:', error);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const cloudTrips = data.map(row => row.trip_data);
-        cloudTrips.forEach(ct => {
-          const index = PRESET_TRIPS.findIndex(pt => pt.id === ct.id);
-          if (index !== -1) {
-            PRESET_TRIPS[index] = ct;
-          } else {
-            PRESET_TRIPS.unshift(ct);
-          }
-        });
-        populateTripDropdown();
-        renderAllViews();
-      }
-    } catch (err) {
-      console.error('Error syncing trips:', err);
+    if (error || !trips || !trips.length) {
+      showToast('No saved trips found. Plan a new trip to get started!');
+      return;
     }
+
+    // Populate dropdown with user's trips
+    const tripSelect = document.getElementById('tripSelect');
+    if (tripSelect) {
+      tripSelect.innerHTML = trips.map(t => {
+        const tripTitle = t.trip_data?.title || t.destination || 'Saved Trip';
+        return `<option value="${t.id}">${tripTitle}</option>`;
+      }).join('');
+      
+      // Update listener for custom IDs from DB
+      tripSelect.addEventListener('change', (e) => {
+        const selectedId = e.target.value;
+        const selectedRow = trips.find(tr => tr.id === selectedId);
+        if (selectedRow) renderTripDetails(selectedRow);
+      });
+    }
+    
+    // Load active trip view
+    renderTripDetails(trips[0]);
+  }
+
+  function renderTripDetails(tripRow) {
+    const tripObj = tripRow.trip_data || tripRow;
+    const existingIdx = PRESET_TRIPS.findIndex(pt => pt.id === tripObj.id);
+    
+    if (existingIdx !== -1) {
+      currentTripIndex = existingIdx;
+    } else {
+      PRESET_TRIPS.unshift(tripObj);
+      currentTripIndex = 0;
+    }
+    
+    renderAllViews();
   }
 
   async function saveTripToSupabase(tripObj) {
@@ -1806,16 +1823,6 @@
       });
     }
 
-    // Trip Selector
-    const tripSelect = document.getElementById('tripSelect');
-    if (tripSelect) {
-      tripSelect.addEventListener('change', (e) => {
-        currentTripIndex = parseInt(e.target.value, 10) || 0;
-        activeDayIndex = 0;
-        renderAllViews();
-      });
-    }
-
     // Modal Triggers
     const btnNewTrip = document.getElementById('btnNewTrip');
     if (btnNewTrip) {
@@ -1830,18 +1837,6 @@
     const btnRegisterModal = document.getElementById('btnRegisterModal');
     if (btnRegisterModal) {
       btnRegisterModal.addEventListener('click', () => openModal(document.getElementById('registerModal')));
-    }
-
-    const btnLogout = document.getElementById('btnLogout');
-    if (btnLogout) {
-      btnLogout.addEventListener('click', async () => {
-        if (supabase) {
-          await supabase.auth.signOut();
-          currentUser = null;
-          updateAuthUI(null);
-          showToast('Signed out successfully');
-        }
-      });
     }
 
     // Modal Close Buttons
@@ -1861,30 +1856,46 @@
 
     // Auth Form Handlers
     const loginForm = document.getElementById('loginForm');
-    if (loginForm && supabase) {
+    if (loginForm) {
       loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('loginEmail')?.value;
         const password = document.getElementById('loginPassword')?.value;
         if (!email || !password) return;
 
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) {
-            showToast(`Login failed: ${error.message}`);
-          } else {
-            showToast('Logged in successfully!');
-            closeModal(document.getElementById('loginModal'));
-            loginForm.reset();
+        if (supabase) {
+          try {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+              showToast(`Login failed: ${error.message}`);
+            } else {
+              showToast('Logged in successfully!');
+              
+              const userObj = {
+                id: data.user.id,
+                email: data.user.email,
+                name: data.user.user_metadata?.full_name || data.user.email.split('@')[0]
+              };
+              
+              handleLoginSuccess(userObj);
+              closeModal(document.getElementById('loginModal'));
+              loginForm.reset();
+            }
+          } catch (err) {
+            console.error('Login error:', err);
           }
-        } catch (err) {
-          console.error('Login error:', err);
+        } else {
+          // Fallback UI Simulation if Supabase is disconnected
+          const demoUser = { id: 'demo-123', email, name: email.split('@')[0] };
+          handleLoginSuccess(demoUser);
+          closeModal(document.getElementById('loginModal'));
+          loginForm.reset();
         }
       });
     }
 
     const registerForm = document.getElementById('registerForm');
-    if (registerForm && supabase) {
+    if (registerForm) {
       registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('registerEmail')?.value;
@@ -1893,21 +1904,31 @@
 
         if (!email || !password) return;
 
-        try {
-          const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { full_name: fullName } }
-          });
-          if (error) {
-            showToast(`Registration failed: ${error.message}`);
-          } else {
-            showToast('Account created successfully!');
-            closeModal(document.getElementById('registerModal'));
-            registerForm.reset();
+        if (supabase) {
+          try {
+            const { data, error } = await supabase.auth.signUp({
+              email,
+              password,
+              options: { data: { full_name: fullName } }
+            });
+            if (error) {
+              showToast(`Registration failed: ${error.message}`);
+            } else {
+              showToast('Account created successfully!');
+              
+              const userObj = {
+                id: data.user?.id || 'new-user',
+                email: email,
+                name: fullName
+              };
+              
+              handleLoginSuccess(userObj);
+              closeModal(document.getElementById('registerModal'));
+              registerForm.reset();
+            }
+          } catch (err) {
+            console.error('Registration error:', err);
           }
-        } catch (err) {
-          console.error('Registration error:', err);
         }
       });
     }
@@ -1962,88 +1983,95 @@
             neighborhood: `${dest.split(',')[0]} Highlight District`,
             weatherPlan: '☀️ Weather-optimized for walking and exploration.',
             morning: {
-              dualName: 'City Center Exploration',
+              dualName: 'Morning Exploration',
               category: 'Sightseeing',
-              time: '09:30 - 11:30',
-              desc: `Discover the top cultural landmark in ${dest}.`,
-              weatherBadge: '☀️ Morning Tour',
-              accessibility: ['♿ Accessible Access'],
-              cost: 15,
-              completed: false
-            },
-            lunch: {
-              dualName: 'Local Culinary Market',
-              category: 'Dining',
-              time: '12:00 - 13:30',
-              desc: 'Authentic local cuisine and regional specialties.',
-              weatherBadge: '❄️ Indoor Dining',
-              accessibility: ['👨‍👩‍👧 Family Seating'],
-              cost: 30,
-              completed: false
-            },
-            afternoon: {
-              dualName: 'Regional Museum & Gardens',
-              category: 'Culture & Nature',
-              time: '14:00 - 16:30',
-              desc: 'Relaxing afternoon walk through local heritage exhibits.',
-              weatherBadge: '🏛️ Indoor/Outdoor',
-              accessibility: ['👶 Stroller-Friendly'],
+              time: '09:00 - 12:00',
+              desc: 'Visit main city attractions and landmarks.',
+              weatherBadge: '☀️ Optimal Weather',
+              accessibility: ['♿ Accessible'],
               cost: 20,
               completed: false
             },
+            lunch: {
+              dualName: 'Local Lunch',
+              category: 'Dining',
+              time: '12:30 - 13:30',
+              desc: 'Sample local cuisine.',
+              weatherBadge: '🍽️ Indoor',
+              cost: 25,
+              completed: false
+            },
+            afternoon: {
+              dualName: 'Cultural Immersion',
+              category: 'Culture',
+              time: '14:00 - 17:00',
+              desc: 'Museums, galleries or local markets.',
+              weatherBadge: '🏛️ Indoor/Outdoor',
+              cost: 15,
+              completed: false
+            },
             evening: {
-              dualName: 'Sunset Promenade & Dinner',
-              category: 'Nightlife',
-              time: '18:00 - 20:00',
-              desc: 'Evening dining experience with local atmosphere.',
-              weatherBadge: '🌆 Evening Breeze',
-              accessibility: ['👶 Smooth Walkway'],
+              dualName: 'Evening Entertainment',
+              category: 'Leisure',
+              time: '18:30 - 21:00',
+              desc: 'Dinner and nighttime stroll.',
+              weatherBadge: '🌆 Cool Breeze',
               cost: 40,
               completed: false
             }
           })),
           packingList: [
-            { id: '1', item: 'Travel documents & IDs', checked: true, category: 'Essentials' },
-            { id: '2', item: 'Weather-appropriate apparel', checked: false, category: 'Clothing' },
-            { id: '3', item: 'Mobile devices & chargers', checked: true, category: 'Electronics' }
+            { id: 'c1', item: 'Travel Documents & ID', checked: false, category: 'Essentials' },
+            { id: 'c2', item: 'Comfortable walking shoes', checked: false, category: 'Footwear' },
+            { id: 'c3', item: 'Universal Power Adapter', checked: false, category: 'Electronics' }
           ],
           budgetBreakdown: {
-            totalTripCost: duration * 220,
-            dailyAverage: 220,
-            perPersonTotal: Math.round((duration * 220) / Math.max(1, adults + children)),
-            lodgingTotal: Math.round(duration * 110),
-            diningTotal: Math.round(duration * 60),
-            ticketsTotal: Math.round(duration * 30),
-            transitTotal: Math.round(duration * 20),
+            totalTripCost: duration * 150 * (adults + children),
+            dailyAverage: 150 * (adults + children),
+            perPersonTotal: duration * 150,
+            lodgingTotal: duration * 80 * adults,
+            diningTotal: duration * 40 * (adults + children),
+            ticketsTotal: duration * 20 * (adults + children),
+            transitTotal: duration * 10 * (adults + children),
             lodgingPct: 50,
-            diningPct: 27,
-            ticketsPct: 14,
-            transitPct: 9
+            diningPct: 25,
+            ticketsPct: 15,
+            transitPct: 10
           }
         };
 
-        PRESET_TRIPS.push(newTripObj);
-        currentTripIndex = PRESET_TRIPS.length - 1;
-        saveTripToSupabase(newTripObj);
+        PRESET_TRIPS.unshift(newTripObj);
+        currentTripIndex = 0;
         renderAllViews();
-
+        saveTripToSupabase(newTripObj);
         closeModal(document.getElementById('newTripModal'));
-        showToast(`Trip to ${dest} generated successfully!`);
+        showToast('New trip generated successfully!');
         newTripForm.reset();
       });
     }
   }
 
-  // Initial Boot
+  // 8. Auto-Login Check on Page Load
   document.addEventListener('DOMContentLoaded', () => {
-    const savedTheme = localStorage.getItem('tripcraft_theme');
-    if (savedTheme) {
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    }
-
-    initAuth();
-    applyLanguage(currentLang);
     initEventListeners();
+    applyLanguage(currentLang);
+    
+    const savedUser = localStorage.getItem('tripcraft_user');
+    if (savedUser) {
+      try {
+        const userObj = JSON.parse(savedUser);
+        handleLoginSuccess(userObj);
+      } catch (err) {
+        console.error('Error parsing saved user session:', err);
+      }
+    } else {
+      // Revert to demo guest state if no user
+      const authNavGroup = document.getElementById('authNavGroup');
+      const userNavGroup = document.getElementById('userNavGroup');
+      if (authNavGroup) authNavGroup.style.display = 'flex';
+      if (userNavGroup) userNavGroup.style.display = 'none';
+      renderAllViews();
+    }
   });
 
 })();
