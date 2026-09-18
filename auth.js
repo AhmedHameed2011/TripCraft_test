@@ -1,10 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const loginForm = document.getElementById('login-form');
-  const signupForm = document.getElementById('signup-form');
+  // 1. Safely retrieve Supabase client instance
+  const supabase = window.supabaseClient || window.supabase;
 
-  // Helper function to safely render feedback messages in forms
+  // 2. Target form elements (supporting both hyphenated and camelCase IDs)
+  const loginForm = document.getElementById('login-form') || document.getElementById('loginForm');
+  const signupForm = document.getElementById('signup-form') || document.getElementById('registerForm');
+
+  // Helper function to render feedback messages in forms
   function showAuthFeedback(formType, message, type = 'error') {
-    const feedbackEl = document.getElementById(`${formType}-feedback`);
+    const feedbackEl = document.getElementById(`${formType}-feedback`) || document.getElementById(`${formType}Feedback`);
     if (!feedbackEl) return;
 
     feedbackEl.textContent = message;
@@ -26,26 +30,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Get initialized Supabase client instance safely
-  function getSupabaseClient() {
-    return window.supabaseClient || window.supabase;
+  // Early guard check if Supabase failed to initialize
+  if (!supabase || !supabase.auth) {
+    console.warn('Auth functionality limited: Supabase client is not available.');
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        showAuthFeedback('login', 'Authentication unavailable. Check Supabase connection.', 'error');
+      });
+    }
+    if (signupForm) {
+      signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        showAuthFeedback('signup', 'Authentication unavailable. Check Supabase connection.', 'error');
+      });
+    }
+    return;
   }
 
   // Registration Handler
   if (signupForm) {
     signupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const supabase = getSupabaseClient();
-      if (!supabase || !supabase.auth) {
-        showAuthFeedback('signup', 'Supabase client is not initialized. Check supabase-config.js', 'error');
-        console.error('Supabase client missing from window scope.');
-        return;
-      }
 
-      const nameInput = document.getElementById('signup-name');
-      const emailInput = document.getElementById('signup-email');
-      const passwordInput = document.getElementById('signup-password');
+      const nameInput = document.getElementById('signup-name') || document.getElementById('registerName');
+      const emailInput = document.getElementById('signup-email') || document.getElementById('registerEmail');
+      const passwordInput = document.getElementById('signup-password') || document.getElementById('registerPassword');
 
       if (!emailInput || !passwordInput) {
         showAuthFeedback('signup', 'Required input fields missing in HTML.', 'error');
@@ -60,9 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            data: { full_name: name }
-          }
+          options: { data: { full_name: name } }
         });
 
         if (error) {
@@ -73,15 +81,14 @@ document.addEventListener('DOMContentLoaded', () => {
         showAuthFeedback('signup', 'Account created! Check your email to confirm.', 'success');
         signupForm.reset();
 
-        // Auto-close modal after 2.5 seconds on successful registration
         setTimeout(() => {
           const registerModal = document.getElementById('registerModal');
           if (registerModal) registerModal.classList.remove('active');
-        }, 2500);
+        }, 2000);
 
       } catch (err) {
         console.error('Unexpected Auth Exception:', err);
-        showAuthFeedback('signup', 'An unexpected error occurred. Check browser console.', 'error');
+        showAuthFeedback('signup', 'An unexpected error occurred.', 'error');
       }
     });
   }
@@ -91,14 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const supabase = getSupabaseClient();
-      if (!supabase || !supabase.auth) {
-        showAuthFeedback('login', 'Supabase client is not initialized.', 'error');
-        return;
-      }
-
-      const emailInput = document.getElementById('login-email');
-      const passwordInput = document.getElementById('login-password');
+      const emailInput = document.getElementById('login-email') || document.getElementById('loginEmail');
+      const passwordInput = document.getElementById('login-password') || document.getElementById('loginPassword');
 
       if (!emailInput || !passwordInput) {
         showAuthFeedback('login', 'Required input fields missing.', 'error');
@@ -116,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
+        if (window.showToast) window.showToast('Logged in successfully!');
         const loginModal = document.getElementById('loginModal');
         if (loginModal) loginModal.classList.remove('active');
         loginForm.reset();
