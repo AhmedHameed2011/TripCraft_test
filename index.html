@@ -333,78 +333,59 @@
     </div>
   </div>
 
-  <!-- Login Modal -->
-<div id="loginModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-  <div class="bg-[#0e1322] border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl text-white relative">
-    <div class="flex items-center justify-between pb-4 mb-6 border-b border-slate-800/60">
-      <h2 class="text-xl font-bold text-white tracking-wide">Login to TripCraft</h2>
-      <button type="button" id="closeLoginModal" class="text-slate-400 hover:text-white transition-colors text-xl font-medium">&times;</button>
+
+  <!-- Modal 2: Login Modal -->
+  <div id="loginModal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h2 class="modal-title" data-i18n="btnLogin">Login</h2>
+        <button class="modal-close-btn" type="button" data-close-modal>&times;</button>
+      </div>
+      <form id="loginForm" class="modal-body-form">
+        <div class="form-group">
+          <label class="form-label">Email or Username</label>
+          <input type="email" class="form-input" placeholder="name@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" placeholder="••••••••" required>
+        </div>
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btnLogin">Login</button>
+        </div>
+      </form>
     </div>
-    
-    <form id="loginForm" class="space-y-5">
-      <div>
-        <label for="loginEmail" class="block text-sm font-medium text-slate-300 mb-2">Email Address *</label>
-        <input 
-          type="email" 
-          id="loginEmail" 
-          placeholder="name@example.com" 
-          required 
-          class="w-full bg-[#151c2e] border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-sm"
-        />
-      </div>
-
-      <div>
-        <label for="loginPassword" class="block text-sm font-medium text-slate-300 mb-2">Password *</label>
-        <input 
-          type="password" 
-          id="loginPassword" 
-          placeholder="••••••••" 
-          required 
-          class="w-full bg-[#151c2e] border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-sm"
-        />
-      </div>
-
-      <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800/60 mt-6">
-        <button 
-          type="button" 
-          onclick="document.getElementById('loginModal').classList.add('hidden')" 
-          class="px-5 py-2.5 rounded-full border border-slate-700 text-slate-300 hover:bg-slate-800 transition-all text-sm font-medium"
-        >
-          Cancel
-        </button>
-        <button 
-          type="submit" 
-          class="px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 text-white font-semibold text-sm shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all"
-        >
-          Sign In
-        </button>
-      </div>
-    </form>
   </div>
-</div>
 
-<!-- Register Modal -->
-<div id="registerModal" class="modal-overlay hidden">
-  <div class="modal-card">
-    <button type="button" class="modal-close" id="closeRegisterModal">&times;</button>
-    <h2 class="modal-title">Create Account</h2>
-    <form id="registerForm" class="auth-form">
-      <div class="form-group">
-        <label for="registerName">Full Name</label>
-        <input type="text" id="registerName" class="form-input" placeholder="Enter your full name" required />
+
+<!-- Modal 3: Register Modal -->
+  <div id="registerModal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 class="modal-title" data-i18n="btnRegister">Register</h2>
+        <button class="modal-close-btn" type="button" data-close-modal>&times;</button>
       </div>
-      <div class="form-group">
-        <label for="registerEmail">Email</label>
-        <input type="email" id="registerEmail" class="form-input" placeholder="Enter your email" required />
-      </div>
-      <div class="form-group">
-        <label for="registerPassword">Password</label>
-        <input type="password" id="registerPassword" class="form-input" placeholder="Create a password" required />
-      </div>
-      <button type="submit" class="btn-primary w-full">Register</button>
-    </form>
+      <form id="registerForm" class="modal-body-form">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" placeholder="Ahmed Ali" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" placeholder="name@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" placeholder="••••••••" required>
+        </div>
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-i18n="btnRegister">Create Account</button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
 
   <!-- Modal Open/Close Toggle Handlers -->
   <script>
