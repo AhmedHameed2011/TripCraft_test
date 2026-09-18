@@ -3,7 +3,6 @@
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Ensure supabase client is available globally from supabase-config.js
   if (typeof supabase === 'undefined') {
     console.error('❌ Supabase client is not initialized. Make sure supabase-config.js is loaded before auth.js.');
     return;
@@ -23,19 +22,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
 
-  // --- Modal Utilities (Bulletproof CSS override) ---
+  // --- Bulletproof Modal Utilities ---
   function openModal(modal) {
     if (modal) {
-      modal.style.removeProperty('display');
-      modal.style.cssText = 'display: flex !important; opacity: 1; visibility: visible;';
-      modal.classList.add('active', 'show');
+      modal.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;';
+      modal.classList.add('active', 'show', 'open');
     }
   }
 
   function closeModal(modal) {
     if (modal) {
-      modal.style.cssText = 'display: none !important; opacity: 0; visibility: hidden;';
-      modal.classList.remove('active', 'show', 'open');
+      // Forcefully strip all visibility classes and apply important inline hide rules
+      modal.classList.remove('active', 'show', 'open', 'visible', 'is-open');
+      modal.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
     }
   }
 
@@ -58,15 +57,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- UI State Management for Authentication ---
   function updateAuthUI(session) {
-    if (!authNavGroup || !userNavGroup) {
-      console.warn('⚠️ Auth UI containers (#authNavGroup or #userNavGroup) not found in DOM.');
-      return;
-    }
+    if (!authNavGroup || !userNavGroup) return;
 
     if (session && session.user) {
       console.log('✅ User is authenticated:', session.user.email);
       
-      // Hide login/register buttons, show user greeting and Logout button
       authNavGroup.style.display = 'none';
       userNavGroup.style.display = 'flex';
 
@@ -80,11 +75,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         <button id="btnLogout" class="btn btn-secondary btn-sm">Logout</button>
       `;
 
-      // Attach Logout event listener dynamically
       const btnLogout = document.getElementById('btnLogout');
       if (btnLogout) {
         btnLogout.addEventListener('click', async () => {
-          console.log('🔄 Signing out...');
           const { error } = await supabase.auth.signOut();
           if (error) {
             console.error('❌ Error signing out:', error.message);
@@ -94,20 +87,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
 
-      // Load user trips if defined in app.js
       if (typeof window.loadUserTrips === 'function') {
         window.loadUserTrips(session.user.id);
       }
     } else {
-      console.log('ℹ️ No active session. User is logged out.');
-      // Show login/register buttons, hide user profile group
       authNavGroup.style.display = 'flex';
       userNavGroup.style.display = 'none';
       userNavGroup.innerHTML = '';
     }
   }
 
-  // --- Check Initial Session on Page Load ---
+  // --- Check Initial Session ---
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) throw error;
@@ -116,7 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('❌ Error fetching initial session:', err.message);
   }
 
-  // --- Listen to Real-time Auth State Changes ---
+  // --- Auth State Listener ---
   supabase.auth.onAuthStateChange((event, session) => {
     console.log('🔔 Auth state changed event:', event);
     updateAuthUI(session);
@@ -137,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.log('🔑 Login successful!');
         
-        // Force close the modal
+        // Force close modal immediately on success
         closeModal(loginModal);
         loginForm.reset();
       } catch (err) {
@@ -173,8 +163,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         closeModal(registerModal);
         registerForm.reset();
       } catch (err) {
-        alert('Registration failed: ' + err.message);
         console.error('❌ Registration error:', err.message);
+        alert('Registration failed: ' + err.message);
       }
     });
   }
