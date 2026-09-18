@@ -1,14 +1,14 @@
-// supabase-config.js
-// Replace these with your actual Supabase Project URL and Anon Key
-const SUPABASE_URL = "https://oowrmsisgogscqgnnahp.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_iTDs1RBLyJifkqng8cnQvw_Q8V1NTyU";
+// Supabase Configuration & Initialization
+const SUPABASE_URL = 'https://oowrmsisgogscqgnnahp.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_iTDs1RBLyJifkqng8cnQvw_Q8V1NTyU';
 
-let supabaseClient = null;
-
-// Initialize Supabase client if SDK is loaded and keys are provided
-if (typeof supabase !== 'undefined' && SUPABASE_URL !== "https://oowrmsisgogscqgnnahp.supabase.co") {
-  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  console.log("Supabase Client initialized successfully.");
-} else {
-  console.warn("Supabase credentials not set or SDK not loaded. App will fall back to localStorage/mock mode.");
+// Verification check for Supabase SDK
+if (typeof supabase === 'undefined' || !supabase.createClient) {
+  console.error('Supabase SDK not loaded. Ensure CDN script tag is placed before supabase-config.js.');
 }
+
+// Initialize and export global client instance
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Assign to global scope for auth.js and app.js access
+window.supabase = supabaseClient;
