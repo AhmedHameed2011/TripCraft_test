@@ -1,14 +1,13 @@
-// Supabase Configuration & Initialization
 const SUPABASE_URL = 'https://oowrmsisgogscqgnnahp.supabase.co';
+// Your new Supabase Publishable Key
 const SUPABASE_ANON_KEY = 'sb_publishable_iTDs1RBLyJifkqng8cnQvw_Q8V1NTyU';
 
-// Verification check for Supabase SDK
 if (typeof supabase === 'undefined' || !supabase.createClient) {
-  console.error('Supabase SDK not loaded. Ensure CDN script tag is placed before supabase-config.js.');
+  console.error('Supabase SDK not loaded. Make sure the Supabase JS script tag is included in HTML.');
 }
 
-// Initialize and export global client instance
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Assign to global scope for auth.js and app.js access
+// Assigning both globals fixes the mismatch between app_5.js and auth_4.js
 window.supabase = supabaseClient;
+window.supabaseClient = supabaseClient;
