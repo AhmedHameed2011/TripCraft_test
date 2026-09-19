@@ -65,26 +65,51 @@
         </button>
 
         <!-- Auth Navigation Controls -->
-        <div class="auth-nav-group" style="display: flex; align-items: center; gap: 0.5rem;">
-          <button id="btnLoginModal" class="btn btn-primary" type="button">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-              <polyline points="10 17 15 12 10 7" />
-              <line x1="15" y1="12" x2="3" y2="12" />
-            </svg>
-            <span data-i18n="btnLogin">Login</span>
-          </button>
+        <div class="auth-nav-container" style="display: flex; align-items: center; gap: 0.5rem;">
           
-          <button id="btnRegisterModal" class="btn btn-primary" type="button">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="8.5" cy="7" r="4" />
-              <line x1="20" y1="8" x2="20" y2="14" />
-              <line x1="23" y1="11" x2="17" y2="11" />
-            </svg>
-            <span data-i18n="btnRegister">Register</span>
-          </button>
+          <!-- Logged Out State (Visible by default) -->
+          <div id="loggedOutGroup" style="display: flex; gap: 0.5rem;">
+            <button id="btnLoginModal" class="btn btn-primary" type="button">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              <span data-i18n="btnLogin">Login</span>
+            </button>
+            
+            <button id="btnRegisterModal" class="btn btn-primary" type="button">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <line x1="20" y1="8" x2="20" y2="14" />
+                <line x1="23" y1="11" x2="17" y2="11" />
+              </svg>
+              <span data-i18n="btnRegister">Register</span>
+            </button>
+          </div>
+
+          <!-- Logged In State (Hidden by default) -->
+          <div id="loggedInGroup" style="display: none; align-items: center; gap: 0.75rem;">
+            <div class="user-profile-badge" style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary, rgba(150,150,150,0.1)); padding: 0.25rem 0.75rem 0.25rem 0.25rem; border-radius: 50px;">
+              <div id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary, #007bff); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
+                A
+              </div>
+              <span id="userNameDisplay" style="font-weight: 500; font-size: 0.9rem;">Ahmed</span>
+            </div>
+            
+            <button id="btnLogout" class="btn btn-secondary" type="button" style="padding: 0.4rem 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span data-i18n="btnLogout">Logout</span>
+            </button>
+          </div>
+
         </div>
+
 
         <!-- Language Selector -->
         <div class="dropdown-control">

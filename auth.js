@@ -64,9 +64,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       authNavGroup.style.display = 'none';
       userNavGroup.style.display = 'flex';
+      userNavGroup.style.alignItems = 'center';
+      userNavGroup.style.gap = '0.75rem';
 
       const userEmail = session.user.email;
       const displayName = session.user.user_metadata?.full_name || userEmail.split('@')[0];
+      const initial = displayName.charAt(0).toUpperCase();
 
       window.currentUser = {
         id: session.user.id,
@@ -75,13 +78,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         user_metadata: session.user.user_metadata
       };
 
+      // Inject styled profile badge and logout button dynamically
       userNavGroup.innerHTML = `
-        <span class="user-greeting" style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary);">
-          👋 Hi, <strong style="color: var(--text-primary);">${displayName}</strong>
-        </span>
-        <button id="btnLogout" class="btn btn-secondary btn-sm">Logout</button>
+        <div class="user-profile-badge" style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary, rgba(150,150,150,0.1)); padding: 0.25rem 0.75rem 0.25rem 0.25rem; border-radius: 50px;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary, #007bff); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
+            ${initial}
+          </div>
+          <span style="font-weight: 500; font-size: 0.9rem; color: var(--text-primary);">${displayName}</span>
+        </div>
+        <button id="btnLogout" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 0.25rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Logout
+        </button>
       `;
 
+      // Attach listener to newly created logout button
       const btnLogout = document.getElementById('btnLogout');
       if (btnLogout) {
         btnLogout.addEventListener('click', async () => {
@@ -94,15 +109,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (typeof window.showToast === 'function') {
               window.showToast('Logged out successfully');
             }
+            // Clear trips UI on logout if function exists
+            const tripSelect = document.getElementById('tripSelect');
+            if (tripSelect) tripSelect.innerHTML = '<option value="">Select Trip</option>';
+            
             setTimeout(() => window.location.reload(), 600);
           }
         });
       }
 
+      // Load user trips if function is available in app.js
       if (typeof window.loadUserTrips === 'function') {
         window.loadUserTrips(session.user.id);
       }
     } else {
+      // User is logged out
       authNavGroup.style.display = 'flex';
       userNavGroup.style.display = 'none';
       userNavGroup.innerHTML = '';
@@ -111,13 +132,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Check Initial Session ---
-  try {
-    const { data: { session }, error } = await sbClient.auth.getSession();
-    if (error) throw error;
-    updateAuthUI(session);
-  } catch (err) {
-    console.error('❌ Error fetching initial session:', err.message);
-  }
+  const initializeSession = async () => {
+    try {
+      const { data: { session }, error } = await sbClient.auth.getSession();
+      if (error) throw error;
+      updateAuthUI(session);
+    } catch (err) {
+      console.error('❌ Error fetching initial session:', err.message);
+    }
+  };
+  
+  initializeSession();
 
   // --- Auth State Listener ---
   sbClient.auth.onAuthStateChange((event, session) => {
@@ -148,7 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (err) {
         console.error('❌ Login error:', err.message);
         if (typeof window.showToast === 'function') {
-          window.showToast('Login failed: ' + err.message);
+          window.showToast('Login failed: ' + err.message, 'error');
         } else {
           alert('Login failed: ' + err.message);
         }
@@ -185,7 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (err) {
         console.error('❌ Registration error:', err.message);
         if (typeof window.showToast === 'function') {
-          window.showToast('Registration failed: ' + err.message);
+          window.showToast('Registration failed: ' + err.message, 'error');
         } else {
           alert('Registration failed: ' + err.message);
         }
