@@ -68,7 +68,7 @@
         <div class="auth-nav-container" style="display: flex; align-items: center; gap: 0.5rem;">
           
           <!-- Logged Out State (Visible by default) -->
-          <div id="loggedOutGroup" style="display: flex; gap: 0.5rem;">
+          <div id="authNavGroup" style="display: flex; gap: 0.5rem;">
             <button id="btnLoginModal" class="btn btn-primary" type="button">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
@@ -90,12 +90,12 @@
           </div>
 
           <!-- Logged In State (Hidden by default) -->
-          <div id="loggedInGroup" style="display: none; align-items: center; gap: 0.75rem;">
+          <div id="userNavGroup" style="display: none; align-items: center; gap: 0.75rem;">
             <div class="user-profile-badge" style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary, rgba(150,150,150,0.1)); padding: 0.25rem 0.75rem 0.25rem 0.25rem; border-radius: 50px;">
               <div id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary, #007bff); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
                 A
               </div>
-              <span id="userNameDisplay" style="font-weight: 500; font-size: 0.9rem;">Ahmed</span>
+              <span id="userNameDisplay" style="font-weight: 500; font-size: 0.9rem;">User</span>
             </div>
             
             <button id="btnLogout" class="btn btn-secondary" type="button" style="padding: 0.4rem 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
@@ -109,7 +109,6 @@
           </div>
 
         </div>
-
 
         <!-- Language Selector -->
         <div class="dropdown-control">
@@ -358,7 +357,6 @@
     </div>
   </div>
 
-
   <!-- Modal 2: Login Modal -->
   <div id="loginModal" class="modal-backdrop">
     <div class="modal-dialog" style="max-width: 440px;">
@@ -382,7 +380,6 @@
       </form>
     </div>
   </div>
-
 
   <!-- Modal 3: Register Modal -->
   <div id="registerModal" class="modal-backdrop">
