@@ -3,7 +3,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (typeof supabase === 'undefined') {
+  const sbClient = window.supabaseClient || window.supabase;
+  if (typeof sbClient === 'undefined' || !sbClient) {
     console.error('❌ Supabase client is not initialized. Make sure supabase-config.js is loaded before auth.js.');
     return;
   }
@@ -32,7 +33,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function closeModal(modal) {
     if (modal) {
-      // Forcefully strip all visibility classes and apply important inline hide rules
       modal.classList.remove('active', 'show', 'open', 'visible', 'is-open');
       modal.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
     }
@@ -68,6 +68,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const userEmail = session.user.email;
       const displayName = session.user.user_metadata?.full_name || userEmail.split('@')[0];
 
+      window.currentUser = {
+        id: session.user.id,
+        email: userEmail,
+        name: displayName,
+        user_metadata: session.user.user_metadata
+      };
+
       userNavGroup.innerHTML = `
         <span class="user-greeting" style="font-size: 0.875rem; font-weight: 500; color: var(--text-secondary);">
           👋 Hi, <strong style="color: var(--text-primary);">${displayName}</strong>
@@ -78,11 +85,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       const btnLogout = document.getElementById('btnLogout');
       if (btnLogout) {
         btnLogout.addEventListener('click', async () => {
-          const { error } = await supabase.auth.signOut();
+          const { error } = await sbClient.auth.signOut();
           if (error) {
             console.error('❌ Error signing out:', error.message);
           } else {
-            window.location.reload();
+            localStorage.removeItem('tripcraft_user');
+            window.currentUser = null;
+            if (typeof window.showToast === 'function') {
+              window.showToast('Logged out successfully');
+            }
+            setTimeout(() => window.location.reload(), 600);
           }
         });
       }
@@ -94,12 +106,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       authNavGroup.style.display = 'flex';
       userNavGroup.style.display = 'none';
       userNavGroup.innerHTML = '';
+      window.currentUser = null;
     }
   }
 
   // --- Check Initial Session ---
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session }, error } = await sbClient.auth.getSession();
     if (error) throw error;
     updateAuthUI(session);
   } catch (err) {
@@ -107,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Auth State Listener ---
-  supabase.auth.onAuthStateChange((event, session) => {
+  sbClient.auth.onAuthStateChange((event, session) => {
     console.log('🔔 Auth state changed event:', event);
     updateAuthUI(session);
   });
@@ -121,18 +134,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         console.log('🔄 Attempting login for:', email);
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
         
         if (error) throw error;
 
         console.log('🔑 Login successful!');
+        if (typeof window.showToast === 'function') {
+          window.showToast('Login successful!');
+        }
         
-        // Force close modal immediately on success
         closeModal(loginModal);
         loginForm.reset();
       } catch (err) {
         console.error('❌ Login error:', err.message);
-        alert('Login failed: ' + err.message);
+        if (typeof window.showToast === 'function') {
+          window.showToast('Login failed: ' + err.message);
+        } else {
+          alert('Login failed: ' + err.message);
+        }
       }
     });
   }
@@ -146,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const password = document.getElementById('registerPassword').value;
 
       try {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await sbClient.auth.signUp({
           email,
           password,
           options: { data: { full_name: fullName } }
@@ -154,17 +173,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (error) throw error;
 
-        if (data?.session) {
-          alert('Registration successful! Welcome.');
+        const msg = data?.session ? 'Registration successful! Welcome.' : 'Registration successful! Please check your email to confirm your account.';
+        if (typeof window.showToast === 'function') {
+          window.showToast(msg);
         } else {
-          alert('Registration successful! Please check your email to confirm your account.');
+          alert(msg);
         }
 
         closeModal(registerModal);
         registerForm.reset();
       } catch (err) {
         console.error('❌ Registration error:', err.message);
-        alert('Registration failed: ' + err.message);
+        if (typeof window.showToast === 'function') {
+          window.showToast('Registration failed: ' + err.message);
+        } else {
+          alert('Registration failed: ' + err.message);
+        }
       }
     });
   }

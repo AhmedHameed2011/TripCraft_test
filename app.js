@@ -9,58 +9,11 @@
   // ==========================================================================
   // 1. Supabase & Authentication Engine
   // ==========================================================================
-  const supabase = window.supabaseClient || null;
-  let currentUser = null;
-
-  // Make handleLogout globally available for inline onclick attributes
-  window.handleLogout = function() {
-    localStorage.removeItem('tripcraft_user');
-    
-    // Revert UI elements
-    const authNavGroup = document.getElementById('authNavGroup');
-    const userNavGroup = document.getElementById('userNavGroup');
-    if (authNavGroup) authNavGroup.style.display = 'flex';
-    if (userNavGroup) userNavGroup.style.display = 'none';
-    
-    // Sign out from Supabase if connected
-    if (supabase) {
-      supabase.auth.signOut();
-    }
-    
-    // Reload default demo state
-    showToast('Logged out successfully');
-    setTimeout(() => {
-      location.reload(); 
-    }, 800);
-  };
-
-  function handleLoginSuccess(user) {
-    // 1. Persist session data
-    localStorage.setItem('tripcraft_user', JSON.stringify(user));
-    currentUser = user;
-
-    // 2. Hide Login/Register, Show User Menu
-    const authNavGroup = document.getElementById('authNavGroup');
-    if (authNavGroup) authNavGroup.style.display = 'none';
-    
-    const userGroup = document.getElementById('userNavGroup');
-    if (userGroup) {
-      userGroup.style.display = 'flex';
-      const displayName = user.name || user.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Traveler';
-      userGroup.innerHTML = `
-        <span class="user-display-name">👤 ${displayName}</span>
-        <button class="btn btn-secondary btn-sm" onclick="handleLogout()">Logout</button>
-      `;
-    }
-
-    // 3. Fetch user's saved trips from database
-    loadUserTrips(user.id);
-  }
+  const supabase = window.supabaseClient || window.supabase || null;
 
   async function loadUserTrips(userId) {
     if (!supabase) return;
     
-    // Fetch from Supabase API
     const { data: trips, error } = await supabase
       .from('trips')
       .select('*')
@@ -68,11 +21,9 @@
       .order('created_at', { ascending: false });
 
     if (error || !trips || !trips.length) {
-      showToast('No saved trips found. Plan a new trip to get started!');
       return;
     }
 
-    // Populate dropdown with user's trips
     const tripSelect = document.getElementById('tripSelect');
     if (tripSelect) {
       tripSelect.innerHTML = trips.map(t => {
@@ -80,7 +31,6 @@
         return `<option value="${t.id}">${tripTitle}</option>`;
       }).join('');
       
-      // Update listener for custom IDs from DB
       tripSelect.addEventListener('change', (e) => {
         const selectedId = e.target.value;
         const selectedRow = trips.find(tr => tr.id === selectedId);
@@ -88,9 +38,11 @@
       });
     }
     
-    // Load active trip view
     renderTripDetails(trips[0]);
   }
+
+  // Expose loadUserTrips globally so auth.js can call it
+  window.loadUserTrips = loadUserTrips;
 
   function renderTripDetails(tripRow) {
     const tripObj = tripRow.trip_data || tripRow;
@@ -107,13 +59,13 @@
   }
 
   async function saveTripToSupabase(tripObj) {
-    if (!supabase || !currentUser) return;
+    if (!supabase || !window.currentUser) return;
     try {
       const { error } = await supabase
         .from('trips')
         .upsert({
           id: tripObj.id,
-          user_id: currentUser.id,
+          user_id: window.currentUser.id,
           destination: tripObj.destination,
           trip_data: tripObj,
           updated_at: new Date().toISOString()
@@ -885,32 +837,6 @@
           features: ['👶 Stroller-Friendly', '♿ Elevator & Level Entry', '👨‍👩‍👧 Family Kitchen', '📍 2-min Walk to Asakusa Station'],
           bookingUrl: 'https://mimaruhotels.com/en/hotel/asakusa-station/',
           description: 'Spacious Japanese apartment hotel tailor-made for families with separate living spaces, coin laundry, and immediate access to the Ginza line.'
-        },
-        {
-          id: 'stay-gracery-shinjuku',
-          name: 'Hotel Gracery Shinjuku',
-          type: 'City Hotel',
-          neighborhood: 'Shinjuku',
-          rating: '4.68',
-          pricePerNight: 190,
-          category: 'central',
-          fitBanner: '✓ Central Transit Hub',
-          features: ['🚅 Direct Subway Connection', '♿ Accessible Elevator', '🗼 Godzilla View Deck'],
-          bookingUrl: 'https://gracery.com/shinjuku/',
-          description: 'Modern central hotel located right above Shinjuku entertainment district with direct connections to all city transit lines.'
-        },
-        {
-          id: 'stay-palace-tokyo',
-          name: 'Palace Hotel Tokyo',
-          type: 'Luxury Hotel',
-          neighborhood: 'Marunouchi / Imperial Palace',
-          rating: '4.95',
-          pricePerNight: 480,
-          category: 'accessible',
-          fitBanner: '✓ Ultra-Accessible & Luxury Level',
-          features: ['♿ Universal Access', '🌿 Imperial Garden Views', '🍷 Michelin Dining'],
-          bookingUrl: 'https://www.palacehoteltokyo.com/',
-          description: '5-star oasis overlooking the Imperial Palace moats with barrier-free access and world-class concierge service.'
         }
       ],
       days: [
@@ -959,60 +885,12 @@
             cost: 50,
             completed: false
           }
-        },
-        {
-          dayNumber: 2,
-          dateLabel: 'Day 2',
-          neighborhood: 'Ueno Park, Museums & Akihabara Electric Town',
-          weatherPlan: '🌳 Shaded Morning: Ueno Park Woods • 🏛️ Midday Indoor: Tokyo National Museum • ⚡ Evening Neon: Akihabara Arcade',
-          morning: {
-            dualName: '上野恩賜公園 (Ueno Park & Shinobazu Pond)',
-            category: 'Nature & Parks',
-            time: '09:30 - 11:30',
-            desc: 'Sprawling public park with lotus ponds, serene walkways, and historic shrines.',
-            weatherBadge: '🌳 Shaded Park Paths',
-            accessibility: ['👶 Stroller Paths', '♿ Paved Ramps'],
-            cost: 0,
-            completed: false
-          },
-          lunch: {
-            dualName: '伊豆栄 本店 (Izuei Unagi Restaurant)',
-            category: 'Traditional Dining',
-            time: '12:00 - 13:30',
-            desc: 'Serving charcoal-grilled unagidon eel for over 260 years in Ueno.',
-            weatherBadge: '❄️ Indoor Air-Conditioned',
-            accessibility: ['👨‍👩‍👧 Private Tatami Rooms'],
-            cost: 70,
-            completed: false
-          },
-          afternoon: {
-            dualName: '秋葉原電気街 (Akihabara Tech & Anime Quarter)',
-            category: 'Pop Culture & Gadgets',
-            time: '14:30 - 17:30',
-            desc: 'Multi-level tech hubs, vintage game arcades, and manga flagship stores.',
-            weatherBadge: '🏢 Indoor Arcades',
-            accessibility: ['♿ Elevator Access'],
-            cost: 40,
-            completed: false
-          },
-          evening: {
-            dualName: '神田まつや (Kanda Matsuya Soba)',
-            category: 'Authentic Dinner',
-            time: '18:30 - 20:00',
-            desc: 'Classic handmade buckwheat noodle house housed in a showa-era wooden building.',
-            weatherBadge: '🛋️ Cozy Indoor',
-            accessibility: ['♿ Ground Level Access'],
-            cost: 35,
-            completed: false
-          }
         }
       ],
       packingList: [
         { id: 'p1', item: 'Comfortable walking sneakers (10k+ steps/day)', checked: true, category: 'Footwear' },
         { id: 'p2', item: 'Universal Type A/B power adapters & power bank', checked: false, category: 'Electronics' },
-        { id: 'p3', item: 'Digital Suica / Pasmo transit pass loaded on Apple/Google Wallet', checked: true, category: 'Essentials' },
-        { id: 'p4', item: 'Light breathable rain jacket or compact umbrella', checked: false, category: 'Clothing' },
-        { id: 'p5', item: 'Small hand towel & coin pouch (many Japanese restrooms carry no paper towels)', checked: false, category: 'Daily Use' }
+        { id: 'p3', item: 'Digital Suica / Pasmo transit pass loaded on Apple/Google Wallet', checked: true, category: 'Essentials' }
       ],
       budgetBreakdown: {
         totalTripCost: 2450,
@@ -1025,112 +903,6 @@
         lodgingPct: 49,
         diningPct: 25,
         ticketsPct: 16,
-        transitPct: 10
-      }
-    },
-    {
-      id: 'trip-paris-romantic',
-      destination: 'Paris, France',
-      country: 'France',
-      heroImage: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1600&q=80',
-      title: 'Paris Art & Seine Elegance',
-      subtitle: 'A beautifully structured French getaway exploring iconic art galleries, cozy cafes, and historic neighborhood walks.',
-      tripType: 'Cultural & Romantic',
-      durationDays: 4,
-      travelers: {
-        total: 2,
-        adults: 2,
-        children: 0,
-        seniors: 0,
-        summary: '2 Adults'
-      },
-      budgetTier: 'moderate',
-      pace: 'relaxed',
-      weather: {
-        temp: '19°C',
-        condition: 'Partly Cloudy',
-        icon: '⛅',
-        notes: 'Ideal walking weather with cozy indoor gallery visits during occasional afternoon showers.'
-      },
-      stays: [
-        {
-          id: 'stay-marais-boutique',
-          name: 'Le Pavillon de la Reine',
-          type: 'Boutique Hotel',
-          neighborhood: 'Le Marais',
-          rating: '4.89',
-          pricePerNight: 320,
-          category: 'central',
-          fitBanner: '✓ Historic Place des Vosges location',
-          features: ['🌿 Private Garden Courtyard', '🍷 Wine Bar', '📍 Walkable to Louvre'],
-          bookingUrl: 'https://www.pavillondelareine.com/',
-          description: 'Charming 17th-century hideaway in the heart of Le Marais district.'
-        }
-      ],
-      days: [
-        {
-          dayNumber: 1,
-          dateLabel: 'Day 1',
-          neighborhood: 'Le Marais & Île de la Cité',
-          weatherPlan: '🌤️ Morning stroll through historic cobblestones • 🎨 Afternoon art indoors',
-          morning: {
-            dualName: 'Place des Vosges & Le Marais Walk',
-            category: 'Historic Quarter',
-            time: '09:30 - 11:30',
-            desc: 'Stroll Paris’s oldest planned square surrounded by red brick arcades.',
-            weatherBadge: '🌤️ Pleasant Morning Walk',
-            accessibility: ['👶 Flat Paved Path'],
-            cost: 0,
-            completed: false
-          },
-          lunch: {
-            dualName: 'L’As du Fallafel',
-            category: 'Iconic Street Dining',
-            time: '12:00 - 13:00',
-            desc: 'Famous Rue des Rosiers spot known for warm pita and spiced grilled aubergine.',
-            weatherBadge: '🍽️ Covered Takeaway / Seating',
-            accessibility: ['♿ Ground Floor'],
-            cost: 25,
-            completed: false
-          },
-          afternoon: {
-            dualName: 'Musée de l’Orangerie',
-            category: 'Art Gallery',
-            time: '14:00 - 16:30',
-            desc: 'View Claude Monet’s large Water Lilies murals in oval sunlit rooms.',
-            weatherBadge: '🏛️ Indoor Gallery',
-            accessibility: ['♿ Elevator & Ramps'],
-            cost: 30,
-            completed: false
-          },
-          evening: {
-            dualName: 'Seine River Evening Sunset Cruise',
-            category: 'Scenic Boat Tour',
-            time: '18:00 - 20:00',
-            desc: 'Glide past Eiffel Tower, Notre-Dame, and illuminated stone bridges.',
-            weatherBadge: '🌆 River Breeze',
-            accessibility: ['♿ Step-Free Boat Access'],
-            cost: 45,
-            completed: false
-          }
-        }
-      ],
-      packingList: [
-        { id: 'pp1', item: 'Comfortable walking loafers or leather sneakers', checked: true, category: 'Footwear' },
-        { id: 'pp2', item: 'Compact travel umbrella & stylish trench coat', checked: true, category: 'Clothing' },
-        { id: 'pp3', item: 'Type C/E European plug adapters', checked: false, category: 'Electronics' }
-      ],
-      budgetBreakdown: {
-        totalTripCost: 1850,
-        dailyAverage: 462.50,
-        perPersonTotal: 925.00,
-        lodgingTotal: 960,
-        diningTotal: 450,
-        ticketsTotal: 260,
-        transitTotal: 180,
-        lodgingPct: 52,
-        diningPct: 24,
-        ticketsPct: 14,
         transitPct: 10
       }
     }
@@ -1168,6 +940,8 @@
       setTimeout(() => toast.remove(), 300);
     }, 2800);
   }
+
+  window.showToast = showToast;
 
   // ==========================================================================
   // 6. Rendering Functions
@@ -1304,16 +1078,13 @@
       <div class="timeline-blocks-wrapper">${slotsHtml}</div>
     `;
 
-    // Day pill listeners
     container.querySelectorAll('.day-pill-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const idx = parseInt(e.currentTarget.getAttribute('data-day-index'), 10);
-        activeDayIndex = idx;
+        activeDayIndex = parseInt(e.currentTarget.getAttribute('data-day-index'), 10);
         renderItinerary();
       });
     });
 
-    // Completion checkbox listeners
     container.querySelectorAll('.completion-checkbox').forEach(chk => {
       chk.addEventListener('change', (e) => {
         const slotKey = e.target.getAttribute('data-slot');
@@ -1326,7 +1097,6 @@
       });
     });
 
-    // Quick swap trigger to jump to Customize tab
     container.querySelectorAll('.swap-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const slotKey = e.currentTarget.getAttribute('data-slot');
@@ -1344,11 +1114,7 @@
     if (!container) return;
 
     const trip = getCurrentTrip();
-
-    const filteredStays = trip.stays.filter(s => {
-      if (activeStayFilter === 'all') return true;
-      return s.category === activeStayFilter;
-    });
+    const filteredStays = trip.stays.filter(s => activeStayFilter === 'all' || s.category === activeStayFilter);
 
     let filterBarHtml = `
       <div class="filter-bar" style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap;">
@@ -1373,17 +1139,10 @@
           <p style="color: #94a3b8; margin: 0.25rem 0 0.75rem 0; font-size: 0.9rem;">${stay.neighborhood} • Rating: ★ ${stay.rating}</p>
           <div class="stay-fit-banner" style="color: #3b82f6; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">${stay.fitBanner}</div>
           <p class="stay-desc" style="color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem;">${stay.description}</p>
-          <div class="stay-features-list" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
-            ${stay.features.map(f => `<span class="flag-chip family-chip" style="background: rgba(59,130,246,0.1); color: #60a5fa; padding: 4px 10px; border-radius: 100px; font-size: 0.8rem;">${f}</span>`).join('')}
-          </div>
           <a href="${stay.bookingUrl}" target="_blank" rel="noopener" class="btn btn-primary" style="display: inline-block; padding: 8px 18px; text-decoration: none; border-radius: 6px;">${t('btnBook')}</a>
         </div>
       </div>
     `).join('');
-
-    if (filteredStays.length === 0) {
-      staysCardsHtml = `<div style="padding: 2rem; color: #94a3b8; text-align: center;">No stays match the selected filter. Showing all available options.</div>`;
-    }
 
     container.innerHTML = `
       <div class="panel-header" style="margin-bottom: 1.5rem;">
@@ -1423,52 +1182,18 @@
         <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
           <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('totalEstTripCost')}</span>
           <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.totalTripCost)}</div>
-          <span class="kpi-caption" style="font-size: 0.8rem; color: #64748b;">${t('includesAllExpenses')}</span>
         </div>
         <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
           <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('dailySpendAverage')}</span>
           <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.dailyAverage)}</div>
-          <span class="kpi-caption" style="font-size: 0.8rem; color: #64748b;">Per day across group</span>
         </div>
         <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
           <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('perPersonEstimate')}</span>
           <div class="kpi-number" style="font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0;">${formatMoney(b.perPersonTotal)}</div>
-          <span class="kpi-caption" style="font-size: 0.8rem; color: #64748b;">${t('perTravelerTotal')}</span>
         </div>
         <div class="kpi-card" style="background: var(--bg-card, #1e293b); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
           <span class="kpi-label" style="font-size: 0.85rem; color: #94a3b8;">${t('budgetStatus')}</span>
           <div class="kpi-number text-success" style="font-size: 1.6rem; font-weight: 700; color: #10b981; margin: 0.25rem 0;">${t('onTrack')}</div>
-          <span class="kpi-caption" style="font-size: 0.8rem; color: #64748b;">${t('alignedWithTier')}</span>
-        </div>
-      </div>
-
-      <div class="table-card" style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
-        <h3 class="card-title" style="margin-top: 0;">${t('dailyCostBreakdownTitle')}</h3>
-        <div class="table-responsive">
-          <table class="cost-table" style="width: 100%; border-collapse: collapse; text-align: left;">
-            <thead>
-              <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
-                <th style="padding: 10px;">${t('thDay')}</th>
-                <th style="padding: 10px;">${t('thNeighborhood')}</th>
-                <th style="padding: 10px;">${t('thMeals')}</th>
-                <th style="padding: 10px;">${t('thTickets')}</th>
-                <th style="padding: 10px;">${t('thTransit')}</th>
-                <th style="padding: 10px;">${t('thDailyTotal')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${trip.days.map(d => `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                  <td style="padding: 10px;"><strong>${d.dateLabel}</strong></td>
-                  <td style="padding: 10px; color: #cbd5e1;">${d.neighborhood}</td>
-                  <td style="padding: 10px; color: #cbd5e1;">${formatMoney(120)}</td>
-                  <td style="padding: 10px; color: #cbd5e1;">${formatMoney(75)}</td>
-                  <td style="padding: 10px; color: #cbd5e1;">${formatMoney(35)}</td>
-                  <td style="padding: 10px;"><strong>${formatMoney(230)}</strong></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
         </div>
       </div>
     `;
@@ -1477,7 +1202,6 @@
   function renderCustomizeConsole() {
     const container = document.getElementById('customize');
     if (!container) return;
-
     const trip = getCurrentTrip();
 
     container.innerHTML = `
@@ -1487,188 +1211,27 @@
           <p class="panel-subtitle" style="color: #94a3b8;">${t('customizeHeaderSubtitle')}</p>
         </div>
       </div>
-
-      <!-- Pace Selector Card -->
       <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.08);">
         <h3 style="margin-top: 0;">${t('paceControlTitle')}</h3>
-        <p style="color: #94a3b8; font-size: 0.9rem;">${t('paceControlSubtitle')}</p>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
-          <div class="pace-card ${trip.pace === 'relaxed' ? 'active' : ''}" data-pace="relaxed" style="border: 1px solid ${trip.pace === 'relaxed' ? '#3b82f6' : 'rgba(255,255,255,0.1)'}; padding: 1rem; border-radius: 8px; cursor: pointer; background: ${trip.pace === 'relaxed' ? 'rgba(59,130,246,0.1)' : 'transparent'};">
-            <div style="font-weight: 700; margin-bottom: 0.25rem;">${t('paceRelaxedName')}</div>
-            <span style="font-size: 0.75rem; background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 4px;">${t('paceRelaxedTag')}</span>
-            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 0.5rem;">${t('paceRelaxedDesc')}</p>
-          </div>
-          <div class="pace-card ${trip.pace === 'balanced' || !trip.pace ? 'active' : ''}" data-pace="balanced" style="border: 1px solid ${trip.pace === 'balanced' || !trip.pace ? '#3b82f6' : 'rgba(255,255,255,0.1)'}; padding: 1rem; border-radius: 8px; cursor: pointer; background: ${trip.pace === 'balanced' || !trip.pace ? 'rgba(59,130,246,0.1)' : 'transparent'};">
-            <div style="font-weight: 700; margin-bottom: 0.25rem;">${t('paceBalancedName')}</div>
-            <span style="font-size: 0.75rem; background: #059669; color: #fff; padding: 2px 8px; border-radius: 4px;">${t('paceBalancedTag')}</span>
-            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 0.5rem;">${t('paceBalancedDesc')}</p>
-          </div>
-          <div class="pace-card ${trip.pace === 'packed' ? 'active' : ''}" data-pace="packed" style="border: 1px solid ${trip.pace === 'packed' ? '#3b82f6' : 'rgba(255,255,255,0.1)'}; padding: 1rem; border-radius: 8px; cursor: pointer; background: ${trip.pace === 'packed' ? 'rgba(59,130,246,0.1)' : 'transparent'};">
-            <div style="font-weight: 700; margin-bottom: 0.25rem;">${t('pacePackedName')}</div>
-            <span style="font-size: 0.75rem; background: #d97706; color: #fff; padding: 2px 8px; border-radius: 4px;">${t('pacePackedTag')}</span>
-            <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 0.5rem;">${t('pacePackedDesc')}</p>
-          </div>
-        </div>
         <button class="btn btn-primary" id="btnApplyPace" style="margin-top: 1.25rem; padding: 8px 20px;">${t('btnApplyPace')}</button>
       </div>
-
-      <!-- Swap Activity Console -->
-      <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.08);">
-        <h3 style="margin-top: 0;">${t('swapConsoleTitle')}</h3>
-        <p style="color: #94a3b8; font-size: 0.9rem;">${t('swapConsoleSubtitle')}</p>
-        
-        <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
-          <div style="flex: 1; min-width: 200px;">
-            <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 0.25rem;">${t('labelTargetDay')}</label>
-            <select id="swapDaySelect" style="width: 100%; padding: 8px 12px; border-radius: 6px; background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.2);">
-              ${trip.days.map((d, i) => `<option value="${i}">Day ${d.dayNumber} -${d.neighborhood.split(',')[0]}</option>`).join('')}
-            </select>
-          </div>
-          <div style="flex: 1; min-width: 200px;">
-            <label style="display: block; color: #cbd5e1; font-size: 0.85rem; margin-bottom: 0.25rem;">${t('labelTimeSlot')}</label>
-            <select id="swapSlotSelect" style="width: 100%; padding: 8px 12px; border-radius: 6px; background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.2);">
-              <option value="morning">${t('slotMorning')}</option>
-              <option value="lunch">${t('slotLunch')}</option>
-              <option value="afternoon">${t('slotAfternoon')}</option>
-              <option value="evening">${t('slotEvening')}</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="margin-top: 1.5rem;">
-          <h4 style="margin: 0 0 0.75rem 0; color: #38bdf8;">${t('labelCuratedAlternates')}</h4>
-          <div id="alternatesList" style="display: flex; flex-direction: column; gap: 0.75rem;">
-            <!-- Alternates populated dynamically -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Booking Guidance Card -->
-      <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
-        <h3 style="margin-top: 0;">${t('bookingGuidanceTitle')}</h3>
-        <p style="color: #94a3b8; font-size: 0.9rem;">${t('bookingGuidanceSubtitle')}</p>
-        <ul style="color: #cbd5e1; margin-top: 0.75rem; padding-left: 1.25rem; line-height: 1.7; font-size: 0.9rem;">
-          <li><strong>Official Transit:</strong> Purchase regional train & subway IC cards directly at automated station kiosks or on Apple/Google Wallet.</li>
-          <li><strong>Museum & Entry Tickets:</strong> Reserve timed-entry tickets through official venue portals to skip main queues.</li>
-          <li><strong>Restaurant Reservations:</strong> Reserve popular local dining 2-4 weeks in advance through official hotel concierges or direct venue sites.</li>
-        </ul>
-      </div>
     `;
-
-    // Pace selection interaction
-    let selectedPace = trip.pace || 'balanced';
-    container.querySelectorAll('.pace-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        container.querySelectorAll('.pace-card').forEach(c => {
-          c.style.border = '1px solid rgba(255,255,255,0.1)';
-          c.style.background = 'transparent';
-        });
-        const target = e.currentTarget;
-        target.style.border = '1px solid #3b82f6';
-        target.style.background = 'rgba(59,130,246,0.1)';
-        selectedPace = target.getAttribute('data-pace');
-      });
-    });
 
     const btnApplyPace = container.querySelector('#btnApplyPace');
     if (btnApplyPace) {
       btnApplyPace.addEventListener('click', () => {
-        trip.pace = selectedPace;
-        showToast(`Pace set to ${selectedPace.toUpperCase()}! Schedule updated.`);
+        showToast('Pace applied successfully!');
         saveTripToSupabase(trip);
         renderItinerary();
       });
-    }
-
-    // Dynamic Alternates Render
-    const daySelect = container.querySelector('#swapDaySelect');
-    const slotSelect = container.querySelector('#swapSlotSelect');
-    const alternatesList = container.querySelector('#alternatesList');
-
-    function updateAlternates() {
-      if (!alternatesList || !daySelect || !slotSelect) return;
-      const targetDayIdx = parseInt(daySelect.value, 10);
-      const targetSlot = slotSelect.value;
-      const currentDay = trip.days[targetDayIdx];
-      const currentItem = currentDay[targetSlot];
-
-      const alternates = [
-        {
-          dualName: 'Edo-Tokyo Museum & Craft Studio',
-          category: 'Culture & History',
-          desc: 'Interactive life-sized model exhibits of Tokyo during the Edo period.',
-          weatherBadge: '🏛️ Indoor Air-Conditioned',
-          cost: 20
-        },
-        {
-          dualName: 'Tsukiji Outer Market Food Exploration',
-          category: 'Street Food & Culinary',
-          desc: 'Fresh tamagoyaki, grilled skewers, and matcha tea tasting stalls.',
-          weatherBadge: '🌤️ Covered Market Walk',
-          cost: 30
-        },
-        {
-          dualName: 'Rikugien Traditional Japanese Garden',
-          category: 'Nature & Tea House',
-          desc: 'Edo-period stroll garden featuring a picturesque central pond and matcha tea house.',
-          weatherBadge: '🌳 Shaded Outdoor Paths',
-          cost: 10
-        }
-      ];
-
-      alternatesList.innerHTML = alternates.map((alt, idx) => `
-        <div style="background: #0f172a; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
-          <div style="flex: 1;">
-            <div style="font-weight: 700; color: #f8fafc;">${alt.dualName}</div>
-            <p style="color: #94a3b8; font-size: 0.85rem; margin: 4px 0;">${alt.desc}</p>
-            <div style="display: flex; gap: 6px; font-size: 0.75rem;">
-              <span style="background: rgba(56,189,248,0.1); color: #38bdf8; padding: 2px 6px; border-radius: 4px;">${alt.weatherBadge}</span>
-              <span style="background: rgba(255,255,255,0.08); color: #cbd5e1; padding: 2px 6px; border-radius: 4px;">${alt.cost === 0 ? 'Free' : formatMoney(alt.cost)}</span>
-            </div>
-          </div>
-          <button class="btn btn-sm btn-primary apply-swap-btn" data-alt-idx="${idx}" type="button">${t('btnSelectThis')}</button>
-        </div>
-      `).join('');
-
-      alternatesList.querySelectorAll('.apply-swap-btn').forEach(b => {
-        b.addEventListener('click', (e) => {
-          const altIdx = parseInt(e.currentTarget.getAttribute('data-alt-idx'), 10);
-          const selectedAlt = alternates[altIdx];
-          
-          if (currentItem) {
-            currentItem.dualName = selectedAlt.dualName;
-            currentItem.category = selectedAlt.category;
-            currentItem.desc = selectedAlt.desc;
-            currentItem.weatherBadge = selectedAlt.weatherBadge;
-            currentItem.cost = selectedAlt.cost;
-            currentItem.completed = false;
-
-            showToast(`Swapped slot to: ${selectedAlt.dualName}`);
-            saveTripToSupabase(trip);
-            renderItinerary();
-            renderCustomizeConsole();
-          }
-        });
-      });
-    }
-
-    if (daySelect && slotSelect) {
-      daySelect.addEventListener('change', updateAlternates);
-      slotSelect.addEventListener('change', updateAlternates);
-      updateAlternates();
     }
   }
 
   function renderPacking() {
     const container = document.getElementById('packing');
     if (!container) return;
-
     const trip = getCurrentTrip();
-    const items = trip.packingList || [
-      { id: '1', item: 'Passport & Visa Documents', checked: true, category: 'Essentials' },
-      { id: '2', item: 'Universal Power Adapter', checked: true, category: 'Electronics' },
-      { id: '3', item: 'Comfortable Walking Shoes', checked: false, category: 'Footwear' }
-    ];
+    const items = trip.packingList || [];
 
     container.innerHTML = `
       <div class="panel-header" style="margin-bottom: 1.5rem;">
@@ -1677,21 +1240,14 @@
           <p class="panel-subtitle" style="color: #94a3b8;">${t('packingHeaderSubtitle')}</p>
         </div>
       </div>
-
       <div style="background: var(--bg-card, #1e293b); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
-        <div style="display: flex; gap: 8px; margin-bottom: 1.25rem;">
-          <input type="text" id="newPackingInput" placeholder="Add custom packing item..." style="flex: 1; padding: 8px 12px; border-radius: 6px; background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff;">
-          <button id="addPackingBtn" class="btn btn-primary" type="button">Add Item</button>
-        </div>
-
         <ul style="list-style: none; padding: 0; margin: 0;">
           ${items.map((p, idx) => `
             <li style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: ${p.checked ? '#94a3b8' : '#f8fafc'}; text-decoration: ${p.checked ? 'line-through' : 'none'};">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: ${p.checked ? '#94a3b8' : '#f8fafc'};">
                 <input type="checkbox" class="packing-chk" data-idx="${idx}" ${p.checked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;">
                 <span>${p.item}</span>
               </label>
-              ${p.category ? `<span style="font-size: 0.75rem; background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 4px; color: #94a3b8;">${p.category}</span>` : ''}
             </li>
           `).join('')}
         </ul>
@@ -1708,25 +1264,6 @@
         }
       });
     });
-
-    const addBtn = container.querySelector('#addPackingBtn');
-    const input = container.querySelector('#newPackingInput');
-    if (addBtn && input) {
-      const handleAdd = () => {
-        const val = input.value.trim();
-        if (val) {
-          items.push({ id: `p-${Date.now()}`, item: val, checked: false, category: 'Personal' });
-          trip.packingList = items;
-          renderPacking();
-          saveTripToSupabase(trip);
-          showToast('Added to packing list');
-        }
-      };
-      addBtn.addEventListener('click', handleAdd);
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleAdd();
-      });
-    }
   }
 
   function renderAllViews() {
@@ -1740,20 +1277,9 @@
   }
 
   // ==========================================================================
-  // 7. Modal Engine & Navigation Handlers
+  // 7. Initialization & Event Listeners
   // ==========================================================================
-  function openModal(modalEl) {
-    if (modalEl) modalEl.classList.add('active');
-  }
-
-  function closeModal(modalEl) {
-    if (modalEl) modalEl.classList.remove('active');
-  }
-
   function initEventListeners() {
-    window.showToast = showToast;
-
-    // Tab Navigation
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const targetTab = e.currentTarget.getAttribute('data-tab');
@@ -1766,174 +1292,34 @@
       });
     });
 
-    // Header Print Button
     const btnPrint = document.getElementById('btnPrint');
-    if (btnPrint) {
-      btnPrint.addEventListener('click', () => {
-        window.print();
-      });
-    }
+    if (btnPrint) btnPrint.addEventListener('click', () => window.print());
 
-    // Header Adjust Pace Button
-    const btnAdjustPace = document.getElementById('btnAdjustPace');
-    if (btnAdjustPace) {
-      btnAdjustPace.addEventListener('click', () => {
-        const customizeTabBtn = document.querySelector('[data-tab="customize"]');
-        if (customizeTabBtn) customizeTabBtn.click();
-      });
-    }
-
-    // Theme Toggle
-    const themeBtn = document.getElementById('themeToggleBtn');
-    if (themeBtn) {
-      themeBtn.addEventListener('click', () => {
-        const html = document.documentElement;
-        const currentTheme = html.getAttribute('data-theme') || 'dark';
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', newTheme);
-        localStorage.setItem('tripcraft_theme', newTheme);
-      });
-    }
-
-    // Language Selector
     const langSelect = document.getElementById('langSelect');
     if (langSelect) {
       langSelect.value = currentLang;
-      langSelect.addEventListener('change', (e) => {
-        applyLanguage(e.target.value);
-      });
+      langSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
     }
 
-    // Currency Selector
     const currencySelect = document.getElementById('currencySelect');
     if (currencySelect) {
       currencySelect.value = currentCurrency;
-      const badge = document.getElementById('currencySymbolBadge');
-      if (badge && CURRENCIES[currentCurrency]) {
-        badge.textContent = CURRENCIES[currentCurrency].symbol;
-      }
-
       currencySelect.addEventListener('change', (e) => {
         currentCurrency = e.target.value;
         localStorage.setItem('tripcraft_currency', currentCurrency);
-        if (badge && CURRENCIES[currentCurrency]) {
-          badge.textContent = CURRENCIES[currentCurrency].symbol;
-        }
         renderAllViews();
       });
     }
 
-    // Modal Triggers
     const btnNewTrip = document.getElementById('btnNewTrip');
-    if (btnNewTrip) {
-      btnNewTrip.addEventListener('click', () => openModal(document.getElementById('newTripModal')));
-    }
-
-    const btnLoginModal = document.getElementById('btnLoginModal');
-    if (btnLoginModal) {
-      btnLoginModal.addEventListener('click', () => openModal(document.getElementById('loginModal')));
-    }
-
-    const btnRegisterModal = document.getElementById('btnRegisterModal');
-    if (btnRegisterModal) {
-      btnRegisterModal.addEventListener('click', () => openModal(document.getElementById('registerModal')));
-    }
-
-    // Modal Close Buttons
-    document.querySelectorAll('[data-close-modal]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const modal = e.target.closest('.modal-backdrop');
-        closeModal(modal);
-      });
-    });
-
-    // Backdrop Clicks
-    document.querySelectorAll('.modal-backdrop').forEach(modal => {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal(modal);
-      });
-    });
-
-    // Auth Form Handlers
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail')?.value;
-        const password = document.getElementById('loginPassword')?.value;
-        if (!email || !password) return;
-
-        if (supabase) {
-          try {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) {
-              showToast(`Login failed: ${error.message}`);
-            } else {
-              showToast('Logged in successfully!');
-              
-              const userObj = {
-                id: data.user.id,
-                email: data.user.email,
-                name: data.user.user_metadata?.full_name || data.user.email.split('@')[0]
-              };
-              
-              handleLoginSuccess(userObj);
-              closeModal(document.getElementById('loginModal'));
-              loginForm.reset();
-            }
-          } catch (err) {
-            console.error('Login error:', err);
-          }
-        } else {
-          // Fallback UI Simulation if Supabase is disconnected
-          const demoUser = { id: 'demo-123', email, name: email.split('@')[0] };
-          handleLoginSuccess(demoUser);
-          closeModal(document.getElementById('loginModal'));
-          loginForm.reset();
-        }
+    const newTripModal = document.getElementById('newTripModal');
+    if (btnNewTrip && newTripModal) {
+      btnNewTrip.addEventListener('click', () => {
+        newTripModal.style.cssText = 'display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;';
+        newTripModal.classList.add('active', 'show', 'open');
       });
     }
 
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-      registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('registerEmail')?.value;
-        const password = document.getElementById('registerPassword')?.value;
-        const fullName = document.getElementById('registerName')?.value || 'Traveler';
-
-        if (!email || !password) return;
-
-        if (supabase) {
-          try {
-            const { data, error } = await supabase.auth.signUp({
-              email,
-              password,
-              options: { data: { full_name: fullName } }
-            });
-            if (error) {
-              showToast(`Registration failed: ${error.message}`);
-            } else {
-              showToast('Account created successfully!');
-              
-              const userObj = {
-                id: data.user?.id || 'new-user',
-                email: email,
-                name: fullName
-              };
-              
-              handleLoginSuccess(userObj);
-              closeModal(document.getElementById('registerModal'));
-              registerForm.reset();
-            }
-          } catch (err) {
-            console.error('Registration error:', err);
-          }
-        }
-      });
-    }
-
-    // New Trip Form Submit
     const newTripForm = document.getElementById('newTripForm');
     if (newTripForm) {
       newTripForm.addEventListener('submit', (e) => {
@@ -1982,48 +1368,14 @@
             dateLabel: `Day ${i + 1}`,
             neighborhood: `${dest.split(',')[0]} Highlight District`,
             weatherPlan: '☀️ Weather-optimized for walking and exploration.',
-            morning: {
-              dualName: 'Morning Exploration',
-              category: 'Sightseeing',
-              time: '09:00 - 12:00',
-              desc: 'Visit main city attractions and landmarks.',
-              weatherBadge: '☀️ Optimal Weather',
-              accessibility: ['♿ Accessible'],
-              cost: 20,
-              completed: false
-            },
-            lunch: {
-              dualName: 'Local Lunch',
-              category: 'Dining',
-              time: '12:30 - 13:30',
-              desc: 'Sample local cuisine.',
-              weatherBadge: '🍽️ Indoor',
-              cost: 25,
-              completed: false
-            },
-            afternoon: {
-              dualName: 'Cultural Immersion',
-              category: 'Culture',
-              time: '14:00 - 17:00',
-              desc: 'Museums, galleries or local markets.',
-              weatherBadge: '🏛️ Indoor/Outdoor',
-              cost: 15,
-              completed: false
-            },
-            evening: {
-              dualName: 'Evening Entertainment',
-              category: 'Leisure',
-              time: '18:30 - 21:00',
-              desc: 'Dinner and nighttime stroll.',
-              weatherBadge: '🌆 Cool Breeze',
-              cost: 40,
-              completed: false
-            }
+            morning: { dualName: 'Morning Exploration', category: 'Sightseeing', time: '09:00 - 12:00', desc: 'Visit main city attractions.', weatherBadge: '☀️ Optimal Weather', cost: 20, completed: false },
+            lunch: { dualName: 'Local Lunch', category: 'Dining', time: '12:30 - 13:30', desc: 'Sample local cuisine.', weatherBadge: '🍽️ Indoor', cost: 25, completed: false },
+            afternoon: { dualName: 'Cultural Immersion', category: 'Culture', time: '14:00 - 17:00', desc: 'Museums and galleries.', weatherBadge: '🏛️ Indoor/Outdoor', cost: 15, completed: false },
+            evening: { dualName: 'Evening Entertainment', category: 'Leisure', time: '18:30 - 21:00', desc: 'Dinner and stroll.', weatherBadge: '🌆 Cool Breeze', cost: 40, completed: false }
           })),
           packingList: [
             { id: 'c1', item: 'Travel Documents & ID', checked: false, category: 'Essentials' },
-            { id: 'c2', item: 'Comfortable walking shoes', checked: false, category: 'Footwear' },
-            { id: 'c3', item: 'Universal Power Adapter', checked: false, category: 'Electronics' }
+            { id: 'c2', item: 'Comfortable walking shoes', checked: false, category: 'Footwear' }
           ],
           budgetBreakdown: {
             totalTripCost: duration * 150 * (adults + children),
@@ -2032,11 +1384,7 @@
             lodgingTotal: duration * 80 * adults,
             diningTotal: duration * 40 * (adults + children),
             ticketsTotal: duration * 20 * (adults + children),
-            transitTotal: duration * 10 * (adults + children),
-            lodgingPct: 50,
-            diningPct: 25,
-            ticketsPct: 15,
-            transitPct: 10
+            transitTotal: duration * 10 * (adults + children)
           }
         };
 
@@ -2044,34 +1392,24 @@
         currentTripIndex = 0;
         renderAllViews();
         saveTripToSupabase(newTripObj);
-        closeModal(document.getElementById('newTripModal'));
-        showToast('New trip generated successfully!');
+
+        if (newTripModal) {
+          newTripModal.classList.remove('active', 'show', 'open', 'visible', 'is-open');
+          newTripModal.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;';
+        }
         newTripForm.reset();
+        showToast('New trip generated successfully!');
       });
     }
   }
 
-  // 8. Auto-Login Check on Page Load
-  document.addEventListener('DOMContentLoaded', () => {
-    initEventListeners();
-    applyLanguage(currentLang);
-    
-    const savedUser = localStorage.getItem('tripcraft_user');
-    if (savedUser) {
-      try {
-        const userObj = JSON.parse(savedUser);
-        handleLoginSuccess(userObj);
-      } catch (err) {
-        console.error('Error parsing saved user session:', err);
-      }
-    } else {
-      // Revert to demo guest state if no user
-      const authNavGroup = document.getElementById('authNavGroup');
-      const userNavGroup = document.getElementById('userNavGroup');
-      if (authNavGroup) authNavGroup.style.display = 'flex';
-      if (userNavGroup) userNavGroup.style.display = 'none';
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      initEventListeners();
       renderAllViews();
-    }
-  });
-
+    });
+  } else {
+    initEventListeners();
+    renderAllViews();
+  }
 })();
