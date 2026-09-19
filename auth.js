@@ -10,9 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // DOM Elements
-  const authNavGroup = document.getElementById('authNavGroup');
-  const userNavGroup = document.getElementById('userNavGroup');
-  
   const loginModal = document.getElementById('loginModal');
   const registerModal = document.getElementById('registerModal');
   const newTripModal = document.getElementById('newTripModal');
@@ -57,7 +54,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- UI State Management for Authentication ---
   function updateAuthUI(session) {
-    if (!authNavGroup || !userNavGroup) return;
+    // Smart Element Lookup (Handles missing HTML IDs gracefully)
+    let authNavGroup = document.getElementById('authNavGroup') || document.getElementById('loggedOutGroup');
+    let userNavGroup = document.getElementById('userNavGroup') || document.getElementById('loggedInGroup');
+
+    // Fallback 1: If authNavGroup is missing, target the parent container of btnLoginModal
+    if (!authNavGroup && btnLoginModal) {
+      authNavGroup = btnLoginModal.parentElement;
+    }
+
+    // Fallback 2: If userNavGroup is missing in index.html, auto-create it next to authNavGroup
+    if (!userNavGroup && authNavGroup && authNavGroup.parentElement) {
+      userNavGroup = document.createElement('div');
+      userNavGroup.id = 'userNavGroup';
+      userNavGroup.className = 'user-nav-group';
+      authNavGroup.parentElement.appendChild(userNavGroup);
+    }
+
+    if (!authNavGroup || !userNavGroup) {
+      console.warn('⚠️ Unable to find or create navbar container elements.');
+      return;
+    }
 
     if (session && session.user) {
       console.log('✅ User is authenticated:', session.user.email);
@@ -78,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         user_metadata: session.user.user_metadata
       };
 
-      // Inject styled profile badge and logout button dynamically
+      // Inject profile badge and logout button dynamically
       userNavGroup.innerHTML = `
         <div class="user-profile-badge" style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary, rgba(150,150,150,0.1)); padding: 0.25rem 0.75rem 0.25rem 0.25rem; border-radius: 50px;">
           <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary, #007bff); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
@@ -86,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <span style="font-weight: 500; font-size: 0.9rem; color: var(--text-primary);">${displayName}</span>
         </div>
-        <button id="btnLogout" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 0.25rem;">
+        <button id="btnLogout" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
@@ -96,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </button>
       `;
 
-      // Attach listener to newly created logout button
+      // Attach click listener to the newly generated Logout button
       const btnLogout = document.getElementById('btnLogout');
       if (btnLogout) {
         btnLogout.addEventListener('click', async () => {
@@ -109,16 +126,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (typeof window.showToast === 'function') {
               window.showToast('Logged out successfully');
             }
-            // Clear trips UI on logout if function exists
             const tripSelect = document.getElementById('tripSelect');
             if (tripSelect) tripSelect.innerHTML = '<option value="">Select Trip</option>';
             
-            setTimeout(() => window.location.reload(), 600);
+            setTimeout(() => window.location.reload(), 500);
           }
         });
       }
 
-      // Load user trips if function is available in app.js
+      // Trigger user trips reload if function exists in app.js
       if (typeof window.loadUserTrips === 'function') {
         window.loadUserTrips(session.user.id);
       }
@@ -131,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // --- Check Initial Session ---
+  // --- Check Initial Session on Page Load ---
   const initializeSession = async () => {
     try {
       const { data: { session }, error } = await sbClient.auth.getSession();
@@ -144,7 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   initializeSession();
 
-  // --- Auth State Listener ---
+  // --- Auth State Change Listener ---
   sbClient.auth.onAuthStateChange((event, session) => {
     console.log('🔔 Auth state changed event:', event);
     updateAuthUI(session);
