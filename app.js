@@ -945,7 +945,6 @@
     const langSelect = document.getElementById('langSelect');
     if (langSelect) langSelect.value = lang;
 
-    // Re-render UI views
     renderTripHero();
     renderItinerary();
     renderStays();
@@ -953,7 +952,6 @@
     renderCustomizeConsole();
     renderPacking();
 
-    // Notify other modules that language changed
     window.dispatchEvent(new CustomEvent('tripcraft:langChanged', { detail: { lang } }));
   }
 
@@ -2081,6 +2079,13 @@
       destImg = 'assets/dest-bali.jpg';
     }
 
+    // If destination picker provided a live image, use that instead
+    const liveImage = window.__selectedDestinationImage;
+    if (liveImage?.url) {
+      heroImg = liveImage.url;
+      destImg = liveImage.url;
+    }
+
     const generatedDays = [];
     const neighborhoodsList = [
       'Historic Old Town & Central Square',
@@ -2151,6 +2156,8 @@
       subtitle: `Curated ${tripType.toLowerCase()} designed for ${totalTravelers} travelers with weather adaptation and neighborhood clustering.`,
       tripType: tripType,
       durationDays: duration,
+      startDate: formData.startDate || null,
+      specialNotes: formData.specialNotes || null,
       travelers: {
         total: totalTravelers,
         adults: adults,
@@ -2436,12 +2443,17 @@
             seniors:      document.getElementById('inputSeniors').value,
             tripType:     document.getElementById('selectTripType').value,
             budgetPref:   document.getElementById('selectBudgetPref').value,
-            startDate:    document.getElementById('inputStartDate').value,
-            specialNotes: document.getElementById('inputSpecialNotes').value
+            startDate:    document.getElementById('inputStartDate').value || null,
+            specialNotes: document.getElementById('inputSpecialNotes').value || null
           };
 
           // 1) Generate locally first (fast UX)
           generateCustomTrip(data);
+
+          // The freshly-generated trip is now PRESET_TRIPS[0]
+          const newTrip = PRESET_TRIPS[0];
+          newTrip.startDate = data.startDate;
+          newTrip.specialNotes = data.specialNotes;
 
           // Close modal immediately
           modalNewTrip.classList.remove('active');
@@ -2450,23 +2462,16 @@
           // 2) Persist to Supabase if signed in
           if (window.TripCraftAuth?.isSignedIn() && window.TripsAPI) {
             try {
-              const trip = PRESET_TRIPS[0];
-              const daysToSave = (trip.days || []).map(d => ({
-                dayNumber:    d.dayNumber,
-                dateLabel:    d.dateLabel,
-                neighborhood: d.neighborhood,
-                weatherPlan:  d.weatherPlan,
-                morning:      d.morning,
-                lunch:        d.lunch,
-                afternoon:    d.afternoon,
-                evening:      d.evening
-              }));
-              await window.TripsAPI.createTrip(trip, daysToSave);
-              showToast('✓ Trip saved to your account');
+              const saved = await window.TripsAPI.saveTrip(newTrip);
+              newTrip.id = saved.id;
+              newTrip.savedToCloud = true;
+              showToast('✓ Trip and itinerary saved to your account');
             } catch (cloudErr) {
               console.error('[app] Supabase save failed:', cloudErr);
               showToast('⚠ Saved locally — cloud sync failed');
             }
+          } else {
+            showToast('ℹ Sign in to save this trip to your account');
           }
 
           // Reset destination picker state
@@ -2491,9 +2496,12 @@
       try {
         const remoteTrips = await window.TripsAPI.listTrips();
         if (remoteTrips.length === 0) return;
+
+        const existingIds = new Set(PRESET_TRIPS.map(t => t.id));
         remoteTrips.forEach(rt => {
-          if (!PRESET_TRIPS.some(t => t.id === rt.id)) PRESET_TRIPS.push(rt);
+          if (!existingIds.has(rt.id)) PRESET_TRIPS.push(rt);
         });
+
         renderTripHero();
         showToast(`✓ Loaded ${remoteTrips.length} saved trip(s)`);
       } catch (err) {

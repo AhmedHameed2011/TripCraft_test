@@ -232,10 +232,11 @@
         applyImageFallback(dest);
       }
 
-      // Apply weather
-      if (weatherResult.status === 'fulfilled') {
+            if (weatherResult.status === 'fulfilled') {
+        window.__selectedDestinationWeather = weatherResult.value;
         applyWeather(dest, weatherResult.value);
       } else {
+        window.__selectedDestinationWeather = null;
         applyWeatherError(dest);
       }
     }
@@ -252,6 +253,7 @@
         weatherWidget.innerHTML = '';
       }
       window.__selectedDestination = null;
+      window.__selectedDestinationWeather = null;
       window.__selectedDestinationImage = null;
       input.focus();
 

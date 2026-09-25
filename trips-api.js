@@ -1,159 +1,210 @@
 /**
- * TripCraft — Auth UI wiring
- * Connects the auth modal, mode toggle, form submission, and logout button.
+ * TripCraft — Supabase Data Layer for Trips & Itineraries
+ * Full CRUD for trips + itinerary days, including all nested JSON fields.
  */
 (function () {
   'use strict';
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const modal        = document.getElementById('modalAuth');
-    const openBtn      = document.getElementById('authModalTrigger');
-    const closeBtn     = document.getElementById('btnCloseAuthModal');
-    const form         = document.getElementById('formAuth');
-    const emailInput   = document.getElementById('inputAuthEmail');
-    const passInput    = document.getElementById('inputAuthPassword');
-    const nameInput    = document.getElementById('inputAuthName');
-    const nameGroup    = document.getElementById('authNameGroup');
-    const modeLogin    = document.getElementById('btnModeLogin');
-    const modeRegister = document.getElementById('btnModeRegister');
-    const submitBtn    = document.getElementById('btnAuthSubmit');
-    const submitText   = document.getElementById('btnAuthSubmitText');
-    const errorBox     = document.getElementById('authErrorMessage');
-    const logoutBtn    = document.getElementById('logoutBtn');
+  const TripsAPI = {
+    _client() {
+      if (!window.supabaseClient) throw new Error('Supabase client not initialised');
+      return window.supabaseClient;
+    },
 
-    if (!modal || !openBtn) {
-      console.warn('[auth-ui] Auth modal elements not found — skipping wiring.');
-      return;
-    }
+    async _currentUserId() {
+      const { data: { user } } = await this._client().auth.getUser();
+      return user ? user.id : null;
+    },
 
-    let mode = 'login';
+    /* ================================================================== */
+    /* CREATE — save a full trip + all its days                           */
+    /* ================================================================== */
+    async saveTrip(trip) {
+      const userId = await this._currentUserId();
+      if (!userId) throw new Error('You must be signed in to save a trip.');
 
-    function t(key, fallback) {
-      if (typeof window.tripcraftT === 'function') {
-        const v = window.tripcraftT(key);
-        if (v && v !== key) return v;
-      }
-      return fallback;
-    }
+      const structured = window.__selectedDestination || null;
+      const weather = window.__selectedDestinationWeather || null;
+      const image = window.__selectedDestinationImage || null;
 
-    function clearError() {
-      if (!errorBox) return;
-      errorBox.textContent = '';
-      errorBox.classList.remove('visible');
-    }
+      // ---- 1. Build the trip row ----
+      const tripRow = {
+        user_id: userId,
+        destination: trip.destination,
+        country: trip.country || null,
+        title: trip.title || null,
+        subtitle: trip.subtitle || null,
+        trip_type: trip.tripType || null,
+        duration_days: trip.durationDays || 0,
+        start_date: trip.startDate || null,
+        special_notes: trip.specialNotes || null,
+        travelers: trip.travelers || {},
+        budget_tier: trip.budgetTier || 'moderate',
+        weather: weather
+          ? {
+              temp: `${weather.temperature}°${weather.unit}`,
+              condition: weather.icon?.key || 'weatherClear',
+              icon: weather.icon?.icon || '☀️',
+              feelsLike: weather.feelsLike,
+              humidity: weather.humidity,
+              windSpeed: weather.windSpeed,
+              windUnit: weather.windUnit,
+              updatedAt: weather.updatedAt
+            }
+          : trip.weather || {},
+        current_pace: trip.currentPace || 'balanced',
+        hero_image: image?.url || trip.heroImage || null,
+        stays: trip.stays || [],
+        budget_breakdown: trip.budgetBreakdown || {},
+        booking_links: trip.bookingLinks || [],
+        packing: trip.packing || [],
+        destination_lat: structured?.lat ?? null,
+        destination_lng: structured?.lng ?? null,
+        destination_geoname_id: structured?.geonameId ?? null,
+        destination_country_code: structured?.countryCode ?? null
+      };
 
-    function showError(msg) {
-      if (!errorBox) return;
-      errorBox.textContent = msg;
-      errorBox.classList.add('visible');
-    }
+      // ---- 2. Insert the trip ----
+      const { data: insertedTrip, error: tripErr } = await this._client()
+        .from('trips')
+        .insert([tripRow])
+        .select()
+        .single();
 
-    function openModal() {
-      modal.classList.add('active');
-      clearError();
-    }
-
-    function closeModal() {
-      modal.classList.remove('active');
-      if (form) form.reset();
-      clearError();
-    }
-
-    function setMode(next) {
-      mode = next;
-      const isLogin = next === 'login';
-
-      modeLogin?.classList.toggle('active', isLogin);
-      modeRegister?.classList.toggle('active', !isLogin);
-
-      if (nameGroup) nameGroup.style.display = isLogin ? 'none' : 'block';
-      if (nameInput) nameInput.required = !isLogin;
-
-      if (submitText) {
-        submitText.textContent = isLogin
-          ? t('authLogin', 'Login')
-          : t('authRegister', 'Register');
-      }
-      clearError();
-    }
-
-    openBtn.addEventListener('click', openModal);
-    closeBtn?.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
-    });
-
-    modeLogin?.addEventListener('click', () => setMode('login'));
-    modeRegister?.addEventListener('click', () => setMode('register'));
-
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      clearError();
-
-      if (!window.TripCraftAuth) {
-        showError('Auth module not loaded. Please refresh.');
-        return;
-      }
-      if (!window.supabaseClient) {
-        showError('Authentication service unavailable. Check your connection.');
-        return;
+      if (tripErr) {
+        console.error('[trips-api] Trip insert failed:', tripErr);
+        throw tripErr;
       }
 
-      const email = emailInput.value.trim();
-      const password = passInput.value;
+      // ---- 3. Insert all itinerary days ----
+      if (Array.isArray(trip.days) && trip.days.length > 0) {
+        const dayRows = trip.days.map((d, idx) => ({
+          trip_id: insertedTrip.id,
+          day_number: d.dayNumber ?? idx + 1,
+          date_label: d.dateLabel || `Day ${idx + 1}`,
+          neighborhood: d.neighborhood || '',
+          weather_plan: d.weatherPlan || '',
+          morning: d.morning || null,
+          lunch: d.lunch || null,
+          afternoon: d.afternoon || null,
+          evening: d.evening || null
+        }));
 
-      if (!email || !password) {
-        showError('Email and password are required.');
-        return;
-      }
-      if (password.length < 6) {
-        showError('Password must be at least 6 characters.');
-        return;
-      }
+        const { error: daysErr } = await this._client()
+          .from('itinerary_days')
+          .insert(dayRows);
 
-      submitBtn.disabled = true;
-      const originalText = submitText?.textContent;
-      if (submitText) submitText.textContent = 'Please wait…';
-
-      try {
-        if (mode === 'login') {
-          await window.TripCraftAuth.login(email, password);
-          if (typeof window.tripcraftToast === 'function') {
-            window.tripcraftToast('✓ Signed in successfully');
-          }
-        } else {
-          const fullName = nameInput?.value.trim() || '';
-          await window.TripCraftAuth.register(email, password, { full_name: fullName });
-          showError('Check your inbox to confirm your email address.');
-          if (typeof window.tripcraftToast === 'function') {
-            window.tripcraftToast('✓ Account created — check your email');
-          }
+        if (daysErr) {
+          console.error('[trips-api] Days insert failed:', daysErr);
+          // Attempt rollback so we don't leave orphan trips
+          await this._client().from('trips').delete().eq('id', insertedTrip.id);
+          throw daysErr;
         }
-        closeModal();
-      } catch (err) {
-        showError(err.message || 'Authentication failed.');
-      } finally {
-        submitBtn.disabled = false;
-        if (submitText) submitText.textContent = originalText;
       }
-    });
 
-    logoutBtn?.addEventListener('click', async () => {
-      try {
-        await window.TripCraftAuth.logout();
-        if (typeof window.tripcraftToast === 'function') {
-          window.tripcraftToast('Signed out');
-        }
-      } catch (err) {
-        console.error('[auth-ui] logout failed:', err);
-      }
-    });
+      // ---- 4. Attach the DB id back to the local trip object ----
+      trip.id = insertedTrip.id;
 
-    window.addEventListener('tripcraft:langChanged', () => setMode(mode));
+      return insertedTrip;
+    },
 
-    window.addEventListener('tripcraft:authChanged', (e) => {
-      const user = e.detail?.user;
-      if (user?.email) console.info('[auth-ui] Signed in as', user.email);
-    });
-  });
+    /* ================================================================== */
+    /* READ — list all trips for the current user                         */
+    /* ================================================================== */
+    async listTrips() {
+      const { data, error } = await this._client()
+        .from('trips')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(this._rowToTrip);
+    },
+
+    /* ================================================================== */
+    /* READ — one trip + its days                                         */
+    /* ================================================================== */
+    async getTripWithDays(tripId) {
+      const { data: tripRow, error: tripErr } = await this._client()
+        .from('trips')
+        .select('*')
+        .eq('id', tripId)
+        .single();
+      if (tripErr) throw tripErr;
+
+      const { data: dayRows, error: daysErr } = await this._client()
+        .from('itinerary_days')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('day_number', { ascending: true });
+      if (daysErr) throw daysErr;
+
+      const trip = this._rowToTrip(tripRow);
+      trip.days = (dayRows || []).map(d => ({
+        dayNumber: d.day_number,
+        dateLabel: d.date_label,
+        neighborhood: d.neighborhood,
+        weatherPlan: d.weather_plan,
+        morning: d.morning,
+        lunch: d.lunch,
+        afternoon: d.afternoon,
+        evening: d.evening
+      }));
+
+      return trip;
+    },
+
+    /* ================================================================== */
+    /* UPDATE                                                            */
+    /* ================================================================== */
+    async updateTrip(tripId, patch) {
+      const { data, error } = await this._client()
+        .from('trips')
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq('id', tripId)
+        .select()
+        .single();
+      if (error) throw error;
+      return this._rowToTrip(data);
+    },
+
+    /* ================================================================== */
+    /* DELETE                                                            */
+    /* ================================================================== */
+    async deleteTrip(tripId) {
+      const { error } = await this._client().from('trips').delete().eq('id', tripId);
+      if (error) throw error;
+    },
+
+    /* ================================================================== */
+    /* Helper: map DB row → app-local trip object                         */
+    /* ================================================================== */
+    _rowToTrip(row) {
+      return {
+        id: row.id,
+        destination: row.destination,
+        country: row.country,
+        title: row.title,
+        subtitle: row.subtitle,
+        tripType: row.trip_type,
+        durationDays: row.duration_days,
+        startDate: row.start_date,
+        specialNotes: row.special_notes,
+        travelers: row.travelers || {},
+        budgetTier: row.budget_tier,
+        weather: row.weather || {},
+        currentPace: row.current_pace || 'balanced',
+        heroImage: row.hero_image,
+        stays: row.stays || [],
+        budgetBreakdown: row.budget_breakdown || {},
+        bookingLinks: row.booking_links || [],
+        packing: row.packing || [],
+        days: [], // populated by getTripWithDays
+        savedToCloud: true,
+        createdAt: row.created_at
+      };
+    }
+  };
+
+  window.TripsAPI = TripsAPI;
 })();
