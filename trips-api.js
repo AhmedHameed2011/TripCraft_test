@@ -69,6 +69,8 @@
         destination_geoname_id: structured?.geonameId ?? null
       };
 
+      console.log('[trips-api] Inserting trip row:', tripRow);
+
       // ---- Insert the trip ----
       const { data: insertedTrip, error: tripErr } = await this._client()
         .from('trips')
@@ -80,6 +82,8 @@
         console.error('[trips-api] Trip insert failed:', tripErr);
         throw tripErr;
       }
+
+      console.log('[trips-api] Trip inserted with id:', insertedTrip.id);
 
       // ---- Insert all itinerary days ----
       if (Array.isArray(trip.days) && trip.days.length > 0) {
@@ -101,10 +105,11 @@
 
         if (daysErr) {
           console.error('[trips-api] Days insert failed:', daysErr);
-          // Rollback the trip so we don't leave orphans
           await this._client().from('trips').delete().eq('id', insertedTrip.id);
           throw daysErr;
         }
+
+        console.log('[trips-api] Inserted', dayRows.length, 'itinerary days');
       }
 
       trip.id = insertedTrip.id;
@@ -201,7 +206,6 @@
         days: [],
         savedToCloud: true,
         createdAt: row.created_at,
-        // Preserve geonames data for re-use
         destinationMeta: {
           lat: row.destination_lat,
           lng: row.destination_lng,
