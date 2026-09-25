@@ -1553,7 +1553,6 @@
     const heroWeatherBadge = document.getElementById('heroWeatherBadge');
     const heroWeatherText = document.getElementById('heroWeatherText');
     if (heroWeatherBadge && heroWeatherText) {
-      // FIX: translate the weather condition key (e.g. weatherPartlyCloudy → "Partly cloudy")
       const conditionKey = trip.weather?.condition || '';
       const translatedCondition = conditionKey ? (t(conditionKey) || conditionKey) : '';
       heroWeatherText.textContent = `${trip.weather?.temp || ''} • ${translatedCondition}`;
@@ -1566,7 +1565,7 @@
     if (heroSubtitle) heroSubtitle.textContent = trip.subtitle;
 
     const metricTravelers = document.getElementById('metricTravelers');
-    if (metricTravelers) metricTravelers.textContent = trip.travelers.summary;
+    if (metricTravelers) metricTravelers.textContent = trip.travelers?.summary || '';
 
     const metricStay = document.getElementById('metricStay');
     if (metricStay && trip.stays && trip.stays.length > 0) metricStay.textContent = trip.stays[0].name;
@@ -1601,7 +1600,6 @@
   function renderItinerary() {
     const trip = getCurrentTrip();
     if (!trip || !trip.days || trip.days.length === 0) {
-      // Clear containers if no days
       const pills = document.getElementById('dayPillsContainer');
       if (pills) pills.innerHTML = '<div style="padding:1rem;color:var(--text-tertiary);font-size:0.85rem;">Loading days…</div>';
       const container = document.getElementById('timelineCardsContainer');
@@ -1621,9 +1619,11 @@
         btn.className = `day-pill-btn ${idx === activeDayIndex ? 'active' : ''}`;
         btn.innerHTML = `
           <span class="pill-day-label">${t('thDay')} ${d.dayNumber}</span>
-          <span class="pill-day-title">${d.neighborhood.split(',')[0]}</span>
+          <span class="pill-day-title">${(d.neighborhood || '').split(',')[0]}</span>
         `;
+        // FIX: guard against clicking a day index that doesn't exist
         btn.addEventListener('click', () => {
+          if (!trip.days || !trip.days[idx]) return;
           activeDayIndex = idx;
           renderItinerary();
           renderTripHero();
@@ -2093,7 +2093,6 @@
       destImg = 'assets/dest-bali.jpg';
     }
 
-    // If destination picker provided a live image, use that instead
     const liveImage = window.__selectedDestinationImage;
     if (liveImage?.url) {
       heroImg = liveImage.url;
@@ -2364,12 +2363,10 @@
         currentTripIndex = parseInt(e.target.value, 10) || 0;
         activeDayIndex = 0;
 
-        // FIX: if a saved trip has no days loaded, fetch them now
         const trip = PRESET_TRIPS[currentTripIndex];
         if (trip && (!trip.days || trip.days.length === 0) && trip.savedToCloud && window.TripsAPI) {
           try {
             const full = await window.TripsAPI.getTripWithDays(trip.id);
-            // Preserve object identity — mutate in place
             Object.keys(full).forEach(k => { trip[k] = full[k]; });
           } catch (err) {
             console.warn('[app] Could not load trip days:', err.message);
@@ -2625,6 +2622,25 @@
 
     // Initial render
     applyLanguage(currentLang);
+
+    // ---- FIX: Hydrate the currently-selected trip if it lacks days ----
+    (async () => {
+      const trip = getCurrentTrip();
+      if (trip && (!trip.days || trip.days.length === 0) && trip.savedToCloud && window.TripsAPI) {
+        try {
+          const full = await window.TripsAPI.getTripWithDays(trip.id);
+          Object.keys(full).forEach(k => { trip[k] = full[k]; });
+          renderTripHero();
+          renderItinerary();
+          renderStays();
+          renderBudget();
+          renderCustomizeConsole();
+          renderPacking();
+        } catch (err) {
+          console.warn('[app] Boot hydration failed:', err.message);
+        }
+      }
+    })();
   }
 
   // Boot on DOM ready
