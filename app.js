@@ -1540,7 +1540,7 @@
     if (!trip) return;
 
     const heroBackdrop = document.getElementById('heroBackdrop');
-    if (heroBackdrop) {
+    if (heroBackdrop && trip.heroImage) {
       heroBackdrop.style.backgroundImage = `url('${trip.heroImage}')`;
     }
 
@@ -1553,7 +1553,10 @@
     const heroWeatherBadge = document.getElementById('heroWeatherBadge');
     const heroWeatherText = document.getElementById('heroWeatherText');
     if (heroWeatherBadge && heroWeatherText) {
-      heroWeatherText.textContent = `${trip.weather.temp} • ${trip.weather.condition}`;
+      // FIX: translate the weather condition key (e.g. weatherPartlyCloudy → "Partly cloudy")
+      const conditionKey = trip.weather?.condition || '';
+      const translatedCondition = conditionKey ? (t(conditionKey) || conditionKey) : '';
+      heroWeatherText.textContent = `${trip.weather?.temp || ''} • ${translatedCondition}`;
     }
 
     const heroTitle = document.getElementById('heroTitle');
@@ -1566,16 +1569,20 @@
     if (metricTravelers) metricTravelers.textContent = trip.travelers.summary;
 
     const metricStay = document.getElementById('metricStay');
-    if (metricStay && trip.stays.length > 0) metricStay.textContent = trip.stays[0].name;
+    if (metricStay && trip.stays && trip.stays.length > 0) metricStay.textContent = trip.stays[0].name;
 
     const metricDailySpend = document.getElementById('metricDailySpend');
-    if (metricDailySpend) {
+    if (metricDailySpend && trip.budgetBreakdown) {
       metricDailySpend.textContent = `${formatMoney(trip.budgetBreakdown.dailyAverage)} / day`;
     }
 
     const metricNeighborhood = document.getElementById('metricNeighborhood');
-    if (metricNeighborhood && trip.days[activeDayIndex]) {
-      metricNeighborhood.textContent = trip.days[activeDayIndex].neighborhood.split(',')[0];
+    if (metricNeighborhood) {
+      if (trip.days && trip.days[activeDayIndex]) {
+        metricNeighborhood.textContent = trip.days[activeDayIndex].neighborhood.split(',')[0];
+      } else {
+        metricNeighborhood.textContent = '—';
+      }
     }
 
     const tripSelect = document.getElementById('tripSelect');
@@ -1593,7 +1600,14 @@
 
   function renderItinerary() {
     const trip = getCurrentTrip();
-    if (!trip || !trip.days || trip.days.length === 0) return;
+    if (!trip || !trip.days || trip.days.length === 0) {
+      // Clear containers if no days
+      const pills = document.getElementById('dayPillsContainer');
+      if (pills) pills.innerHTML = '<div style="padding:1rem;color:var(--text-tertiary);font-size:0.85rem;">Loading days…</div>';
+      const container = document.getElementById('timelineCardsContainer');
+      if (container) container.innerHTML = '';
+      return;
+    }
 
     if (activeDayIndex >= trip.days.length) activeDayIndex = 0;
     const day = trip.days[activeDayIndex];
@@ -1629,10 +1643,10 @@
     container.innerHTML = '';
 
     const slots = [
-      { phase: 'morning', phaseName: t('slotMorning'), slotData: day.morning, time: day.morning.time },
-      { phase: 'lunch', phaseName: t('slotLunch'), slotData: day.lunch, time: day.lunch.time },
-      { phase: 'afternoon', phaseName: t('slotAfternoon'), slotData: day.afternoon, time: day.afternoon.time },
-      { phase: 'evening', phaseName: t('slotEvening'), slotData: day.evening, time: day.evening.time }
+      { phase: 'morning', phaseName: t('slotMorning'), slotData: day.morning, time: day.morning?.time },
+      { phase: 'lunch', phaseName: t('slotLunch'), slotData: day.lunch, time: day.lunch?.time },
+      { phase: 'afternoon', phaseName: t('slotAfternoon'), slotData: day.afternoon, time: day.afternoon?.time },
+      { phase: 'evening', phaseName: t('slotEvening'), slotData: day.evening, time: day.evening?.time }
     ];
 
     slots.forEach(s => {
@@ -1641,9 +1655,9 @@
       card.className = `timeline-slot-card ${s.slotData.completed ? 'completed' : ''}`;
 
       let localName = '';
-      let englishName = s.slotData.dualName;
-      if (s.slotData.dualName.includes('(')) {
-        const parts = s.slotData.dualName.split('(');
+      let englishName = s.slotData.dualName || '';
+      if (englishName.includes('(')) {
+        const parts = englishName.split('(');
         localName = parts[0].trim();
         englishName = parts[1].replace(')', '').trim();
       }
@@ -1651,13 +1665,13 @@
       const flagsHtml = `
         ${s.slotData.weatherBadge ? `<span class="flag-chip weather-chip">${s.slotData.weatherBadge}</span>` : ''}
         ${(s.slotData.accessibility || []).map(acc => `<span class="flag-chip family-chip">${acc}</span>`).join('')}
-        <span class="flag-chip cost-chip">💵 ${formatMoney(s.slotData.cost)}</span>
+        <span class="flag-chip cost-chip">💵 ${formatMoney(s.slotData.cost || 0)}</span>
       `;
 
       card.innerHTML = `
         <div class="slot-time-column">
           <span class="slot-phase-pill phase-${s.phase}">${s.phaseName}</span>
-          <span class="slot-time-range">${s.time}</span>
+          <span class="slot-time-range">${s.time || ''}</span>
         </div>
         <div class="slot-content-column">
           <div class="slot-top-row">
@@ -1667,9 +1681,9 @@
                 <span class="english-trans-name">${englishName}</span>
               </h4>
             </div>
-            <span class="slot-category-badge">${s.slotData.category}</span>
+            <span class="slot-category-badge">${s.slotData.category || ''}</span>
           </div>
-          <p class="slot-description">${s.slotData.desc}</p>
+          <p class="slot-description">${s.slotData.desc || ''}</p>
           <div class="slot-flags-row">${flagsHtml}</div>
           <div class="slot-actions-bar">
             <label class="completion-check-label">
@@ -1726,11 +1740,11 @@
 
     let stays = trip.stays || [];
     if (activeStayFilter === 'family') {
-      stays = stays.filter(s => s.fitBanner.toLowerCase().includes('family') || s.features.some(f => f.includes('Family')));
+      stays = stays.filter(s => (s.fitBanner || '').toLowerCase().includes('family') || s.features?.some(f => f.includes('Family')));
     } else if (activeStayFilter === 'accessible') {
-      stays = stays.filter(s => s.features.some(f => f.includes('Wheelchair') || f.includes('Elevator') || f.includes('Stroller')));
+      stays = stays.filter(s => s.features?.some(f => f.includes('Wheelchair') || f.includes('Elevator') || f.includes('Stroller')));
     } else if (activeStayFilter === 'central') {
-      stays = stays.filter(s => s.features.some(f => f.includes('Station') || f.includes('Transit')));
+      stays = stays.filter(s => s.features?.some(f => f.includes('Station') || f.includes('Transit')));
     }
 
     stays.forEach(stay => {
@@ -1750,7 +1764,7 @@
           <div class="stay-fit-banner">${stay.fitBanner}</div>
           <p class="stay-desc">${stay.description}</p>
           <div class="stay-features-list">
-            ${stay.features.map(f => `<span class="flag-chip access-chip">${f}</span>`).join('')}
+            ${(stay.features || []).map(f => `<span class="flag-chip access-chip">${f}</span>`).join('')}
           </div>
           <a href="${stay.bookingUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-block">
             <span>Official Booking & Rates</span>
@@ -1768,57 +1782,57 @@
 
   function renderBudget() {
     const trip = getCurrentTrip();
-    const b = trip.budgetBreakdown;
+    const b = trip.budgetBreakdown || {};
 
     const budgetTotalCost = document.getElementById('budgetTotalCost');
-    if (budgetTotalCost) budgetTotalCost.textContent = formatMoney(b.totalTripCost);
+    if (budgetTotalCost) budgetTotalCost.textContent = formatMoney(b.totalTripCost || 0);
 
     const budgetTotalCaption = document.getElementById('budgetTotalCaption');
     if (budgetTotalCaption) {
-      budgetTotalCaption.textContent = `For ${trip.travelers.total} travelers over ${trip.durationDays} days`;
+      budgetTotalCaption.textContent = `For ${trip.travelers?.total || 0} travelers over ${trip.durationDays || 0} days`;
     }
 
     const budgetDailyAvg = document.getElementById('budgetDailyAvg');
-    if (budgetDailyAvg) budgetDailyAvg.textContent = formatMoney(b.dailyAverage);
+    if (budgetDailyAvg) budgetDailyAvg.textContent = formatMoney(b.dailyAverage || 0);
 
     const budgetPerPerson = document.getElementById('budgetPerPerson');
-    if (budgetPerPerson) budgetPerPerson.textContent = formatMoney(b.perPersonTotal);
+    if (budgetPerPerson) budgetPerPerson.textContent = formatMoney(b.perPersonTotal || 0);
 
     const costLodgingPct = document.getElementById('costLodgingPct');
-    if (costLodgingPct) costLodgingPct.textContent = `${b.lodgingPct}%`;
+    if (costLodgingPct) costLodgingPct.textContent = `${b.lodgingPct || 0}%`;
 
     const costDiningPct = document.getElementById('costDiningPct');
-    if (costDiningPct) costDiningPct.textContent = `${b.diningPct}%`;
+    if (costDiningPct) costDiningPct.textContent = `${b.diningPct || 0}%`;
 
     const costTicketsPct = document.getElementById('costTicketsPct');
-    if (costTicketsPct) costTicketsPct.textContent = `${b.ticketsPct}%`;
+    if (costTicketsPct) costTicketsPct.textContent = `${b.ticketsPct || 0}%`;
 
     const costTransitPct = document.getElementById('costTransitPct');
-    if (costTransitPct) costTransitPct.textContent = `${b.transitPct}%`;
+    if (costTransitPct) costTransitPct.textContent = `${b.transitPct || 0}%`;
 
     const budgetProgressBar = document.getElementById('budgetProgressBar');
     if (budgetProgressBar) {
       budgetProgressBar.innerHTML = `
-        <div class="seg seg-lodging" style="width: ${b.lodgingPct}%;" title="${t('catLodging')}: ${b.lodgingPct}%"></div>
-        <div class="seg seg-dining" style="width: ${b.diningPct}%;" title="${t('catDining')}: ${b.diningPct}%"></div>
-        <div class="seg seg-tickets" style="width: ${b.ticketsPct}%;" title="${t('catTickets')}: ${b.ticketsPct}%"></div>
-        <div class="seg seg-transit" style="width: ${b.transitPct}%;" title="${t('catTransit')}: ${b.transitPct}%"></div>
+        <div class="seg seg-lodging" style="width: ${b.lodgingPct || 0}%;" title="${t('catLodging')}: ${b.lodgingPct || 0}%"></div>
+        <div class="seg seg-dining" style="width: ${b.diningPct || 0}%;" title="${t('catDining')}: ${b.diningPct || 0}%"></div>
+        <div class="seg seg-tickets" style="width: ${b.ticketsPct || 0}%;" title="${t('catTickets')}: ${b.ticketsPct || 0}%"></div>
+        <div class="seg seg-transit" style="width: ${b.transitPct || 0}%;" title="${t('catTransit')}: ${b.transitPct || 0}%"></div>
       `;
     }
 
     const tableBody = document.getElementById('dailyCostTableBody');
     if (tableBody) {
       tableBody.innerHTML = '';
-      trip.days.forEach(d => {
-        const mealsCost = d.lunch.cost + 35;
-        const ticketsCost = (d.morning.cost || 0) + (d.afternoon.cost || 0);
+      (trip.days || []).forEach(d => {
+        const mealsCost = (d.lunch?.cost || 0) + 35;
+        const ticketsCost = (d.morning?.cost || 0) + (d.afternoon?.cost || 0);
         const transitCost = 15;
         const dailyTotal = mealsCost + ticketsCost + transitCost;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${t('thDay')} ${d.dayNumber}</strong></td>
-          <td>${d.neighborhood.split(',')[0]}</td>
+          <td>${(d.neighborhood || '').split(',')[0]}</td>
           <td>${formatMoney(mealsCost)}</td>
           <td>${formatMoney(ticketsCost)}</td>
           <td>${formatMoney(transitCost)}</td>
@@ -1835,10 +1849,10 @@
     const swapDaySelect = document.getElementById('swapDaySelect');
     if (swapDaySelect) {
       swapDaySelect.innerHTML = '';
-      trip.days.forEach((d, idx) => {
+      (trip.days || []).forEach((d, idx) => {
         const opt = document.createElement('option');
         opt.value = idx;
-        opt.textContent = `${t('thDay')} ${d.dayNumber} — ${d.neighborhood.split(',')[0]}`;
+        opt.textContent = `${t('thDay')} ${d.dayNumber} — ${(d.neighborhood || '').split(',')[0]}`;
         if (idx === activeDayIndex) opt.selected = true;
         swapDaySelect.appendChild(opt);
       });
@@ -1958,11 +1972,11 @@
 
       item.querySelector('.btn-select-alt').addEventListener('click', () => {
         const trip = getCurrentTrip();
-        if (trip.days[dayIdx]) {
+        if (trip.days && trip.days[dayIdx]) {
           trip.days[dayIdx][slot] = {
             dualName: alt.dualName,
             category: alt.category,
-            time: trip.days[dayIdx][slot].time || '14:00 - 16:30',
+            time: trip.days[dayIdx][slot]?.time || '14:00 - 16:30',
             desc: alt.desc,
             weatherBadge: alt.weatherBadge,
             accessibility: ['👶 Stroller-Friendly', '♿ Accessible'],
@@ -2343,12 +2357,25 @@
       });
     }
 
-    // Trip selector
+    // Trip selector — with lazy hydration of remote trip days
     const tripSelect = document.getElementById('tripSelect');
     if (tripSelect) {
-      tripSelect.addEventListener('change', (e) => {
+      tripSelect.addEventListener('change', async (e) => {
         currentTripIndex = parseInt(e.target.value, 10) || 0;
         activeDayIndex = 0;
+
+        // FIX: if a saved trip has no days loaded, fetch them now
+        const trip = PRESET_TRIPS[currentTripIndex];
+        if (trip && (!trip.days || trip.days.length === 0) && trip.savedToCloud && window.TripsAPI) {
+          try {
+            const full = await window.TripsAPI.getTripWithDays(trip.id);
+            // Preserve object identity — mutate in place
+            Object.keys(full).forEach(k => { trip[k] = full[k]; });
+          } catch (err) {
+            console.warn('[app] Could not load trip days:', err.message);
+          }
+        }
+
         renderTripHero();
         renderItinerary();
         renderStays();
@@ -2416,7 +2443,6 @@
         const submitBtn = document.getElementById('btnGenerateTripSubmit');
         const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '';
 
-        // Validate destination before proceeding
         const structured = window.__selectedDestination;
         const destDisplay = structured
           ? structured.displayName
@@ -2447,19 +2473,15 @@
             specialNotes: document.getElementById('inputSpecialNotes').value || null
           };
 
-          // 1) Generate locally first (fast UX)
           generateCustomTrip(data);
 
-          // The freshly-generated trip is now PRESET_TRIPS[0]
           const newTrip = PRESET_TRIPS[0];
           newTrip.startDate = data.startDate;
           newTrip.specialNotes = data.specialNotes;
 
-          // Close modal immediately
           modalNewTrip.classList.remove('active');
           formNewTrip.reset();
 
-          // 2) Persist to Supabase if signed in
           if (window.TripCraftAuth?.isSignedIn() && window.TripsAPI) {
             try {
               const saved = await window.TripsAPI.saveTrip(newTrip);
@@ -2474,7 +2496,6 @@
             showToast('ℹ Sign in to save this trip to your account');
           }
 
-          // Reset destination picker state
           if (window.DestinationPicker?.reset) window.DestinationPicker.reset();
 
         } catch (err) {
