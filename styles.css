@@ -1446,3 +1446,71 @@ body:has(.modal-backdrop.active) { overflow: hidden; }
   .destination-weather-widget { font-size: 0.76rem; padding: 0.5rem 0.7rem; }
   .hero-attribution { font-size: 0.62rem; padding: 0.2rem 0.45rem; }
 }
+
+/* ==========================================================================
+   Dropdown / Select readability fix
+   Native <option> elements don't inherit custom properties reliably,
+   so we set explicit colors for both themes.
+   ========================================================================== */
+
+/* Base select in both themes */
+select,
+.icon-dropdown,
+.trip-dropdown,
+.form-input {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-elevated);
+}
+
+/* Dropdown options — dark theme */
+html[data-theme="dark"] select option,
+html[data-theme="dark"] .icon-dropdown option,
+html[data-theme="dark"] .trip-dropdown option,
+html[data-theme="dark"] .form-input option {
+  background-color: #1a1a2e;   /* dark surface */
+  color: #f5f5fa;              /* light text */
+}
+
+/* Dropdown options — light theme */
+html[data-theme="light"] select option,
+html[data-theme="light"] .icon-dropdown option,
+html[data-theme="light"] .trip-dropdown option,
+html[data-theme="light"] .form-input option {
+  background-color: #ffffff;
+  color: #1a1a2e;
+}
+
+/* Highlighted / hovered / selected option in dark theme */
+html[data-theme="dark"] select option:checked,
+html[data-theme="dark"] select option:hover,
+html[data-theme="dark"] .icon-dropdown option:checked,
+html[data-theme="dark"] .trip-dropdown option:checked {
+  background-color: #6366f1;
+  color: #ffffff;
+}
+
+/* Highlighted option in light theme */
+html[data-theme="light"] select option:checked,
+html[data-theme="light"] select option:hover,
+html[data-theme="light"] .icon-dropdown option:checked,
+html[data-theme="light"] .trip-dropdown option:checked {
+  background-color: #6366f1;
+  color: #ffffff;
+}
+
+/* The currently visible select (closed state) — ensure text is readable */
+html[data-theme="dark"] select,
+html[data-theme="dark"] .icon-dropdown,
+html[data-theme="dark"] .trip-dropdown,
+html[data-theme="dark"] .form-input {
+  color: #f5f5fa;
+  background-color: #1a1a2e;
+}
+
+html[data-theme="light"] select,
+html[data-theme="light"] .icon-dropdown,
+html[data-theme="light"] .trip-dropdown,
+html[data-theme="light"] .form-input {
+  color: #1a1a2e;
+  background-color: #ffffff;
+}
