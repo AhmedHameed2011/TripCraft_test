@@ -1,6 +1,6 @@
 /**
  * TripCraft — Supabase Data Layer for Trips & Itineraries
- * Full CRUD for trips + itinerary days, including all nested JSON fields.
+ * Aligned with the existing `trips` schema (uses trip_data jsonb for extended fields).
  */
 (function () {
   'use strict';
@@ -17,7 +17,7 @@
     },
 
     /* ================================================================== */
-    /* CREATE — save a full trip + all its days                           */
+    /* SAVE (insert) — full trip + all its days                           */
     /* ================================================================== */
     async saveTrip(trip) {
       const userId = await this._currentUserId();
@@ -27,19 +27,15 @@
       const weather = window.__selectedDestinationWeather || null;
       const image = window.__selectedDestinationImage || null;
 
-      // ---- 1. Build the trip row ----
-      const tripRow = {
-        user_id: userId,
-        destination: trip.destination,
+      // ---- Build the extended payload that goes into trip_data ----
+      const tripData = {
         country: trip.country || null,
-        title: trip.title || null,
         subtitle: trip.subtitle || null,
-        trip_type: trip.tripType || null,
-        duration_days: trip.durationDays || 0,
         start_date: trip.startDate || null,
         special_notes: trip.specialNotes || null,
-        travelers: trip.travelers || {},
-        budget_tier: trip.budgetTier || 'moderate',
+        current_pace: trip.currentPace || 'balanced',
+        hero_image: image?.url || trip.heroImage || null,
+        destination_country_code: structured?.countryCode ?? null,
         weather: weather
           ? {
               temp: `${weather.temperature}°${weather.unit}`,
@@ -52,19 +48,28 @@
               updatedAt: weather.updatedAt
             }
           : trip.weather || {},
-        current_pace: trip.currentPace || 'balanced',
-        hero_image: image?.url || trip.heroImage || null,
         stays: trip.stays || [],
         budget_breakdown: trip.budgetBreakdown || {},
         booking_links: trip.bookingLinks || [],
-        packing: trip.packing || [],
-        destination_lat: structured?.lat ?? null,
-        destination_lng: structured?.lng ?? null,
-        destination_geoname_id: structured?.geonameId ?? null,
-        destination_country_code: structured?.countryCode ?? null
+        packing: trip.packing || []
       };
 
-      // ---- 2. Insert the trip ----
+      // ---- Row for the `trips` table ----
+      const tripRow = {
+        user_id: userId,
+        destination: trip.destination,
+        title: trip.title || null,
+        trip_type: trip.tripType || null,
+        duration_days: trip.durationDays || 0,
+        travelers: trip.travelers || {},
+        budget_tier: trip.budgetTier || 'moderate',
+        trip_data: tripData,
+        destination_lat: structured?.lat ?? null,
+        destination_lng: structured?.lng ?? null,
+        destination_geoname_id: structured?.geonameId ?? null
+      };
+
+      // ---- Insert the trip ----
       const { data: insertedTrip, error: tripErr } = await this._client()
         .from('trips')
         .insert([tripRow])
@@ -76,7 +81,7 @@
         throw tripErr;
       }
 
-      // ---- 3. Insert all itinerary days ----
+      // ---- Insert all itinerary days ----
       if (Array.isArray(trip.days) && trip.days.length > 0) {
         const dayRows = trip.days.map((d, idx) => ({
           trip_id: insertedTrip.id,
@@ -96,33 +101,30 @@
 
         if (daysErr) {
           console.error('[trips-api] Days insert failed:', daysErr);
-          // Attempt rollback so we don't leave orphan trips
+          // Rollback the trip so we don't leave orphans
           await this._client().from('trips').delete().eq('id', insertedTrip.id);
           throw daysErr;
         }
       }
 
-      // ---- 4. Attach the DB id back to the local trip object ----
       trip.id = insertedTrip.id;
-
       return insertedTrip;
     },
 
     /* ================================================================== */
-    /* READ — list all trips for the current user                         */
+    /* LIST — all trips for current user                                  */
     /* ================================================================== */
     async listTrips() {
       const { data, error } = await this._client()
         .from('trips')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       return (data || []).map(this._rowToTrip);
     },
 
     /* ================================================================== */
-    /* READ — one trip + its days                                         */
+    /* GET one trip with days                                             */
     /* ================================================================== */
     async getTripWithDays(tripId) {
       const { data: tripRow, error: tripErr } = await this._client()
@@ -150,12 +152,11 @@
         afternoon: d.afternoon,
         evening: d.evening
       }));
-
       return trip;
     },
 
     /* ================================================================== */
-    /* UPDATE                                                            */
+    /* UPDATE / DELETE                                                    */
     /* ================================================================== */
     async updateTrip(tripId, patch) {
       const { data, error } = await this._client()
@@ -168,40 +169,45 @@
       return this._rowToTrip(data);
     },
 
-    /* ================================================================== */
-    /* DELETE                                                            */
-    /* ================================================================== */
     async deleteTrip(tripId) {
       const { error } = await this._client().from('trips').delete().eq('id', tripId);
       if (error) throw error;
     },
 
     /* ================================================================== */
-    /* Helper: map DB row → app-local trip object                         */
+    /* Mapper: DB row → app trip object                                   */
     /* ================================================================== */
     _rowToTrip(row) {
+      const td = row.trip_data || {};
       return {
         id: row.id,
         destination: row.destination,
-        country: row.country,
+        country: td.country || null,
         title: row.title,
-        subtitle: row.subtitle,
+        subtitle: td.subtitle || null,
         tripType: row.trip_type,
         durationDays: row.duration_days,
-        startDate: row.start_date,
-        specialNotes: row.special_notes,
+        startDate: td.start_date || null,
+        specialNotes: td.special_notes || null,
         travelers: row.travelers || {},
         budgetTier: row.budget_tier,
-        weather: row.weather || {},
-        currentPace: row.current_pace || 'balanced',
-        heroImage: row.hero_image,
-        stays: row.stays || [],
-        budgetBreakdown: row.budget_breakdown || {},
-        bookingLinks: row.booking_links || [],
-        packing: row.packing || [],
-        days: [], // populated by getTripWithDays
+        weather: td.weather || {},
+        currentPace: td.current_pace || 'balanced',
+        heroImage: td.hero_image || null,
+        stays: td.stays || [],
+        budgetBreakdown: td.budget_breakdown || {},
+        bookingLinks: td.booking_links || [],
+        packing: td.packing || [],
+        days: [],
         savedToCloud: true,
-        createdAt: row.created_at
+        createdAt: row.created_at,
+        // Preserve geonames data for re-use
+        destinationMeta: {
+          lat: row.destination_lat,
+          lng: row.destination_lng,
+          geonameId: row.destination_geoname_id,
+          countryCode: td.destination_country_code || null
+        }
       };
     }
   };
