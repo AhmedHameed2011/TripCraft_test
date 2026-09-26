@@ -1133,7 +1133,7 @@ body:has(.modal-backdrop.active) { overflow: hidden; }
 
 @media (max-width: 640px) {
   .brand-tagline { display: none; }
-  .trip-quick-selector { display: none; }
+  
   .nav-controls { width: 100%; justify-content: flex-end; }
   .btn { padding: 0.55rem 0.9rem; font-size: 0.8rem; }
   .btn .btn-icon { display: none; }
@@ -1566,5 +1566,60 @@ html[data-theme="light"] .form-input {
   .modal-body-form {
     max-height: calc(100vh - 100px);
     overflow-y: auto;
+  }
+}
+
+/* ==========================================================================
+   Mobile — Trip Switcher (was hidden, now visible)
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* Move trip selector to its own row on mobile */
+  .nav-brand-group {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .brand-logo {
+    justify-content: flex-start;
+  }
+
+  .trip-quick-selector {
+    display: flex;
+    width: 100%;
+  }
+
+  .trip-quick-selector .select-pill-wrapper {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+  }
+
+  .trip-quick-selector .trip-dropdown {
+    flex: 1;
+    max-width: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  /* Make it visually prominent */
+  .trip-quick-selector .pill-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--brand-primary);
+  }
+
+  /* Nav controls stay on their own row below */
+  .nav-controls {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
   }
 }
