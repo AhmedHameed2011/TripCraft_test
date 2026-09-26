@@ -44,6 +44,7 @@
       labelStay: "Recommended Stay",
       labelBudget: "Est. Daily Spending",
       labelNeighborhood: "Current District",
+      tabTrips: "My Trips",
       tabItinerary: "Day-by-Day Itinerary",
       tabStays: "Recommended Stays",
       tabBudget: "Cost Estimates & Budget",
@@ -181,7 +182,27 @@
       weatherHeavySnow: "Heavy snow",
       weatherSnowShowers: "Snow showers",
       weatherThunderstorm: "Thunderstorm",
-      weatherUnknown: "Unknown"
+      weatherUnknown: "Unknown",
+      tripsHeaderTitle: "My Trips",
+      tripsHeaderSubtitle: "All your planned journeys in one place. Load any trip to view its full itinerary, or delete trips you no longer need.",
+      tripsEmptyTitle: "No saved trips yet",
+      tripsEmptySub: "Tap \"Plan New Trip\" to create your first journey.",
+      tripCardLoad: "View Trip",
+      tripCardActive: "Currently Open",
+      tripCardDelete: "Delete",
+      tripCardCloud: "Cloud",
+      tripCardLocal: "Local",
+      tripCardTravelers: "travelers",
+      tripCardDays: "days",
+      deleteTripTitle: "Delete this trip?",
+      deleteTripMsg: "This will permanently remove the trip and its itinerary from your account. This cannot be undone.",
+      deleteTripCancel: "Cancel",
+      deleteTripConfirm: "Delete Permanently",
+      deleting: "Deleting…",
+      tripDeleted: "✓ Trip deleted",
+      tripDeleteFailed: "⚠ Could not delete trip",
+      tripLoaded: "✓ Trip loaded",
+      tripLoadFailed: "⚠ Could not load trip"
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -191,6 +212,7 @@
       labelStay: "الإقامة الموصى بها",
       labelBudget: "الإنفاق اليومي التقديري",
       labelNeighborhood: "الحي الحالي",
+      tabTrips: "رحلاتي",
       tabItinerary: "جدول الأيام خطوة بخطوة",
       tabStays: "خيارات الإقامة الموصى بها",
       tabBudget: "تقديرات التكلفة والميزانية",
@@ -328,7 +350,27 @@
       weatherHeavySnow: "ثلوج كثيفة",
       weatherSnowShowers: "زخات ثلجية",
       weatherThunderstorm: "عاصفة رعدية",
-      weatherUnknown: "غير معروف"
+      weatherUnknown: "غير معروف",
+      tripsHeaderTitle: "رحلاتي",
+      tripsHeaderSubtitle: "جميع رحلاتك المخططة في مكان واحد. حمّل أي رحلة لعرض جدولها الكامل، أو احذف الرحلات التي لم تعد بحاجة إليها.",
+      tripsEmptyTitle: "لا توجد رحلات محفوظة بعد",
+      tripsEmptySub: "اضغط على \"خطط لرحلة جديدة\" لإنشاء رحلتك الأولى.",
+      tripCardLoad: "عرض الرحلة",
+      tripCardActive: "مفتوحة حالياً",
+      tripCardDelete: "حذف",
+      tripCardCloud: "سحابي",
+      tripCardLocal: "محلي",
+      tripCardTravelers: "مسافر",
+      tripCardDays: "أيام",
+      deleteTripTitle: "حذف هذه الرحلة؟",
+      deleteTripMsg: "سيؤدي هذا إلى إزالة الرحلة ومسارها نهائياً من حسابك. لا يمكن التراجع عن هذا الإجراء.",
+      deleteTripCancel: "إلغاء",
+      deleteTripConfirm: "حذف نهائي",
+      deleting: "جارٍ الحذف…",
+      tripDeleted: "✓ تم حذف الرحلة",
+      tripDeleteFailed: "⚠ تعذر حذف الرحلة",
+      tripLoaded: "✓ تم تحميل الرحلة",
+      tripLoadFailed: "⚠ تعذر تحميل الرحلة"
     },
     es: {
       tagline: "Planificador Personal de Viajes",
@@ -338,6 +380,7 @@
       labelStay: "Alojamiento Recomendado",
       labelBudget: "Gasto Diario Estimado",
       labelNeighborhood: "Barrio Actual",
+      tabTrips: "Mis Viajes",
       tabItinerary: "Itinerario Día a Día",
       tabStays: "Alojamientos Recomendados",
       tabBudget: "Presupuesto y Costos",
@@ -475,7 +518,27 @@
       weatherHeavySnow: "Nieve intensa",
       weatherSnowShowers: "Chubascos de nieve",
       weatherThunderstorm: "Tormenta eléctrica",
-      weatherUnknown: "Desconocido"
+      weatherUnknown: "Desconocido",
+      tripsHeaderTitle: "Mis Viajes",
+      tripsHeaderSubtitle: "Todos tus viajes planeados en un solo lugar. Carga cualquier viaje para ver su itinerario completo, o elimina los que ya no necesites.",
+      tripsEmptyTitle: "Aún no hay viajes guardados",
+      tripsEmptySub: "Pulsa \"Planificar Nuevo Viaje\" para crear tu primera aventura.",
+      tripCardLoad: "Ver Viaje",
+      tripCardActive: "Abierto Actualmente",
+      tripCardDelete: "Eliminar",
+      tripCardCloud: "Nube",
+      tripCardLocal: "Local",
+      tripCardTravelers: "viajeros",
+      tripCardDays: "días",
+      deleteTripTitle: "¿Eliminar este viaje?",
+      deleteTripMsg: "Esto eliminará permanentemente el viaje y su itinerario de tu cuenta. Esta acción no se puede deshacer.",
+      deleteTripCancel: "Cancelar",
+      deleteTripConfirm: "Eliminar Definitivamente",
+      deleting: "Eliminando…",
+      tripDeleted: "✓ Viaje eliminado",
+      tripDeleteFailed: "⚠ No se pudo eliminar el viaje",
+      tripLoaded: "✓ Viaje cargado",
+      tripLoadFailed: "⚠ No se pudo cargar el viaje"
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
@@ -485,6 +548,7 @@
       labelStay: "Hébergement Recommandé",
       labelBudget: "Dépense Quotidienne Estimée",
       labelNeighborhood: "Quartier Actuel",
+      tabTrips: "Mes Voyages",
       tabItinerary: "Itinéraire Jour par Jour",
       tabStays: "Hébergements Recommandés",
       tabBudget: "Estimations & Budget",
@@ -622,7 +686,27 @@
       weatherHeavySnow: "Neige abondante",
       weatherSnowShowers: "Averses de neige",
       weatherThunderstorm: "Orage",
-      weatherUnknown: "Inconnu"
+      weatherUnknown: "Inconnu",
+      tripsHeaderTitle: "Mes Voyages",
+      tripsHeaderSubtitle: "Tous vos voyages planifiés en un seul endroit. Chargez un voyage pour voir son itinéraire complet, ou supprimez ceux dont vous n'avez plus besoin.",
+      tripsEmptyTitle: "Aucun voyage enregistré",
+      tripsEmptySub: "Appuyez sur « Nouveau Voyage » pour créer votre première aventure.",
+      tripCardLoad: "Voir le Voyage",
+      tripCardActive: "Actuellement Ouvert",
+      tripCardDelete: "Supprimer",
+      tripCardCloud: "Cloud",
+      tripCardLocal: "Local",
+      tripCardTravelers: "voyageurs",
+      tripCardDays: "jours",
+      deleteTripTitle: "Supprimer ce voyage ?",
+      deleteTripMsg: "Cela supprimera définitivement le voyage et son itinéraire de votre compte. Cette action est irréversible.",
+      deleteTripCancel: "Annuler",
+      deleteTripConfirm: "Supprimer Définitivement",
+      deleting: "Suppression…",
+      tripDeleted: "✓ Voyage supprimé",
+      tripDeleteFailed: "⚠ Impossible de supprimer le voyage",
+      tripLoaded: "✓ Voyage chargé",
+      tripLoadFailed: "⚠ Impossible de charger le voyage"
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
@@ -632,6 +716,7 @@
       labelStay: "おすすめの宿泊先",
       labelBudget: "1日の目安支出",
       labelNeighborhood: "現在のエリア",
+      tabTrips: "マイ旅行",
       tabItinerary: "日別旅程表",
       tabStays: "おすすめ宿泊先",
       tabBudget: "予算と費用見積もり",
@@ -769,7 +854,27 @@
       weatherHeavySnow: "大雪",
       weatherSnowShowers: "にわか雪",
       weatherThunderstorm: "雷雨",
-      weatherUnknown: "不明"
+      weatherUnknown: "不明",
+      tripsHeaderTitle: "マイ旅行",
+      tripsHeaderSubtitle: "計画したすべての旅行を一か所に。旅行を読み込んで完全な旅程を表示したり、不要な旅行を削除できます。",
+      tripsEmptyTitle: "保存された旅行はまだありません",
+      tripsEmptySub: "「新しい旅を計画」をタップして最初の旅行を作成しましょう。",
+      tripCardLoad: "旅行を見る",
+      tripCardActive: "現在開いています",
+      tripCardDelete: "削除",
+      tripCardCloud: "クラウド",
+      tripCardLocal: "ローカル",
+      tripCardTravelers: "名",
+      tripCardDays: "日間",
+      deleteTripTitle: "この旅行を削除しますか？",
+      deleteTripMsg: "旅行とその旅程がアカウントから完全に削除されます。この操作は取り消せません。",
+      deleteTripCancel: "キャンセル",
+      deleteTripConfirm: "完全に削除",
+      deleting: "削除中…",
+      tripDeleted: "✓ 旅行を削除しました",
+      tripDeleteFailed: "⚠ 旅行を削除できませんでした",
+      tripLoaded: "✓ 旅行を読み込みました",
+      tripLoadFailed: "⚠ 旅行を読み込めませんでした"
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
@@ -779,6 +884,7 @@
       labelStay: "Empfohlene Unterkunft",
       labelBudget: "Geschätzte Tagesausgaben",
       labelNeighborhood: "Aktueller Stadtteil",
+      tabTrips: "Meine Reisen",
       tabItinerary: "Tagesprogramm",
       tabStays: "Empfohlene Unterkünfte",
       tabBudget: "Kosten & Budget",
@@ -916,7 +1022,27 @@
       weatherHeavySnow: "Starker Schneefall",
       weatherSnowShowers: "Schneeschauer",
       weatherThunderstorm: "Gewitter",
-      weatherUnknown: "Unbekannt"
+      weatherUnknown: "Unbekannt",
+      tripsHeaderTitle: "Meine Reisen",
+      tripsHeaderSubtitle: "Alle deine geplanten Reisen an einem Ort. Lade eine Reise, um das vollständige Programm zu sehen, oder lösche nicht mehr benötigte Reisen.",
+      tripsEmptyTitle: "Noch keine gespeicherten Reisen",
+      tripsEmptySub: "Tippe auf „Neue Reise planen“, um dein erstes Abenteuer zu erstellen.",
+      tripCardLoad: "Reise ansehen",
+      tripCardActive: "Derzeit geöffnet",
+      tripCardDelete: "Löschen",
+      tripCardCloud: "Cloud",
+      tripCardLocal: "Lokal",
+      tripCardTravelers: "Reisende",
+      tripCardDays: "Tage",
+      deleteTripTitle: "Diese Reise löschen?",
+      deleteTripMsg: "Die Reise und ihr Programm werden dauerhaft aus deinem Konto entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
+      deleteTripCancel: "Abbrechen",
+      deleteTripConfirm: "Endgültig löschen",
+      deleting: "Wird gelöscht…",
+      tripDeleted: "✓ Reise gelöscht",
+      tripDeleteFailed: "⚠ Reise konnte nicht gelöscht werden",
+      tripLoaded: "✓ Reise geladen",
+      tripLoadFailed: "⚠ Reise konnte nicht geladen werden"
     }
   };
 
@@ -946,6 +1072,7 @@
     if (langSelect) langSelect.value = lang;
 
     renderTripHero();
+    renderTripsGrid();
     renderItinerary();
     renderStays();
     renderBudget();
@@ -978,7 +1105,7 @@
       budgetTier: 'moderate',
       weather: {
         temp: '23°C',
-        condition: 'Clear & Mild',
+        condition: 'weatherClear',
         icon: '☀️',
         notes: 'Weather Optimized: Cooler morning temple visits, midday indoor science/ac activities, sunset river breezes.'
       },
@@ -1347,7 +1474,7 @@
       budgetTier: 'luxury',
       weather: {
         temp: '19°C',
-        condition: 'Crisp Autumn Sunshine',
+        condition: 'weatherPartlyCloudy',
         icon: '⛅',
         notes: 'Weather Optimized: Crisp morning strolls in Luxembourg Gardens, afternoon Louvre gallery climate, golden hour Seine cruise.'
       },
@@ -1533,9 +1660,9 @@
   }
 
   // ==========================================================================
-  // 4a. Live Weather Refresh (fetches current weather for the selected trip)
+  // 4a. Live Weather Refresh
   // ==========================================================================
-    async function refreshHeroWeather(trip) {
+  async function refreshHeroWeather(trip) {
     if (!trip) return;
 
     const lat = trip.destinationMeta?.lat;
@@ -1588,7 +1715,7 @@
     const heroDuration = document.getElementById('heroDuration');
     if (heroDuration) heroDuration.textContent = `${trip.durationDays} ${trip.durationDays === 1 ? 'Day' : 'Days'}`;
 
-        // Populate hero weather widget with static fallback data
+    // Populate hero weather widget with static fallback data
     const heroWeatherIcon     = document.getElementById('heroWeatherIcon');
     const heroWeatherTemp     = document.getElementById('heroWeatherTemp');
     const heroWeatherCond     = document.getElementById('heroWeatherCond');
@@ -1602,7 +1729,6 @@
       const conditionKey = trip.weather?.condition || '';
       heroWeatherCond.textContent = conditionKey ? (t(conditionKey) || conditionKey) : '—';
     }
-    // These will be replaced by live data if coordinates exist
     if (heroWeatherFeels)    heroWeatherFeels.textContent    = trip.weather?.feelsLike ? `${t('weatherFeels')} ${trip.weather.feelsLike}°` : '';
     if (heroWeatherHumidity) heroWeatherHumidity.textContent = trip.weather?.humidity ? `💧 ${trip.weather.humidity}%` : '';
     if (heroWeatherWind)     heroWeatherWind.textContent     = trip.weather?.windSpeed ? `💨 ${trip.weather.windSpeed} ${trip.weather.windUnit || 'km/h'}` : '';
@@ -1633,7 +1759,7 @@
       }
     }
 
-        const tripSelect = document.getElementById('tripSelect');
+    const tripSelect = document.getElementById('tripSelect');
     if (tripSelect) {
       tripSelect.innerHTML = '';
       PRESET_TRIPS.forEach((tr, idx) => {
@@ -1647,6 +1773,201 @@
 
     // Kick off a live weather refresh (non-blocking)
     refreshHeroWeather(trip);
+  }
+
+  // ==========================================================================
+  // My Trips — Grid view with load + delete
+  // ==========================================================================
+  function renderTripsGrid() {
+    const container = document.getElementById('tripsGridContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!PRESET_TRIPS || PRESET_TRIPS.length === 0) {
+      container.innerHTML = `
+        <div class="trips-empty-state">
+          <div class="trips-empty-icon">🧳</div>
+          <h3 class="trips-empty-title">${t('tripsEmptyTitle')}</h3>
+          <p class="trips-empty-sub">${t('tripsEmptySub')}</p>
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('btnNewTrip').click()">
+            + ${t('navNewTrip')}
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    PRESET_TRIPS.forEach((trip, idx) => {
+      const isActive = idx === currentTripIndex;
+      const isCloud = !!trip.savedToCloud;
+
+      const card = document.createElement('div');
+      card.className = `trip-grid-card${isActive ? ' is-active' : ''}`;
+      card.dataset.tripId = trip.id;
+      card.dataset.tripIdx = idx;
+
+      const imageUrl = trip.heroImage || 'assets/hero-tokyo.jpg';
+      const travelersCount = trip.travelers?.total || 0;
+      const daysCount = trip.durationDays || (trip.days?.length || 0);
+
+      card.innerHTML = `
+        <div class="trip-grid-image">
+          <img src="${imageUrl}" alt="${trip.destination}" loading="lazy"
+               onerror="this.style.display='none'">
+          <span class="trip-grid-source-badge">
+            ${isCloud ? '☁ ' + t('tripCardCloud') : '💾 ' + t('tripCardLocal')}
+          </span>
+          ${isActive ? `<span class="trip-grid-active-badge">● ${t('tripCardActive')}</span>` : ''}
+          <div class="trip-grid-image-overlay">
+            <h3 class="trip-grid-title">${trip.destination}</h3>
+            <span class="trip-grid-meta">${trip.tripType || ''}${trip.tripType && daysCount ? ' • ' : ''}${daysCount ? daysCount + ' ' + t('tripCardDays') : ''}</span>
+          </div>
+        </div>
+
+        <div class="trip-grid-body">
+          <div class="trip-grid-stats">
+            ${travelersCount ? `<span class="trip-grid-stat">👥 <strong>${travelersCount}</strong> ${t('tripCardTravelers')}</span>` : ''}
+            ${daysCount ? `<span class="trip-grid-stat">📅 <strong>${daysCount}</strong> ${t('tripCardDays')}</span>` : ''}
+          </div>
+
+          <div class="trip-grid-actions">
+            <button type="button" class="btn btn-primary btn-load-trip" data-idx="${idx}">
+              ${isActive ? '● ' + t('tripCardActive') : t('tripCardLoad')}
+            </button>
+            <button type="button" class="btn btn-secondary btn-delete" data-idx="${idx}"
+                    aria-label="${t('tripCardDelete')}" title="${t('tripCardDelete')}">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Load trip
+      card.querySelector('.btn-load-trip').addEventListener('click', async () => {
+        if (isActive) return;
+
+        currentTripIndex = idx;
+        activeDayIndex = 0;
+
+        const targetTrip = PRESET_TRIPS[idx];
+
+        if (targetTrip.savedToCloud && (!targetTrip.days || targetTrip.days.length === 0) && window.TripsAPI) {
+          try {
+            const full = await window.TripsAPI.getTripWithDays(targetTrip.id);
+            Object.keys(full).forEach(k => { targetTrip[k] = full[k]; });
+          } catch (err) {
+            console.warn('[app] Could not load trip days:', err.message);
+            showToast(t('tripLoadFailed'));
+            return;
+          }
+        }
+
+        renderTripHero();
+        renderItinerary();
+        renderStays();
+        renderBudget();
+        renderCustomizeConsole();
+        renderPacking();
+        renderTripsGrid();
+
+        showToast(t('tripLoaded') + ' — ' + targetTrip.destination);
+      });
+
+      // Delete trip
+      card.querySelector('.btn-delete').addEventListener('click', () => {
+        showDeleteConfirm(idx);
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  // ==========================================================================
+  // Delete Confirmation Dialog
+  // ==========================================================================
+  function showDeleteConfirm(tripIdx) {
+    const trip = PRESET_TRIPS[tripIdx];
+    if (!trip) return;
+
+    const isCloud = !!trip.savedToCloud;
+
+    document.querySelectorAll('.delete-confirm-overlay').forEach(el => el.remove());
+
+    const overlay = document.createElement('div');
+    overlay.className = 'delete-confirm-overlay';
+    overlay.innerHTML = `
+      <div class="delete-confirm-dialog" role="dialog" aria-modal="true">
+        <div class="delete-confirm-icon">🗑️</div>
+        <h3 class="delete-confirm-title">${t('deleteTripTitle')}</h3>
+        <p class="delete-confirm-dest">${trip.destination}</p>
+        <p class="delete-confirm-msg">${t('deleteTripMsg')}</p>
+        <div class="delete-confirm-actions">
+          <button type="button" class="btn btn-secondary btn-cancel-delete">${t('deleteTripCancel')}</button>
+          <button type="button" class="btn btn-danger btn-confirm-delete">${t('deleteTripConfirm')}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const closeDialog = () => overlay.remove();
+
+    overlay.querySelector('.btn-cancel-delete').addEventListener('click', closeDialog);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeDialog();
+    });
+
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeDialog();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    overlay.querySelector('.btn-confirm-delete').addEventListener('click', async () => {
+      const confirmBtn = overlay.querySelector('.btn-confirm-delete');
+      const cancelBtn = overlay.querySelector('.btn-cancel-delete');
+
+      confirmBtn.disabled = true;
+      cancelBtn.disabled = true;
+      confirmBtn.textContent = t('deleting');
+
+      try {
+        if (isCloud && window.TripsAPI) {
+          await window.TripsAPI.deleteTrip(trip.id);
+        }
+
+        PRESET_TRIPS.splice(tripIdx, 1);
+
+        if (PRESET_TRIPS.length === 0) {
+          currentTripIndex = 0;
+        } else if (tripIdx === currentTripIndex) {
+          currentTripIndex = Math.max(0, tripIdx - 1);
+        } else if (tripIdx < currentTripIndex) {
+          currentTripIndex -= 1;
+        }
+        activeDayIndex = 0;
+
+        renderTripHero();
+        renderItinerary();
+        renderStays();
+        renderBudget();
+        renderCustomizeConsole();
+        renderPacking();
+        renderTripsGrid();
+
+        closeDialog();
+        showToast(t('tripDeleted'));
+
+      } catch (err) {
+        console.error('[app] Delete failed:', err);
+        confirmBtn.disabled = false;
+        cancelBtn.disabled = false;
+        confirmBtn.textContent = t('deleteTripConfirm');
+        showToast(t('tripDeleteFailed'));
+      }
+    });
   }
 
   function renderItinerary() {
@@ -1673,7 +1994,6 @@
           <span class="pill-day-label">${t('thDay')} ${d.dayNumber}</span>
           <span class="pill-day-title">${(d.neighborhood || '').split(',')[0]}</span>
         `;
-        // FIX: guard against clicking a day index that doesn't exist
         btn.addEventListener('click', () => {
           if (!trip.days || !trip.days[idx]) return;
           activeDayIndex = idx;
@@ -2212,6 +2532,36 @@
       });
     }
 
+    // Capture structured destination metadata if the picker supplied it
+    const structured = window.__selectedDestination;
+    const destinationMeta = structured
+      ? {
+          lat: structured.lat,
+          lng: structured.lng,
+          geonameId: structured.geonameId,
+          countryCode: structured.countryCode
+        }
+      : null;
+
+    // Capture live weather from the picker if available
+    const liveWeather = window.__selectedDestinationWeather;
+    const weatherBlock = liveWeather
+      ? {
+          temp: `${liveWeather.temperature}°${liveWeather.unit}`,
+          condition: liveWeather.icon?.key || 'weatherUnknown',
+          icon: liveWeather.icon?.icon || '☀️',
+          feelsLike: liveWeather.feelsLike,
+          humidity: liveWeather.humidity,
+          windSpeed: liveWeather.windSpeed,
+          windUnit: liveWeather.windUnit
+        }
+      : {
+          temp: '22°C',
+          condition: 'weatherClear',
+          icon: '☀️',
+          notes: 'Weather Optimized: Outdoor visits organized for cooler morning and late afternoon slots.'
+        };
+
     const newTrip = {
       id: `trip-${Date.now()}`,
       destination: dest,
@@ -2231,12 +2581,8 @@
         summary: `${totalTravelers} Travelers (${adults} Adults${children ? `, ${children} Kids` : ''}${seniors ? `, ${seniors} Seniors` : ''})`
       },
       budgetTier: budgetPref,
-      weather: {
-        temp: '22°C',
-        condition: 'Sunny & Pleasant',
-        icon: '☀️',
-        notes: 'Weather Optimized: Outdoor visits organized for cooler morning and late afternoon slots.'
-      },
+      weather: weatherBlock,
+      destinationMeta: destinationMeta,
       currentPace: 'balanced',
       stays: [
         {
@@ -2308,6 +2654,7 @@
     activeDayIndex = 0;
 
     renderTripHero();
+    renderTripsGrid();
     renderItinerary();
     renderStays();
     renderBudget();
@@ -2332,6 +2679,11 @@
 
     const target = document.getElementById(`tabView${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`);
     if (target) target.classList.add('active');
+
+    // Re-render the trips grid whenever the Trips tab is shown
+    if (tabId === 'trips') {
+      renderTripsGrid();
+    }
   }
 
   // ==========================================================================
@@ -2400,6 +2752,7 @@
           currencyBadge.textContent = CURRENCIES[currentCurrency].symbol;
         }
         renderTripHero();
+        renderTripsGrid();
         renderItinerary();
         renderStays();
         renderBudget();
@@ -2426,6 +2779,7 @@
         }
 
         renderTripHero();
+        renderTripsGrid();
         renderItinerary();
         renderStays();
         renderBudget();
@@ -2459,6 +2813,13 @@
 
     if (btnNewTrip && modalNewTrip) {
       btnNewTrip.addEventListener('click', () => {
+        modalNewTrip.classList.add('active');
+      });
+    }
+
+    const btnNewTripInline = document.getElementById('btnNewTripInline');
+    if (btnNewTripInline && modalNewTrip) {
+      btnNewTripInline.addEventListener('click', () => {
         modalNewTrip.classList.add('active');
       });
     }
@@ -2573,6 +2934,7 @@
         });
 
         renderTripHero();
+        renderTripsGrid();
         showToast(`✓ Loaded ${remoteTrips.length} saved trip(s)`);
       } catch (err) {
         console.warn('[app] Could not load remote trips:', err.message);
@@ -2675,7 +3037,7 @@
     // Initial render
     applyLanguage(currentLang);
 
-    // ---- FIX: Hydrate the currently-selected trip if it lacks days ----
+    // ---- Hydrate the currently-selected trip if it lacks days ----
     (async () => {
       const trip = getCurrentTrip();
       if (trip && (!trip.days || trip.days.length === 0) && trip.savedToCloud && window.TripsAPI) {
@@ -2688,6 +3050,7 @@
           renderBudget();
           renderCustomizeConsole();
           renderPacking();
+          renderTripsGrid();
         } catch (err) {
           console.warn('[app] Boot hydration failed:', err.message);
         }

@@ -1760,3 +1760,277 @@ html[data-theme="light"] .form-input {
     grid-column: 1 / -1;
   }
 }
+
+/* ==========================================================================
+   My Trips Tab — Grid View + Delete
+   Mobile-first responsive design
+   ========================================================================== */
+
+.trips-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+/* Tablet and up */
+@media (min-width: 640px) {
+  .trips-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+.trip-grid-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--trans-fast);
+  box-shadow: var(--shadow-card);
+}
+.trip-grid-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-elevated);
+}
+.trip-grid-card.is-active {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 2px var(--brand-primary-glow), var(--shadow-card);
+}
+
+/* ---- Hero image banner ---- */
+.trip-grid-image {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-surface-elevated);
+  overflow: hidden;
+}
+.trip-grid-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.trip-grid-card:hover .trip-grid-image img {
+  transform: scale(1.04);
+}
+
+.trip-grid-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(10,10,20,0.75) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  color: #fff;
+}
+.trip-grid-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 0 0 0.15rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  line-height: 1.25;
+}
+.trip-grid-meta {
+  font-size: 0.72rem;
+  opacity: 0.9;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+/* Active badge in top-right of image */
+.trip-grid-active-badge {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  background: var(--gradient-brand);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 2;
+}
+
+/* Cloud/local badge in top-left of image */
+.trip-grid-source-badge {
+  position: absolute;
+  top: 0.65rem;
+  left: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  font-size: 0.65rem;
+  font-weight: 700;
+  z-index: 2;
+}
+
+/* ---- Card body ---- */
+.trip-grid-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.trip-grid-stats {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.trip-grid-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.trip-grid-stat strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* ---- Action buttons row ---- */
+.trip-grid-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.trip-grid-actions .btn {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  font-size: 0.85rem;
+}
+.trip-grid-actions .btn-delete {
+  flex: 0 0 auto;
+  padding: 0.65rem 0.9rem;
+  background: rgba(244, 63, 94, 0.08);
+  border-color: rgba(244, 63, 94, 0.3);
+  color: var(--accent-rose);
+  font-size: 1rem;
+  line-height: 1;
+}
+.trip-grid-actions .btn-delete:hover {
+  background: rgba(244, 63, 94, 0.18);
+  border-color: var(--accent-rose);
+}
+
+/* ---- Empty state ---- */
+.trips-empty-state {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  background: var(--bg-surface-elevated);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+}
+.trips-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.6;
+}
+.trips-empty-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+.trips-empty-sub {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.25rem;
+}
+
+/* ---- Delete confirmation dialog ---- */
+.delete-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  padding: 1rem;
+  animation: modalFadeIn 0.2s ease-out;
+}
+.delete-confirm-dialog {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  animation: modalSlideUp 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.delete-confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--accent-rose);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  margin: 0 auto 1rem;
+}
+.delete-confirm-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+.delete-confirm-dest {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--brand-primary);
+  margin: 0 0 0.75rem;
+}
+.delete-confirm-msg {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 1.5rem;
+}
+.delete-confirm-actions {
+  display: flex;
+  gap: 0.65rem;
+}
+.delete-confirm-actions .btn {
+  flex: 1;
+  padding: 0.7rem 1rem;
+}
+.btn-danger {
+  background: var(--accent-rose);
+  color: #fff;
+  border-color: var(--accent-rose);
+}
+.btn-danger:hover {
+  background: #e11d48;
+  border-color: #e11d48;
+}
+
+/* Mobile tweaks */
+@media (max-width: 640px) {
+  .trips-grid {
+    grid-template-columns: 1fr;
+  }
+  .trip-grid-title { font-size: 1rem; }
+  .trip-grid-actions .btn { padding: 0.6rem 0.85rem; font-size: 0.8rem; }
+}
