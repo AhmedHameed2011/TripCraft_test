@@ -142,9 +142,13 @@
       <div class="hero-attribution" id="heroAttribution" style="display:none;"></div>
       <div class="hero-glass-overlay">
         <div class="hero-content">
-                    <div class="hero-badges-row">
+          <div class="hero-badges-row">
             <span class="badge badge-primary" id="heroTripType">Family Vacation</span>
             <span class="badge badge-accent" id="heroDuration">5 Days</span>
+            <span class="badge badge-transport" id="heroTransportBadge" style="display:none;">
+              <span id="heroTransportIcon">✈️</span>
+              <span id="heroTransportLabel">Flight</span>
+            </span>
             <span class="badge badge-weather hero-weather-rich" id="heroWeatherBadge">
               <span class="weather-icon" id="heroWeatherIcon">☀️</span>
               <span class="weather-temp" id="heroWeatherTemp">24°C</span>
@@ -225,8 +229,7 @@
     <!-- ============================== TABS ============================== -->
     <nav class="app-tab-navigation" aria-label="Trip Views">
       <div class="tab-list-container">
-
-                <button class="tab-btn active" data-tab="trips" type="button">
+        <button class="tab-btn active" data-tab="trips" type="button">
           <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
             <circle cx="12" cy="10" r="3" />
@@ -234,7 +237,7 @@
           <span data-i18n="tabTrips">My Trips</span>
         </button>
 
-               <button class="tab-btn" data-tab="itinerary" type="button">
+        <button class="tab-btn" data-tab="itinerary" type="button">
           <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
             <line x1="16" y1="2" x2="16" y2="6" />
@@ -282,7 +285,7 @@
     <!-- ============================== MAIN ============================== -->
     <main class="main-content">
 
-      <!-- ================= TAB 1: MY TRIPS ================= -->
+      <!-- TAB 1: MY TRIPS -->
       <section id="tabViewTrips" class="tab-content-panel active">
         <div class="panel-header">
           <div>
@@ -298,30 +301,10 @@
           </button>
         </div>
 
-        <div id="tripsGridContainer" class="trips-grid">
-          <!-- Populated by renderTripsGrid() -->
-        </div>
+        <div id="tripsGridContainer" class="trips-grid"></div>
       </section>
 
-<section id="tabViewTrips" class="tab-content-panel active">
-  <div class="panel-header">
-    <div>
-      <h2 class="panel-title" data-i18n="tripsHeaderTitle">My Trips</h2>
-      <p class="panel-subtitle" data-i18n="tripsHeaderSubtitle">All your planned journeys in one place...</p>
-    </div>
-    <button id="btnNewTripInline" class="btn btn-primary" type="button">
-      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      <span data-i18n="navNewTrip">Plan New Trip</span>
-    </button>
-  </div>
-
-  <div id="tripsGridContainer" class="trips-grid"></div>
-</section>
-
-      <!-- ================= TAB 2: ITINERARY ================= -->
+      <!-- TAB 2: ITINERARY -->
       <section id="tabViewItinerary" class="tab-content-panel">
         <div class="itinerary-header-bar">
           <div class="day-pills-scroller" id="dayPillsContainer"></div>
@@ -381,10 +364,9 @@
             </div>
           </div>
         </div>
+
         <!-- Local Transit Card (populated by JS) -->
         <div id="transitCardContainer"></div>
-
-        
 
         <div class="timeline-blocks-wrapper" id="timelineCardsContainer"></div>
 
@@ -404,6 +386,7 @@
                 <span data-i18n="actionSwapActivityDesc">Browse curated alternate sights in this district</span>
               </div>
             </button>
+
             <button class="action-card-btn" id="btnQuickSwapDining" type="button">
               <div class="action-btn-icon">🍜</div>
               <div class="action-btn-text">
@@ -412,6 +395,7 @@
                   eateries</span>
               </div>
             </button>
+
             <button class="action-card-btn" id="btnQuickAdjustPace" type="button">
               <div class="action-btn-icon">⏳</div>
               <div class="action-btn-text">
@@ -419,6 +403,7 @@
                 <span data-i18n="actionAdjustPaceDesc">Switch between Relaxed, Balanced, and Fast-Paced</span>
               </div>
             </button>
+
             <button class="action-card-btn" id="btnQuickBookingGuide" type="button">
               <div class="action-btn-icon">🎟️</div>
               <div class="action-btn-text">
@@ -430,7 +415,7 @@
         </div>
       </section>
 
-      <!-- TAB 2: STAYS -->
+      <!-- TAB 3: STAYS -->
       <section id="tabViewStays" class="tab-content-panel">
         <div class="panel-header">
           <div>
@@ -453,7 +438,7 @@
         <div class="stays-grid" id="staysContainer"></div>
       </section>
 
-      <!-- TAB 3: BUDGET -->
+      <!-- TAB 4: BUDGET -->
       <section id="tabViewBudget" class="tab-content-panel">
         <div class="panel-header">
           <div>
@@ -530,7 +515,7 @@
         </div>
       </section>
 
-      <!-- TAB 4: CUSTOMIZE -->
+      <!-- TAB 5: CUSTOMIZE -->
       <section id="tabViewCustomize" class="tab-content-panel">
         <div class="panel-header">
           <div>
@@ -617,7 +602,7 @@
         </div>
       </section>
 
-      <!-- TAB 5: PACKING -->
+      <!-- TAB 6: PACKING -->
       <section id="tabViewPacking" class="tab-content-panel">
         <div class="panel-header">
           <div>
@@ -728,6 +713,29 @@
           </div>
         </div>
 
+        <!-- ===== Transportation Row ===== -->
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="selectTransport" class="form-label" data-i18n="formLabelTransport">Transportation *</label>
+            <select id="selectTransport" class="form-input">
+              <option value="flight" data-i18n="transportFlight">✈️ Flight / Airplane</option>
+              <option value="train"  data-i18n="transportTrain">🚆 Train / Rail</option>
+              <option value="car"    data-i18n="transportCar">🚗 Personal Car / Road Trip</option>
+              <option value="bus"    data-i18n="transportBus">🚌 Bus / Coach</option>
+              <option value="ferry"  data-i18n="transportFerry">⛴️ Ferry / Boat</option>
+              <option value="mixed"  data-i18n="transportMixed">🔀 Mixed / Multi-modal</option>
+              <option value="none"   data-i18n="transportNone">🏠 No Inter-city Travel</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="selectTripDirection" class="form-label" data-i18n="formLabelTripDirection">Trip Direction</label>
+            <select id="selectTripDirection" class="form-input">
+              <option value="round"  data-i18n="directionRound">↔️ Round Trip</option>
+              <option value="oneway" data-i18n="directionOneWay">→ One Way</option>
+            </select>
+          </div>
+        </div>
+
         <div class="form-row two-col">
           <div class="form-group">
             <label for="inputStartDate" class="form-label" data-i18n="formLabelStartDate">Start Date</label>
@@ -807,17 +815,14 @@
   <!-- ============================== SCRIPTS ============================== -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="supabase-config.js"></script>
-  <!-- Transitland integration -->
-  <script src="transit-service.js"></script>
-  
   <script src="trips-api.js"></script>
+  <script src="currency-service.js"></script>
+  <script src="transit-service.js"></script>
   <script src="app.js"></script>
   <script src="destination-service.js"></script>
   <script src="destination-picker.js"></script>
   <script src="auth.js"></script>
   <script src="auth-ui.js"></script>
-  <!-- Currency Service (loads before app.js) -->
-  <script src="currency-service.js"></script>
 </body>
 
 </html>
