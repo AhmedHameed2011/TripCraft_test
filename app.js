@@ -38,7 +38,7 @@
       return `${curr.symbol}${converted.toLocaleString()}`;
     }
     if (currentCurrency === 'SAR') {
-      return `${converted.toLocaleString()} ${curr.symbol}`;
+      return `\u200E${converted.toLocaleString()} ${curr.symbol}`;
     }
     return `${curr.symbol}${converted.toLocaleString()}`;
   }
@@ -217,7 +217,20 @@
       trySampleTrip: "Try a Sample Trip",
       sampleTripLoaded: "✓ Sample trip loaded — explore freely!",
       heroWelcomeTitle: "Welcome to TripCraft",
-      heroWelcomeSub: "Plan your first personalized journey and let us craft a day-by-day itinerary tailored to your travel style."
+      heroWelcomeSub: "Plan your first personalized journey and let us craft a day-by-day itinerary tailored to your travel style.",
+            transitNearbyTitle: "Nearby Public Transport",
+      transitLoading: "Finding nearby stops…",
+      transitStops: "stops",
+      transitAttribution: "Transit data by Transitland",
+      transitTram: "Tram",
+      transitMetro: "Metro",
+      transitRail: "Rail",
+      transitBus: "Bus",
+      transitFerry: "Ferry",
+      transitCableCar: "Cable Car",
+      transitGondola: "Gondola",
+      transitFunicular: "Funicular",
+      transitStop: "Transit Stop",
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -389,7 +402,20 @@
       trySampleTrip: "جرّب رحلة نموذجية",
       sampleTripLoaded: "✓ تم تحميل الرحلة النموذجية — استكشفها بحرية!",
       heroWelcomeTitle: "مرحباً بك في TripCraft",
-      heroWelcomeSub: "خطط لرحلتك الأولى المخصصة ودعنا نصمم لك جدولاً يومياً يناسب أسلوب سفرك."
+      heroWelcomeSub: "خطط لرحلتك الأولى المخصصة ودعنا نصمم لك جدولاً يومياً يناسب أسلوب سفرك.",
+            transitNearbyTitle: "وسائل النقل العام القريبة",
+      transitLoading: "جارٍ البحث عن المحطات القريبة…",
+      transitStops: "محطات",
+      transitAttribution: "بيانات النقل بواسطة Transitland",
+      transitTram: "ترام",
+      transitMetro: "مترو",
+      transitRail: "قطار",
+      transitBus: "حافلة",
+      transitFerry: "عبّارة",
+      transitCableCar: "تلفريك",
+      transitGondola: "جندول",
+      transitFunicular: "قطار جبلي",
+      transitStop: "محطة نقل",
     },
     es: {
       tagline: "Planificador Personal de Viajes",
@@ -561,7 +587,20 @@
       trySampleTrip: "Probar Viaje de Ejemplo",
       sampleTripLoaded: "✓ Viaje de ejemplo cargado — ¡explóralo libremente!",
       heroWelcomeTitle: "Bienvenido a TripCraft",
-      heroWelcomeSub: "Planifica tu primer viaje personalizado y deja que diseñemos un itinerario día a día a tu estilo."
+      heroWelcomeSub: "Planifica tu primer viaje personalizado y deja que diseñemos un itinerario día a día a tu estilo.",
+            transitNearbyTitle: "Transporte Público Cercano",
+      transitLoading: "Buscando paradas cercanas…",
+      transitStops: "paradas",
+      transitAttribution: "Datos de tránsito por Transitland",
+      transitTram: "Tranvía",
+      transitMetro: "Metro",
+      transitRail: "Ferrocarril",
+      transitBus: "Autobús",
+      transitFerry: "Ferry",
+      transitCableCar: "Teleférico",
+      transitGondola: "Góndola",
+      transitFunicular: "Funicular",
+      transitStop: "Parada",
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
@@ -733,7 +772,20 @@
       trySampleTrip: "Essayer un Voyage d'Exemple",
       sampleTripLoaded: "✓ Voyage d'exemple chargé — explorez librement !",
       heroWelcomeTitle: "Bienvenue sur TripCraft",
-      heroWelcomeSub: "Planifiez votre premier voyage personnalisé et laissez-nous créer un itinéraire jour par jour adapté à votre style."
+      heroWelcomeSub: "Planifiez votre premier voyage personnalisé et laissez-nous créer un itinéraire jour par jour adapté à votre style.",
+            transitNearbyTitle: "Transports Publics à Proximité",
+      transitLoading: "Recherche des arrêts à proximité…",
+      transitStops: "arrêts",
+      transitAttribution: "Données de transport par Transitland",
+      transitTram: "Tramway",
+      transitMetro: "Métro",
+      transitRail: "Train",
+      transitBus: "Bus",
+      transitFerry: "Ferry",
+      transitCableCar: "Téléphérique",
+      transitGondola: "Gondole",
+      transitFunicular: "Funiculaire",
+      transitStop: "Arrêt",
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
@@ -905,7 +957,20 @@
       trySampleTrip: "サンプル旅行を試す",
       sampleTripLoaded: "✓ サンプル旅行を読み込みました — 自由に探索してください！",
       heroWelcomeTitle: "TripCraftへようこそ",
-      heroWelcomeSub: "最初のパーソナル旅行を計画しましょう。あなたの旅行スタイルに合わせた日別旅程を作成します。"
+      heroWelcomeSub: "最初のパーソナル旅行を計画しましょう。あなたの旅行スタイルに合わせた日別旅程を作成します。",
+            transitNearbyTitle: "近くの公共交通機関",
+      transitLoading: "近くの停留所を検索中…",
+      transitStops: "停留所",
+      transitAttribution: "交通データ提供: Transitland",
+      transitTram: "路面電車",
+      transitMetro: "地下鉄",
+      transitRail: "鉄道",
+      transitBus: "バス",
+      transitFerry: "フェリー",
+      transitCableCar: "ケーブルカー",
+      transitGondola: "ゴンドラ",
+      transitFunicular: "ケーブルカー",
+      transitStop: "停留所",
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
@@ -1077,7 +1142,20 @@
       trySampleTrip: "Beispielreise Testen",
       sampleTripLoaded: "✓ Beispielreise geladen — frei erkunden!",
       heroWelcomeTitle: "Willkommen bei TripCraft",
-      heroWelcomeSub: "Plane deine erste personalisierte Reise und lass uns eine Tagesordnung nach deinem Reisestil erstellen."
+      heroWelcomeSub: "Plane deine erste personalisierte Reise und lass uns eine Tagesordnung nach deinem Reisestil erstellen.",
+      transitNearbyTitle: "Öffentliche Verkehrsmittel in der Nähe",
+      transitLoading: "Suche nach Haltestellen in der Nähe…",
+      transitStops: "Haltestellen",
+      transitAttribution: "Transitdaten von Transitland",
+      transitTram: "Straßenbahn",
+      transitMetro: "U-Bahn",
+      transitRail: "Bahn",
+      transitBus: "Bus",
+      transitFerry: "Fähre",
+      transitCableCar: "Seilbahn",
+      transitGondola: "Gondel",
+      transitFunicular: "Standseilbahn",
+      transitStop: "Haltestelle",
     }
   };
 
@@ -1888,6 +1966,100 @@
     });
   }
 
+  // ==========================================================================
+  // Local Transit — renders "Getting Around" card for the current day
+  // ==========================================================================
+  async function renderTransitCard(day, dayIndex) {
+    const container = document.getElementById('transitCardContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const trip = getCurrentTrip();
+    if (!trip) return;
+
+    // Get the day's location from the trip's destination metadata
+    const lat = trip.destinationMeta?.lat;
+    const lng = trip.destinationMeta?.lng;
+
+    if (!window.TransitService || !window.TransitService.hasApiKey()) {
+      return; // silently skip if service not ready
+    }
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      return;
+    }
+
+    // Show loading state
+    container.innerHTML = `
+      <div class="transit-card">
+        <div class="transit-card-header">
+          <span class="transit-icon">🚏</span>
+          <h3 class="transit-card-title">${t('transitNearbyTitle') || 'Nearby Public Transport'}</h3>
+        </div>
+        <div class="transit-loading">
+          <span class="spinner"></span>
+          <span>${t('transitLoading') || 'Finding nearby stops…'}</span>
+        </div>
+      </div>
+    `;
+
+    try {
+      const stops = await window.TransitService.findNearbyStops(lat, lng, 800);
+
+      if (!stops || stops.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      // Build stop cards
+      const stopsHtml = stops.map(stop => {
+        const typeIcons = (stop.types || [])
+          .slice(0, 3)
+          .map(type => {
+            const v = window.TransitService.formatVehicleType(type);
+            return `<span class="transit-type-icon" title="${t(v.key) || ''}">${v.icon}</span>`;
+          })
+          .join('');
+
+        const routesHtml = (stop.routes || [])
+          .slice(0, 3)
+          .map(r => `<span class="transit-route-chip">${r}</span>`)
+          .join('');
+
+        const wheelChairBadge = stop.wheelchair
+          ? '<span class="transit-a11y" title="Wheelchair accessible">♿</span>'
+          : '';
+
+        return `
+          <div class="transit-stop-row">
+            <div class="transit-stop-info">
+              <div class="transit-stop-name">${wheelChairBadge}${stop.name}</div>
+              <div class="transit-stop-types">${typeIcons}</div>
+            </div>
+            <div class="transit-stop-routes">${routesHtml}</div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="transit-card">
+          <div class="transit-card-header">
+            <span class="transit-icon">🚏</span>
+            <h3 class="transit-card-title">${t('transitNearbyTitle') || 'Nearby Public Transport'}</h3>
+            <span class="transit-stop-count">${stops.length} ${t('transitStops') || 'stops'}</span>
+          </div>
+          <div class="transit-stops-list">${stopsHtml}</div>
+          <div class="transit-card-footer">
+            <span class="transit-attribution">${t('transitAttribution') || 'Transit data by Transitland'}</span>
+          </div>
+        </div>
+      `;
+
+    } catch (err) {
+      console.warn('[app] Transit card render failed:', err);
+      container.innerHTML = '';
+    }
+  }
+
   function renderItinerary() {
     const trip = getCurrentTrip();
     if (!trip || !trip.days || trip.days.length === 0) {
@@ -1927,6 +2099,8 @@
 
     const dayWeatherAdaptationText = document.getElementById('dayWeatherAdaptationText');
     if (dayWeatherAdaptationText) dayWeatherAdaptationText.textContent = day.weatherPlan;
+    // Trigger transit card render
+    renderTransitCard(day, activeDayIndex);
 
     const container = document.getElementById('timelineCardsContainer');
     if (!container) return;
