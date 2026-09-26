@@ -1533,6 +1533,44 @@
   }
 
   // ==========================================================================
+  // 4a. Live Weather Refresh (fetches current weather for the selected trip)
+  // ==========================================================================
+    async function refreshHeroWeather(trip) {
+    if (!trip) return;
+
+    const lat = trip.destinationMeta?.lat;
+    const lng = trip.destinationMeta?.lng;
+
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
+    if (!window.DestinationService?.fetchWeather) return;
+
+    try {
+      const weather = await window.DestinationService.fetchWeather({ lat, lng });
+      if (!weather) return;
+
+      const heroWeatherIcon     = document.getElementById('heroWeatherIcon');
+      const heroWeatherTemp     = document.getElementById('heroWeatherTemp');
+      const heroWeatherCond     = document.getElementById('heroWeatherCond');
+      const heroWeatherFeels    = document.getElementById('heroWeatherFeels');
+      const heroWeatherHumidity = document.getElementById('heroWeatherHumidity');
+      const heroWeatherWind     = document.getElementById('heroWeatherWind');
+
+      const conditionKey = weather.icon?.key || 'weatherUnknown';
+      const condition    = t(conditionKey) || conditionKey;
+
+      if (heroWeatherIcon)     heroWeatherIcon.textContent     = weather.icon?.icon || '☀️';
+      if (heroWeatherTemp)     heroWeatherTemp.textContent     = `${weather.temperature}°${weather.unit}`;
+      if (heroWeatherCond)     heroWeatherCond.textContent     = condition;
+      if (heroWeatherFeels)    heroWeatherFeels.textContent    = `${t('weatherFeels')} ${weather.feelsLike}°`;
+      if (heroWeatherHumidity) heroWeatherHumidity.textContent = `💧 ${weather.humidity}%`;
+      if (heroWeatherWind)     heroWeatherWind.textContent     = `💨 ${weather.windSpeed} ${weather.windUnit}`;
+
+    } catch (err) {
+      console.warn('[app] Hero weather refresh failed:', err.message);
+    }
+  }
+
+  // ==========================================================================
   // 4. UI Rendering Functions
   // ==========================================================================
   function renderTripHero() {
@@ -1550,13 +1588,24 @@
     const heroDuration = document.getElementById('heroDuration');
     if (heroDuration) heroDuration.textContent = `${trip.durationDays} ${trip.durationDays === 1 ? 'Day' : 'Days'}`;
 
-    const heroWeatherBadge = document.getElementById('heroWeatherBadge');
-    const heroWeatherText = document.getElementById('heroWeatherText');
-    if (heroWeatherBadge && heroWeatherText) {
+        // Populate hero weather widget with static fallback data
+    const heroWeatherIcon     = document.getElementById('heroWeatherIcon');
+    const heroWeatherTemp     = document.getElementById('heroWeatherTemp');
+    const heroWeatherCond     = document.getElementById('heroWeatherCond');
+    const heroWeatherFeels    = document.getElementById('heroWeatherFeels');
+    const heroWeatherHumidity = document.getElementById('heroWeatherHumidity');
+    const heroWeatherWind     = document.getElementById('heroWeatherWind');
+
+    if (heroWeatherIcon)     heroWeatherIcon.textContent     = trip.weather?.icon || '☀️';
+    if (heroWeatherTemp)     heroWeatherTemp.textContent     = trip.weather?.temp || '—';
+    if (heroWeatherCond) {
       const conditionKey = trip.weather?.condition || '';
-      const translatedCondition = conditionKey ? (t(conditionKey) || conditionKey) : '';
-      heroWeatherText.textContent = `${trip.weather?.temp || ''} • ${translatedCondition}`;
+      heroWeatherCond.textContent = conditionKey ? (t(conditionKey) || conditionKey) : '—';
     }
+    // These will be replaced by live data if coordinates exist
+    if (heroWeatherFeels)    heroWeatherFeels.textContent    = trip.weather?.feelsLike ? `${t('weatherFeels')} ${trip.weather.feelsLike}°` : '';
+    if (heroWeatherHumidity) heroWeatherHumidity.textContent = trip.weather?.humidity ? `💧 ${trip.weather.humidity}%` : '';
+    if (heroWeatherWind)     heroWeatherWind.textContent     = trip.weather?.windSpeed ? `💨 ${trip.weather.windSpeed} ${trip.weather.windUnit || 'km/h'}` : '';
 
     const heroTitle = document.getElementById('heroTitle');
     if (heroTitle) heroTitle.textContent = trip.title;
@@ -1584,7 +1633,7 @@
       }
     }
 
-    const tripSelect = document.getElementById('tripSelect');
+        const tripSelect = document.getElementById('tripSelect');
     if (tripSelect) {
       tripSelect.innerHTML = '';
       PRESET_TRIPS.forEach((tr, idx) => {
@@ -1595,6 +1644,9 @@
         tripSelect.appendChild(opt);
       });
     }
+
+    // Kick off a live weather refresh (non-blocking)
+    refreshHeroWeather(trip);
   }
 
   function renderItinerary() {

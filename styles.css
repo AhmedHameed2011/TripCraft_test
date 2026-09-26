@@ -1623,3 +1623,80 @@ html[data-theme="light"] .form-input {
     margin-top: 0.25rem;
   }
 }
+
+/* ==========================================================================
+   Rich Hero Weather Badge (matches destination picker widget)
+   ========================================================================== */
+
+.hero-weather-rich {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+  padding: 0.5rem 0.9rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.4;
+  max-width: 100%;
+}
+
+.hero-weather-rich .weather-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.hero-weather-rich .weather-temp {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.hero-weather-rich .weather-cond,
+.hero-weather-rich .weather-detail {
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 500;
+}
+
+.hero-weather-rich .weather-divider {
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 700;
+}
+
+/* Hide empty detail spans (before live data arrives) */
+.hero-weather-rich .weather-detail:empty,
+.hero-weather-rich .weather-divider + .weather-detail:empty {
+  display: none;
+}
+
+/* Hide dividers that would appear before an empty detail */
+.hero-weather-rich .weather-detail:empty + .weather-divider,
+.hero-weather-rich .weather-divider:has(+ .weather-detail:empty) {
+  display: none;
+}
+
+/* On mobile, allow wrapping and hide some details for cleanliness */
+@media (max-width: 640px) {
+  .hero-weather-rich {
+    font-size: 0.75rem;
+    padding: 0.45rem 0.75rem;
+    gap: 0.3rem 0.45rem;
+  }
+  .hero-weather-rich .weather-temp { font-size: 0.9rem; }
+  .hero-weather-rich .weather-icon { font-size: 1rem; }
+  /* Hide feels-like + humidity + wind on very small screens */
+  .hero-weather-rich #heroWeatherHumidity,
+  .hero-weather-rich #heroWeatherWind,
+  .hero-weather-rich #heroWeatherFeels {
+    display: none;
+  }
+  /* Also hide dividers that came before them */
+  .hero-weather-rich .weather-divider:nth-of-type(n+2) {
+    display: none;
+  }
+}
