@@ -1514,3 +1514,57 @@ html[data-theme="light"] .form-input {
   color: #1a1a2e;
   background-color: #ffffff;
 }
+
+/* Mobile fixes for the New Trip button and modal */
+@media (max-width: 640px) {
+  /* Make sure the + button is a proper tappable target */
+  #btnNewTrip {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 5;
+  }
+  #btnNewTrip .btn-icon { display: block !important; width: 20px; height: 20px; }
+  #btnNewTrip span { display: none; }
+  #btnNewTrip::after { display: none !important; }
+
+  /* Ensure modal sits above everything */
+  .modal-backdrop { z-index: 9999 !important; }
+  .modal-backdrop.active {
+    display: flex !important;
+    align-items: flex-start;
+    padding: 1rem 0.5rem;
+    overflow-y: auto;
+  }
+
+  /* Modal dialog full width on mobile */
+  .modal-dialog {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    border-radius: 12px;
+  }
+
+  /* Ensure destination picker is not clipped */
+  .destination-picker-wrapper {
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Dropdown should be readable on mobile */
+  .destination-dropdown {
+    max-height: 50vh;
+    z-index: 10000;
+    font-size: 0.9rem;
+  }
+
+  /* Modal body scrollable */
+  .modal-body-form {
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+}
