@@ -247,21 +247,33 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   background-size: cover;
   background-position: center;
   background-color: var(--bg-surface-elevated);
-  filter: brightness(0.55);
+  /* Removed heavy brightness filter — image is now crisp and full color */
+  filter: none;
+  transition: opacity 0.4s ease;
 }
 
 .hero-glass-overlay {
   position: relative;
   padding: 2.5rem 2rem;
-  background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(10,10,20,0.75) 100%);
-  backdrop-filter: blur(2px);
+  /* Lighter gradient — bottom stays dark enough for text, top is nearly clear */
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.05) 0%,
+    rgba(10, 10, 20, 0.35) 55%,
+    rgba(10, 10, 20, 0.78) 100%
+  );
+  /* Removed backdrop-filter — it was softening the whole image */
   height: 100%;
   display: flex;
   align-items: flex-end;
   min-height: 380px;
 }
 
-.hero-content { color: #f5f5fa; max-width: 900px; }
+.hero-content {
+  color: #f5f5fa;
+  max-width: 900px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
 
 .hero-badges-row {
   display: flex;
@@ -291,12 +303,15 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   letter-spacing: -0.025em;
   margin-bottom: 0.6rem;
   color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.4);
 }
+
 .hero-description {
   font-size: 0.98rem;
-  opacity: 0.9;
+  opacity: 0.95;
   margin: 0 0 1.5rem;
   max-width: 700px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .hero-metrics-grid {

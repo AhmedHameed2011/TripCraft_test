@@ -130,7 +130,7 @@
     return results;
   }
 
-  // =========================================================================
+   // =========================================================================
   // 2. Destination image (Unsplash)
   // =========================================================================
   async function fetchDestinationImage(destination) {
@@ -154,8 +154,13 @@
     }
 
     const photo = data.results[0];
+
+    // Use higher-resolution image on larger screens for a crisper hero background
+    const isLargeScreen = window.innerWidth >= 1024;
+    const imageUrl = isLargeScreen ? photo.urls.full : photo.urls.regular;
+
     const imageData = {
-      url:                photo.urls.regular,
+      url:                imageUrl,
       fullUrl:            photo.urls.full,
       thumbUrl:           photo.urls.small,
       altDescription:     photo.alt_description || `${destination.city}, ${destination.country}`,
