@@ -1,7 +1,6 @@
 /**
  * TripCraft — Intelligent Travel Planner & Itinerary Studio
  * Master Client Application Script
- * Compliant with Tripcraft_instruction.txt.docx specifications
  */
 
 (function() {
@@ -41,6 +40,19 @@
     }
     return `${curr.symbol}${converted.toLocaleString()}`;
   }
+
+  // ==========================================================================
+  // 1b. Transportation cost estimates (per person)
+  // ==========================================================================
+  const TRANSPORT_RATES = {
+    flight: { icon: '✈️', costPerPerson: 400 },
+    train:  { icon: '🚆', costPerPerson: 120 },
+    car:    { icon: '🚗', costPerPerson: 200 },
+    bus:    { icon: '🚌', costPerPerson: 60 },
+    ferry:  { icon: '⛴️', costPerPerson: 90 },
+    mixed:  { icon: '🔀', costPerPerson: 250 },
+    none:   { icon: '🏠', costPerPerson: 0 }
+  };
 
   // ==========================================================================
   // 2. Multilingual Localization Engine
@@ -98,6 +110,7 @@
       catDining: "Local Dining",
       catTickets: "Attractions & Entry",
       catTransit: "Neighborhood Transit",
+      catTransport: "Inter-city Transport",
       dailyCostBreakdownTitle: "Daily Spending Breakdown",
       thDay: "Day",
       thNeighborhood: "Neighborhood Cluster",
@@ -152,6 +165,17 @@
       budgetOptionEconomy: "Budget / Economy (Hostels, Street Eats, Transit)",
       budgetOptionModerate: "Moderate / Comfort (Family Hotels, Casual Dining, Passports)",
       budgetOptionLuxury: "Luxury / Premium (5-Star Stays, Fine Dining, Private Cars)",
+      formLabelTransport: "Transportation *",
+      formLabelTripDirection: "Trip Direction",
+      transportFlight: "✈️ Flight / Airplane",
+      transportTrain: "🚆 Train / Rail",
+      transportCar: "🚗 Personal Car / Road Trip",
+      transportBus: "🚌 Bus / Coach",
+      transportFerry: "⛴️ Ferry / Boat",
+      transportMixed: "🔀 Mixed / Multi-modal",
+      transportNone: "🏠 No Inter-city Travel",
+      directionRound: "↔️ Round Trip",
+      directionOneWay: "→ One Way",
       formLabelStartDate: "Start Date",
       formLabelSpecialNotes: "Special Preferences / Accessibility",
       btnCancel: "Cancel",
@@ -216,7 +240,11 @@
       trySampleTrip: "Try a Sample Trip",
       sampleTripLoaded: "✓ Sample trip loaded — explore freely!",
       heroWelcomeTitle: "Welcome to TripCraft",
-      heroWelcomeSub: "Plan your first personalized journey and let us craft a day-by-day itinerary tailored to your travel style."
+      heroWelcomeSub: "Plan your first personalized journey and let us craft a day-by-day itinerary tailored to your travel style.",
+      transitNearbyTitle: "Nearby Public Transport",
+      transitLoading: "Finding nearby stops…",
+      transitStops: "stops",
+      transitAttribution: "Transit data by Transitland"
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -270,6 +298,7 @@
       catDining: "المطاعم المحلية",
       catTickets: "المعالم وتذاكر الدخول",
       catTransit: "المواصلات الداخلية",
+      catTransport: "النقل بين المدن",
       dailyCostBreakdownTitle: "تفصيل الإنفاق اليومي",
       thDay: "اليوم",
       thNeighborhood: "تجمع الحي",
@@ -324,6 +353,17 @@
       budgetOptionEconomy: "اقتصادية (أماكن إقامة بسيطة، أكل شارع ومواصلات عامة)",
       budgetOptionModerate: "متوسطة / مريحة (فنادق عائلية، مطاعم ممتازة، بطاقات سياحية)",
       budgetOptionLuxury: "فاخرة / مميزة (فنادق 5 نجوم، تجارب راقية، سيارات خاصة)",
+      formLabelTransport: "وسيلة النقل *",
+      formLabelTripDirection: "اتجاه الرحلة",
+      transportFlight: "✈️ طيران",
+      transportTrain: "🚆 قطار / سكة حديد",
+      transportCar: "🚗 سيارة شخصية / رحلة برية",
+      transportBus: "🚌 حافلة",
+      transportFerry: "⛴️ عبّارة / قارب",
+      transportMixed: "🔀 متعدد الوسائل",
+      transportNone: "🏠 بدون سفر بين المدن",
+      directionRound: "↔️ ذهاب وعودة",
+      directionOneWay: "→ اتجاه واحد",
       formLabelStartDate: "تاريخ البداية",
       formLabelSpecialNotes: "تفضيلات خاصة / متطلبات سهولة الوصول",
       btnCancel: "إلغاء",
@@ -388,7 +428,11 @@
       trySampleTrip: "جرّب رحلة نموذجية",
       sampleTripLoaded: "✓ تم تحميل الرحلة النموذجية — استكشفها بحرية!",
       heroWelcomeTitle: "مرحباً بك في TripCraft",
-      heroWelcomeSub: "خطط لرحلتك الأولى المخصصة ودعنا نصمم لك جدولاً يومياً يناسب أسلوب سفرك."
+      heroWelcomeSub: "خطط لرحلتك الأولى المخصصة ودعنا نصمم لك جدولاً يومياً يناسب أسلوب سفرك.",
+      transitNearbyTitle: "وسائل النقل العام القريبة",
+      transitLoading: "جارٍ البحث عن المحطات القريبة…",
+      transitStops: "محطات",
+      transitAttribution: "بيانات النقل بواسطة OpenStreetMap"
     },
     es: {
       tagline: "Planificador Personal de Viajes",
@@ -442,6 +486,7 @@
       catDining: "Comida Local",
       catTickets: "Atracciones y Entradas",
       catTransit: "Transporte Local",
+      catTransport: "Transporte Inter-ciudad",
       dailyCostBreakdownTitle: "Desglose de Gasto Diario",
       thDay: "Día",
       thNeighborhood: "Zona / Barrio",
@@ -496,6 +541,17 @@
       budgetOptionEconomy: "Económico (Hostales, comida callejera, metro)",
       budgetOptionModerate: "Moderado / Confort (Hoteles familiares, buenos restaurantes)",
       budgetOptionLuxury: "Lujo / Premium (Hoteles 5 estrellas, alta cocina, traslados)",
+      formLabelTransport: "Transporte *",
+      formLabelTripDirection: "Dirección del Viaje",
+      transportFlight: "✈️ Vuelo / Avión",
+      transportTrain: "🚆 Tren / Ferrocarril",
+      transportCar: "🚗 Coche Personal / Road Trip",
+      transportBus: "🚌 Autobús",
+      transportFerry: "⛴️ Ferry / Barco",
+      transportMixed: "🔀 Multimodal",
+      transportNone: "🏠 Sin Viaje Interurbano",
+      directionRound: "↔️ Ida y Vuelta",
+      directionOneWay: "→ Solo Ida",
       formLabelStartDate: "Fecha de Inicio",
       formLabelSpecialNotes: "Preferencias especiales / Accesibilidad",
       btnCancel: "Cancelar",
@@ -560,7 +616,11 @@
       trySampleTrip: "Probar Viaje de Ejemplo",
       sampleTripLoaded: "✓ Viaje de ejemplo cargado — ¡explóralo libremente!",
       heroWelcomeTitle: "Bienvenido a TripCraft",
-      heroWelcomeSub: "Planifica tu primer viaje personalizado y deja que diseñemos un itinerario día a día a tu estilo."
+      heroWelcomeSub: "Planifica tu primer viaje personalizado y deja que diseñemos un itinerario día a día a tu estilo.",
+      transitNearbyTitle: "Transporte Público Cercano",
+      transitLoading: "Buscando paradas cercanas…",
+      transitStops: "paradas",
+      transitAttribution: "Datos de tránsito por OpenStreetMap"
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
@@ -614,6 +674,7 @@
       catDining: "Restauration Locale",
       catTickets: "Attractions & Visites",
       catTransit: "Transports Locaux",
+      catTransport: "Transport Inter-villes",
       dailyCostBreakdownTitle: "Détail des Dépenses par Jour",
       thDay: "Jour",
       thNeighborhood: "Quartier",
@@ -668,6 +729,17 @@
       budgetOptionEconomy: "Économique (Auberges, cuisine de rue, métro)",
       budgetOptionModerate: "Modéré / Confort (Hôtels familiaux, bons restaurants)",
       budgetOptionLuxury: "Luxe / Prestige (Hôtels 5 étoiles, gastronomie, transferts)",
+      formLabelTransport: "Transport *",
+      formLabelTripDirection: "Sens du Voyage",
+      transportFlight: "✈️ Vol / Avion",
+      transportTrain: "🚆 Train / Rail",
+      transportCar: "🚗 Voiture Personnelle / Road Trip",
+      transportBus: "🚌 Bus / Autocar",
+      transportFerry: "⛴️ Ferry / Bateau",
+      transportMixed: "🔀 Multimodal",
+      transportNone: "🏠 Sans Voyage Inter-ville",
+      directionRound: "↔️ Aller-Retour",
+      directionOneWay: "→ Aller Simple",
       formLabelStartDate: "Date de Début",
       formLabelSpecialNotes: "Préférences particulières / Accessibilité",
       btnCancel: "Annuler",
@@ -732,7 +804,11 @@
       trySampleTrip: "Essayer un Voyage d'Exemple",
       sampleTripLoaded: "✓ Voyage d'exemple chargé — explorez librement !",
       heroWelcomeTitle: "Bienvenue sur TripCraft",
-      heroWelcomeSub: "Planifiez votre premier voyage personnalisé et laissez-nous créer un itinéraire jour par jour adapté à votre style."
+      heroWelcomeSub: "Planifiez votre premier voyage personnalisé et laissez-nous créer un itinéraire jour par jour adapté à votre style.",
+      transitNearbyTitle: "Transports Publics à Proximité",
+      transitLoading: "Recherche des arrêts à proximité…",
+      transitStops: "arrêts",
+      transitAttribution: "Données de transport par OpenStreetMap"
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
@@ -786,6 +862,7 @@
       catDining: "郷土料理・食事",
       catTickets: "観光・入場料",
       catTransit: "地域交通費",
+      catTransport: "都市間交通",
       dailyCostBreakdownTitle: "日別の費用内訳",
       thDay: "日程",
       thNeighborhood: "エリア",
@@ -840,6 +917,17 @@
       budgetOptionEconomy: "エコノミー（手頃な宿、ローカル食堂、公共交通）",
       budgetOptionModerate: "スタンダード・快適（快適ホテル、名物料理、周遊パス）",
       budgetOptionLuxury: "プレミアム・高級（高級ホテル、特別ディナー、専用車）",
+      formLabelTransport: "交通手段 *",
+      formLabelTripDirection: "旅行の方向",
+      transportFlight: "✈️ 飛行機",
+      transportTrain: "🚆 電車・鉄道",
+      transportCar: "🚗 自家用車・ロードトリップ",
+      transportBus: "🚌 バス",
+      transportFerry: "⛴️ フェリー・船",
+      transportMixed: "🔀 複合交通",
+      transportNone: "🏠 都市間移動なし",
+      directionRound: "↔️ 往復",
+      directionOneWay: "→ 片道",
       formLabelStartDate: "出発日",
       formLabelSpecialNotes: "特記事項 / バリアフリーのご要望",
       btnCancel: "キャンセル",
@@ -904,7 +992,11 @@
       trySampleTrip: "サンプル旅行を試す",
       sampleTripLoaded: "✓ サンプル旅行を読み込みました — 自由に探索してください！",
       heroWelcomeTitle: "TripCraftへようこそ",
-      heroWelcomeSub: "最初のパーソナル旅行を計画しましょう。あなたの旅行スタイルに合わせた日別旅程を作成します。"
+      heroWelcomeSub: "最初のパーソナル旅行を計画しましょう。あなたの旅行スタイルに合わせた日別旅程を作成します。",
+      transitNearbyTitle: "近くの公共交通機関",
+      transitLoading: "近くの停留所を検索中…",
+      transitStops: "停留所",
+      transitAttribution: "交通データ提供: OpenStreetMap"
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
@@ -958,6 +1050,7 @@
       catDining: "Lokale Küche",
       catTickets: "Attraktionen & Eintritte",
       catTransit: "Nahverkehr",
+      catTransport: "Zwischenstädtischer Verkehr",
       dailyCostBreakdownTitle: "Tägliche Kostenaufstellung",
       thDay: "Tag",
       thNeighborhood: "Stadtviertel",
@@ -1012,6 +1105,17 @@
       budgetOptionEconomy: "Günstig (Einfache Hotels, Streetfood, ÖPNV)",
       budgetOptionModerate: "Mittel / Komfortabel (Familienhotels, gute Lokale)",
       budgetOptionLuxury: "Gehoben / Luxus (5-Sterne, Gourmetküche, Privattransfers)",
+      formLabelTransport: "Transportmittel *",
+      formLabelTripDirection: "Reiserichtung",
+      transportFlight: "✈️ Flugzeug",
+      transportTrain: "🚆 Zug / Bahn",
+      transportCar: "🚗 Eigenes Auto / Road Trip",
+      transportBus: "🚌 Bus / Reisebus",
+      transportFerry: "⛴️ Fähre / Schiff",
+      transportMixed: "🔀 Multimodal",
+      transportNone: "🏠 Ohne Städtereise",
+      directionRound: "↔️ Hin und Rück",
+      directionOneWay: "→ Einfache Fahrt",
       formLabelStartDate: "Reisebeginn",
       formLabelSpecialNotes: "Besondere Wünsche / Barrierefreiheit",
       btnCancel: "Abbrechen",
@@ -1076,7 +1180,11 @@
       trySampleTrip: "Beispielreise Testen",
       sampleTripLoaded: "✓ Beispielreise geladen — frei erkunden!",
       heroWelcomeTitle: "Willkommen bei TripCraft",
-      heroWelcomeSub: "Plane deine erste personalisierte Reise und lass uns eine Tagesordnung nach deinem Reisestil erstellen."
+      heroWelcomeSub: "Plane deine erste personalisierte Reise und lass uns eine Tagesordnung nach deinem Reisestil erstellen.",
+      transitNearbyTitle: "Öffentliche Verkehrsmittel in der Nähe",
+      transitLoading: "Suche nach Haltestellen in der Nähe…",
+      transitStops: "Haltestellen",
+      transitAttribution: "Transitdaten von OpenStreetMap"
     }
   };
 
@@ -1133,18 +1241,16 @@
     subtitle: 'A personalized voyage balancing vibrant pop-culture districts, historic Shinto shrines, and serene imperial gardens.',
     tripType: 'Family Vacation',
     durationDays: 5,
+    transport: 'flight',
+    tripDirection: 'round',
+    transportTotal: 1600,
     travelers: {
-      total: 4,
-      adults: 2,
-      children: 2,
-      seniors: 0,
+      total: 4, adults: 2, children: 2, seniors: 0,
       summary: '4 Travelers (2 Adults, 2 Kids: Ages 8 & 11)'
     },
     budgetTier: 'moderate',
     weather: {
-      temp: '23°C',
-      condition: 'weatherClear',
-      icon: '☀️',
+      temp: '23°C', condition: 'weatherClear', icon: '☀️',
       notes: 'Weather Optimized: Cooler morning temple visits, midday indoor science/ac activities, sunset river breezes.'
     },
     currentPace: 'balanced',
@@ -1191,310 +1297,80 @@
     ],
     days: [
       {
-        dayNumber: 1,
-        dateLabel: 'Day 1',
-        neighborhood: 'Asakusa, Sensō-ji & Sumida Riverfront',
+        dayNumber: 1, dateLabel: 'Day 1', neighborhood: 'Asakusa, Sensō-ji & Sumida Riverfront',
         weatherPlan: '☀️ Cooler Morning: Outdoor Temple • 🏛️ Midday Peak Heat: Air-Conditioned Nakamise Arcade • 🌆 Sunset Breeze: River Promenade',
-        morning: {
-          dualName: '浅草寺 (Sensō-ji Historic Temple)',
-          category: 'Heritage & Culture',
-          time: '09:00 - 11:30',
-          desc: 'Tokyo’s oldest Buddhist temple founded in 645 AD. Enter through the iconic Kaminarimon Gate with giant red lantern.',
-          weatherBadge: '☀️ Cool Morning Outdoor',
-          accessibility: ['👶 Stroller-Friendly', '♿ Step-Free Ramp at Main Hall', '👨‍👩‍👧 Great for Kids'],
-          cost: 0,
-          completed: false
-        },
-        lunch: {
-          dualName: '大黒家 天麩羅 (Daikokuya Tempura)',
-          category: 'Local Food Pick',
-          time: '12:00 - 13:15',
-          desc: 'Historic eatery founded in 1887 famed for rich, savory sesame-oil dipped tendon bowls over steaming rice.',
-          weatherBadge: '❄️ Air-Conditioned Indoor Dining',
-          accessibility: ['👨‍👩‍👧 Family-Friendly Seating', '🥢 Traditional Tatami & Chairs'],
-          cost: 45,
-          completed: false
-        },
-        afternoon: {
-          dualName: '東京スカイツリー (Tokyo Skytree & Solamachi)',
-          category: 'Sightseeing & Arcade',
-          time: '14:00 - 17:00',
-          desc: 'Towering observation deck with panoramic views across Greater Tokyo and Mount Fuji, coupled with a 300-store family arcade.',
-          weatherBadge: '🏛️ Midday Indoor Air-Conditioned',
-          accessibility: ['👶 Stroller Rental Available', '♿ Full Wheelchair Accessibility', '👨‍👩‍👧 Pokemon Center & Kids Zone'],
-          cost: 65,
-          completed: false
-        },
-        evening: {
-          dualName: '隅田川遊歩道 (Sumida River Sunset Promenade & Dinner)',
-          category: 'Scenic Walk & Local Eats',
-          time: '18:00 - 20:30',
-          desc: 'Breezy evening stroll along the lit bridges of Sumida River, followed by authentic Chousuke handmade udon.',
-          weatherBadge: '🌆 Pleasant Evening Breeze',
-          accessibility: ['👶 Smooth Paved Walkway', '♿ Wheelchair Ramps'],
-          cost: 50,
-          completed: false
-        }
+        morning: { dualName: '浅草寺 (Sensō-ji Historic Temple)', category: 'Heritage & Culture', time: '09:00 - 11:30', desc: 'Tokyo’s oldest Buddhist temple founded in 645 AD.', weatherBadge: '☀️ Cool Morning Outdoor', accessibility: ['👶 Stroller-Friendly', '♿ Step-Free Ramp at Main Hall', '👨‍👩‍👧 Great for Kids'], cost: 0, completed: false },
+        lunch: { dualName: '大黒家 天麩羅 (Daikokuya Tempura)', category: 'Local Food Pick', time: '12:00 - 13:15', desc: 'Historic eatery founded in 1887 famed for rich, savory sesame-oil dipped tendon bowls.', weatherBadge: '❄️ Air-Conditioned Indoor Dining', accessibility: ['👨‍👩‍👧 Family-Friendly Seating', '🥢 Traditional Tatami & Chairs'], cost: 45, completed: false },
+        afternoon: { dualName: '東京スカイツリー (Tokyo Skytree & Solamachi)', category: 'Sightseeing & Arcade', time: '14:00 - 17:00', desc: 'Towering observation deck with panoramic views and a 300-store family arcade.', weatherBadge: '🏛️ Midday Indoor Air-Conditioned', accessibility: ['👶 Stroller Rental Available', '♿ Full Wheelchair Accessibility'], cost: 65, completed: false },
+        evening: { dualName: '隅田川遊歩道 (Sumida River Sunset Promenade & Dinner)', category: 'Scenic Walk & Local Eats', time: '18:00 - 20:30', desc: 'Breezy evening stroll along the lit bridges of Sumida River.', weatherBadge: '🌆 Pleasant Evening Breeze', accessibility: ['👶 Smooth Paved Walkway', '♿ Wheelchair Ramps'], cost: 50, completed: false }
       },
       {
-        dayNumber: 2,
-        dateLabel: 'Day 2',
-        neighborhood: 'Ueno Cultural Park & Akihabara Electric Town',
+        dayNumber: 2, dateLabel: 'Day 2', neighborhood: 'Ueno Cultural Park & Akihabara Electric Town',
         weatherPlan: '☀️ Morning: Shaded Ueno Park Trees • 🏛️ Midday: Air-Conditioned Museum • 🌆 Evening: Neon Street Lighting',
-        morning: {
-          dualName: '上野恩賜公園 (Ueno Park & Toshogu Shrine)',
-          category: 'Nature & Heritage',
-          time: '09:30 - 11:45',
-          desc: 'Sprawling public park with ancient shrines, Shinobazu lotus pond, and gentle shaded walking avenues.',
-          weatherBadge: '🌳 Shaded Morning Trees',
-          accessibility: ['👶 Stroller Accessible', '♿ Wide Flat Paths', '👨‍👩‍👧 Open Play Spaces'],
-          cost: 0,
-          completed: false
-        },
-        lunch: {
-          dualName: 'とんかつ山家 (Tonkatsu Yamabe Ueno)',
-          category: 'Local Food Pick',
-          time: '12:15 - 13:30',
-          desc: 'Beloved neighborhood kitchen serving golden, crispy breaded pork cutlets with unlimited cabbage and miso soup.',
-          weatherBadge: '❄️ Indoor Air-Conditioned Dining',
-          accessibility: ['👨‍👩‍👧 Hearty Portions', '🥢 High Value Family Pick'],
-          cost: 38,
-          completed: false
-        },
-        afternoon: {
-          dualName: '国立科学博物館 (National Museum of Nature & Science)',
-          category: 'Museum & Discovery',
-          time: '14:00 - 16:45',
-          desc: 'Fascinating interactive dinosaur skeletons, theater 360 projection dome, and physics experiment hall for kids.',
-          weatherBadge: '🏛️ Midday Indoor Climate-Controlled',
-          accessibility: ['👶 Nursing Rooms & Strollers', '♿ 100% Barrier-Free Elevators', '👨‍👩‍👧 Hands-on Discovery Zone'],
-          cost: 24,
-          completed: false
-        },
-        evening: {
-          dualName: '秋葉原電気街 (Akihabara Tech & Retro Arcade)',
-          category: 'Culture & Entertainment',
-          time: '17:30 - 20:30',
-          desc: 'Wander the vibrant multi-story arcade centers and retro gaming shops, dining on authentic charcoal yakitori.',
-          weatherBadge: '🌆 Evening Vibrant Walk',
-          accessibility: ['♿ Elevator access in large department stores', '👨‍👩‍👧 Fun for teens and gamers'],
-          cost: 55,
-          completed: false
-        }
+        morning: { dualName: '上野恩賜公園 (Ueno Park & Toshogu Shrine)', category: 'Nature & Heritage', time: '09:30 - 11:45', desc: 'Sprawling public park with ancient shrines, Shinobazu lotus pond, and gentle shaded walking avenues.', weatherBadge: '🌳 Shaded Morning Trees', accessibility: ['👶 Stroller Accessible', '♿ Wide Flat Paths'], cost: 0, completed: false },
+        lunch: { dualName: 'とんかつ山家 (Tonkatsu Yamabe Ueno)', category: 'Local Food Pick', time: '12:15 - 13:30', desc: 'Beloved neighborhood kitchen serving golden, crispy breaded pork cutlets.', weatherBadge: '❄️ Indoor Air-Conditioned Dining', accessibility: ['👨‍👩‍👧 Hearty Portions'], cost: 38, completed: false },
+        afternoon: { dualName: '国立科学博物館 (National Museum of Nature & Science)', category: 'Museum & Discovery', time: '14:00 - 16:45', desc: 'Fascinating interactive dinosaur skeletons and theater 360 projection dome.', weatherBadge: '🏛️ Midday Indoor Climate-Controlled', accessibility: ['👶 Nursing Rooms & Strollers', '♿ 100% Barrier-Free Elevators'], cost: 24, completed: false },
+        evening: { dualName: '秋葉原電気街 (Akihabara Tech & Retro Arcade)', category: 'Culture & Entertainment', time: '17:30 - 20:30', desc: 'Wander the vibrant multi-story arcade centers and retro gaming shops.', weatherBadge: '🌆 Evening Vibrant Walk', accessibility: ['♿ Elevator access in large stores', '👨‍👩‍👧 Fun for teens'], cost: 55, completed: false }
       },
       {
-        dayNumber: 3,
-        dateLabel: 'Day 3',
-        neighborhood: 'Harajuku, Meiji Shrine & Shibuya Crossing',
+        dayNumber: 3, dateLabel: 'Day 3', neighborhood: 'Harajuku, Meiji Shrine & Shibuya Crossing',
         weatherPlan: '🌳 Morning: Forest Canopy of Meiji Shrine • 🏛️ Midday: Omotesando Indoor Boutiques • 🌆 Evening: Shibuya Sky',
-        morning: {
-          dualName: '明治神宮 (Meiji Jingu Sacred Forest Shrine)',
-          category: 'Spiritual Heritage',
-          time: '09:00 - 11:30',
-          desc: 'Tranquil Shinto shrine nestled in an evergreen forest of 120,000 trees donated from all over Japan.',
-          weatherBadge: '🌳 Cool Dense Forest Canopy',
-          accessibility: ['👶 Compact Gravel Walks (Stroller-friendly main routes)', '♿ Accessible Restrooms', '👴 Relaxing for Seniors'],
-          cost: 0,
-          completed: false
-        },
-        lunch: {
-          dualName: '牛かつ もと村 (Gyukatsu Motomura Harajuku)',
-          category: 'Local Food Pick',
-          time: '12:00 - 13:30',
-          desc: 'Crispy breaded beef cutlet that guests finish sizzling on their personal tabletop stone grills.',
-          weatherBadge: '❄️ Indoor Air-Conditioned',
-          accessibility: ['👨‍👩‍👧 Engaging tabletop cooking', '🥢 Highly rated local specialty'],
-          cost: 60,
-          completed: false
-        },
-        afternoon: {
-          dualName: '竹下通り & 表参道 (Takeshita Street & Omotesando Hills)',
-          category: 'Pop Culture & Shopping',
-          time: '14:00 - 17:00',
-          desc: 'Vibrant youth fashion, colorful rainbow cotton candy, artisan crepe cafes, and architectural promenades.',
-          weatherBadge: '🏛️ Shaded Avenues & Malls',
-          accessibility: ['👶 Baby strollers welcome in Omotesando Hills', '♿ Elevators in all major stores'],
-          cost: 35,
-          completed: false
-        },
-        evening: {
-          dualName: '渋谷スクランブル交差点 (Shibuya Crossing & Sky Rooftop)',
-          category: 'Iconic Landmarks',
-          time: '17:30 - 20:30',
-          desc: 'The world’s busiest pedestrian crossing, followed by Shibuya Sky’s 360-degree sunset observation platform.',
-          weatherBadge: '🌆 Sunset Golden Hour',
-          accessibility: ['♿ Full ADA Wheelchair Lifts', '👨‍👩‍👧 High excitement for whole family'],
-          cost: 55,
-          completed: false
-        }
+        morning: { dualName: '明治神宮 (Meiji Jingu Sacred Forest Shrine)', category: 'Spiritual Heritage', time: '09:00 - 11:30', desc: 'Tranquil Shinto shrine nestled in an evergreen forest of 120,000 trees.', weatherBadge: '🌳 Cool Dense Forest Canopy', accessibility: ['👶 Stroller-friendly routes', '♿ Accessible Restrooms'], cost: 0, completed: false },
+        lunch: { dualName: '牛かつ もと村 (Gyukatsu Motomura Harajuku)', category: 'Local Food Pick', time: '12:00 - 13:30', desc: 'Crispy breaded beef cutlet that guests finish sizzling on tabletop stone grills.', weatherBadge: '❄️ Indoor Air-Conditioned', accessibility: ['👨‍👩‍👧 Engaging tabletop cooking'], cost: 60, completed: false },
+        afternoon: { dualName: '竹下通り & 表参道 (Takeshita Street & Omotesando Hills)', category: 'Pop Culture & Shopping', time: '14:00 - 17:00', desc: 'Vibrant youth fashion, colorful rainbow cotton candy, and architectural promenades.', weatherBadge: '🏛️ Shaded Avenues & Malls', accessibility: ['👶 Baby strollers welcome', '♿ Elevators in all stores'], cost: 35, completed: false },
+        evening: { dualName: '渋谷スクランブル交差点 (Shibuya Crossing & Sky Rooftop)', category: 'Iconic Landmarks', time: '17:30 - 20:30', desc: 'The world’s busiest pedestrian crossing, followed by Shibuya Sky observation deck.', weatherBadge: '🌆 Sunset Golden Hour', accessibility: ['♿ Full ADA Wheelchair Lifts'], cost: 55, completed: false }
       },
       {
-        dayNumber: 4,
-        dateLabel: 'Day 4',
-        neighborhood: 'Odaiba Bay & Waterfront Entertainment',
+        dayNumber: 4, dateLabel: 'Day 4', neighborhood: 'Odaiba Bay & Waterfront Entertainment',
         weatherPlan: '☀️ Morning: Monorail Scenic Views • 🏛️ Midday: TeamLab Immersive Art & Miraikan • 🌆 Evening: Rainbow Bridge Bay',
-        morning: {
-          dualName: '日本科学未来館 (Miraikan Science & Innovation)',
-          category: 'Science & Robotics',
-          time: '10:00 - 12:30',
-          desc: 'Interactive robotics exhibits, humanoid ASIMO demonstrations, and the breathtaking floating Geo-Cosmos globe.',
-          weatherBadge: '🏛️ Indoor High-Tech Experience',
-          accessibility: ['👶 Strollers & Family Lounges', '♿ Universal Design & Tactile Guides', '👨‍👩‍👧 Top Kid Pick'],
-          cost: 32,
-          completed: false
-        },
-        lunch: {
-          dualName: '月島もんじゃ (Tsukishima Monjayaki Waterfront)',
-          category: 'Local Food Pick',
-          time: '13:00 - 14:30',
-          desc: 'Tokyo’s savory comfort pancake cooked right in front of you on a sizzling teppan griddle.',
-          weatherBadge: '❄️ Indoor Waterfront Dining',
-          accessibility: ['👨‍👩‍👧 Fun communal family dining experience'],
-          cost: 50,
-          completed: false
-        },
-        afternoon: {
-          dualName: 'チームラボプラネッツ (teamLab Planets Immersive Art)',
-          category: 'Digital Art Museum',
-          time: '15:00 - 17:30',
-          desc: 'Walk barefoot through water and immerse your senses in crystalline infinite flower mirrors.',
-          weatherBadge: '🏛️ Indoor Sensory Oasis',
-          accessibility: ['♿ Wheelchair loan options available on request', '👨‍👩‍👧 Unforgettable sensory fun for kids'],
-          cost: 95,
-          completed: false
-        },
-        evening: {
-          dualName: 'お台場海浜公園 (Odaiba Seaside Park & Rainbow Bridge)',
-          category: 'Seaside & Statue of Liberty',
-          time: '18:00 - 20:30',
-          desc: 'Watch the sunset over Tokyo Bay with views of the illuminated Rainbow Bridge and Tokyo Tower.',
-          weatherBadge: '🌆 Cooling Sea Breeze',
-          accessibility: ['👶 Smooth Boardwalk Paths', '♿ Wheelchair Accessible Seafront'],
-          cost: 20,
-          completed: false
-        }
+        morning: { dualName: '日本科学未来館 (Miraikan Science & Innovation)', category: 'Science & Robotics', time: '10:00 - 12:30', desc: 'Interactive robotics exhibits and the breathtaking floating Geo-Cosmos globe.', weatherBadge: '🏛️ Indoor High-Tech Experience', accessibility: ['👶 Strollers & Family Lounges', '♿ Universal Design'], cost: 32, completed: false },
+        lunch: { dualName: '月島もんじゃ (Tsukishima Monjayaki Waterfront)', category: 'Local Food Pick', time: '13:00 - 14:30', desc: 'Tokyo’s savory comfort pancake cooked on a sizzling teppan griddle.', weatherBadge: '❄️ Indoor Waterfront Dining', accessibility: ['👨‍👩‍👧 Fun communal dining'], cost: 50, completed: false },
+        afternoon: { dualName: 'チームラボプラネッツ (teamLab Planets Immersive Art)', category: 'Digital Art Museum', time: '15:00 - 17:30', desc: 'Walk barefoot through water and immerse your senses in crystalline flower mirrors.', weatherBadge: '🏛️ Indoor Sensory Oasis', accessibility: ['♿ Wheelchair loan options', '👨‍👩‍👧 Unforgettable sensory fun'], cost: 95, completed: false },
+        evening: { dualName: 'お台場海浜公園 (Odaiba Seaside Park & Rainbow Bridge)', category: 'Seaside & Statue of Liberty', time: '18:00 - 20:30', desc: 'Watch the sunset over Tokyo Bay with views of the illuminated Rainbow Bridge.', weatherBadge: '🌆 Cooling Sea Breeze', accessibility: ['👶 Smooth Boardwalk Paths', '♿ Wheelchair Accessible Seafront'], cost: 20, completed: false }
       },
       {
-        dayNumber: 5,
-        dateLabel: 'Day 5',
-        neighborhood: 'Shinjuku & Imperial Palace Gardens',
+        dayNumber: 5, dateLabel: 'Day 5', neighborhood: 'Shinjuku & Imperial Palace Gardens',
         weatherPlan: '🌳 Morning: Royal Garden Shaded Lawn • 🏛️ Midday: Metropolitan Tower Views • 🌆 Evening: Omoide Yokocho',
-        morning: {
-          dualName: '新宿御苑 (Shinjuku Gyoen National Garden)',
-          category: 'National Garden & Teahouse',
-          time: '09:30 - 12:00',
-          desc: '58 hectares of manicured traditional Japanese, English landscape, and French formal gardens.',
-          weatherBadge: '🌳 Shaded Lawn & Greenhouses',
-          accessibility: ['👶 Wide Paved Buggy Paths', '♿ Wheelchair Accessible Restrooms', '👴 Tranquil Resting Benches'],
-          cost: 15,
-          completed: false
-        },
-        lunch: {
-          dualName: '新宿 つな八 (Shinjuku Tsunahachi Tempura)',
-          category: 'Local Food Pick',
-          time: '12:30 - 13:45',
-          desc: 'Master tempura chefs frying seasonal fresh seafood and vegetables piece-by-piece in front of guests since 1923.',
-          weatherBadge: '❄️ Indoor Air-Conditioned Comfort',
-          accessibility: ['👨‍👩‍👧 Non-smoking environment', '🥢 Traditional English menu available'],
-          cost: 65,
-          completed: false
-        },
-        afternoon: {
-          dualName: '東京都庁舎 (Tokyo Metropolitan Government Observatories)',
-          category: 'City Views & Architecture',
-          time: '14:30 - 16:30',
-          desc: 'Free observation towers at 202 meters offering 360-degree vistas of Tokyo, Mount Fuji, and Tokyo Dome.',
-          weatherBadge: '🏛️ Indoor Panoramic Observatories',
-          accessibility: ['👶 Stroller Accessible High-Speed Elevators', '♿ Full Barrier-Free Access'],
-          cost: 0,
-          completed: false
-        },
-        evening: {
-          dualName: '思い出横丁 & 新宿の夜 (Omoide Yokocho & Farewell Banquet)',
-          category: 'Atmospheric Alleys & Dining',
-          time: '17:30 - 20:30',
-          desc: 'Historic lantern-lit alleyways with savory yakitori skewers and comforting ramen to celebrate the journey.',
-          weatherBadge: '🌆 Evening Lantern Atmosphere',
-          accessibility: ['🥢 Casual street vibes', '👨‍👩‍👧 Memorable family farewell dinner'],
-          cost: 75,
-          completed: false
-        }
+        morning: { dualName: '新宿御苑 (Shinjuku Gyoen National Garden)', category: 'National Garden & Teahouse', time: '09:30 - 12:00', desc: '58 hectares of manicured traditional Japanese, English, and French formal gardens.', weatherBadge: '🌳 Shaded Lawn & Greenhouses', accessibility: ['👶 Wide Paved Buggy Paths', '♿ Wheelchair Accessible Restrooms'], cost: 15, completed: false },
+        lunch: { dualName: '新宿 つな八 (Shinjuku Tsunahachi Tempura)', category: 'Local Food Pick', time: '12:30 - 13:45', desc: 'Master tempura chefs frying seasonal fresh seafood piece-by-piece since 1923.', weatherBadge: '❄️ Indoor Air-Conditioned Comfort', accessibility: ['👨‍👩‍👧 Non-smoking environment'], cost: 65, completed: false },
+        afternoon: { dualName: '東京都庁舎 (Tokyo Metropolitan Government Observatories)', category: 'City Views & Architecture', time: '14:30 - 16:30', desc: 'Free observation towers at 202 meters offering 360-degree vistas of Tokyo and Mount Fuji.', weatherBadge: '🏛️ Indoor Panoramic Observatories', accessibility: ['👶 Stroller Accessible High-Speed Elevators', '♿ Full Barrier-Free Access'], cost: 0, completed: false },
+        evening: { dualName: '思い出横丁 & 新宿の夜 (Omoide Yokocho & Farewell Banquet)', category: 'Atmospheric Alleys & Dining', time: '17:30 - 20:30', desc: 'Historic lantern-lit alleyways with savory yakitori skewers and comforting ramen.', weatherBadge: '🌆 Evening Lantern Atmosphere', accessibility: ['🥢 Casual street vibes', '👨‍👩‍👧 Memorable family farewell'], cost: 75, completed: false }
       }
     ],
     budgetBreakdown: {
-      totalTripCost: 2450,
-      dailyAverage: 490,
-      perPersonTotal: 612.50,
-      lodgingTotal: 1200,
-      diningTotal: 620,
-      ticketsTotal: 380,
-      transitTotal: 250,
-      lodgingPct: 49,
-      diningPct: 25,
-      ticketsPct: 16,
-      transitPct: 10
+      totalTripCost: 2450, dailyAverage: 490, perPersonTotal: 612.50,
+      lodgingTotal: 1200, diningTotal: 620, ticketsTotal: 380, transitTotal: 250,
+      transportTotal: 1600,
+      lodgingPct: 30, diningPct: 15, ticketsPct: 9, transitPct: 6, transportPct: 40
     },
     bookingLinks: [
-      {
-        title: 'Tokyo Metro 72-Hour Tourist Pass',
-        desc: 'Unlimited rides on all 13 Tokyo subway lines for ¥1,500 (~$10), saving up to 60% on daily family transit.',
-        icon: '🚇',
-        actionText: 'Official Metro Portal'
-      },
-      {
-        title: 'teamLab Planets Official Ticket Portal',
-        desc: 'Book designated time slots 4 weeks in advance directly to bypass scalpers and ensure guaranteed entry.',
-        icon: '🎟️',
-        actionText: 'Official teamLab Site'
-      },
-      {
-        title: 'Welcome Suica IC Card for Tourists',
-        desc: 'Tap-and-go contactless card for trains, buses, vending machines, and coin lockers across Japan with zero deposit.',
-        icon: '💳',
-        actionText: 'JR East Tourism Site'
-      },
-      {
-        title: 'Tokyo Skytree Fast Pass',
-        desc: 'Skip the standard ticket counter line directly to the 350m & 450m observation decks.',
-        icon: '🗼',
-        actionText: 'Official Skytree Portal'
-      }
+      { title: 'Tokyo Metro 72-Hour Tourist Pass', desc: 'Unlimited rides on all 13 Tokyo subway lines for ¥1,500.', icon: '🚇', actionText: 'Official Metro Portal' },
+      { title: 'teamLab Planets Official Ticket Portal', desc: 'Book designated time slots 4 weeks in advance.', icon: '🎟️', actionText: 'Official teamLab Site' },
+      { title: 'Welcome Suica IC Card for Tourists', desc: 'Tap-and-go contactless card for trains, buses, and vending machines.', icon: '💳', actionText: 'JR East Tourism Site' },
+      { title: 'Tokyo Skytree Fast Pass', desc: 'Skip the standard ticket counter line directly to observation decks.', icon: '🗼', actionText: 'Official Skytree Portal' }
     ],
     packing: [
-      {
-        category: 'Essential Documents & Finance',
-        icon: '🛂',
-        items: [
-          { text: 'Passports with 6+ months validity for all 4 travelers', checked: true },
-          { text: 'Visit Japan Web QR codes generated for customs & immigration', checked: true },
-          { text: 'Physical cash (¥30,000) for traditional street shrines & food stalls', checked: true },
-          { text: 'No-foreign-transaction-fee credit / debit cards', checked: false }
-        ]
-      },
-      {
-        category: 'Weather & Walking Gear (23°C Mild)',
-        icon: '👟',
-        items: [
-          { text: 'Ultra-comfortable broken-in walking shoes (10,000+ steps/day)', checked: true },
-          { text: 'Light breathable layers & light evening cardigan/jacket', checked: true },
-          { text: 'Compact UV umbrella / rain ponchos for kids', checked: false },
-          { text: 'Reusable insulated water bottles', checked: false }
-        ]
-      },
-      {
-        category: 'Family & Tech Accessories',
-        icon: '📱',
-        items: [
-          { text: 'Pocket Wi-Fi or eSims installed for constant navigation', checked: true },
-          { text: 'Compact lightweight travel stroller for Asakusa & parks', checked: false },
-          { text: 'High-capacity power bank (20,000 mAh) for phones', checked: true },
-          { text: 'Type-A Japan plug adapters', checked: true }
-        ]
-      }
+      { category: 'Essential Documents & Finance', icon: '🛂', items: [
+        { text: 'Passports with 6+ months validity', checked: true },
+        { text: 'Visit Japan Web QR codes', checked: true },
+        { text: 'Physical cash (¥30,000)', checked: true },
+        { text: 'No-foreign-transaction-fee credit cards', checked: false }
+      ]},
+      { category: 'Weather & Walking Gear', icon: '👟', items: [
+        { text: 'Ultra-comfortable broken-in walking shoes', checked: true },
+        { text: 'Light breathable layers', checked: true },
+        { text: 'Compact UV umbrella', checked: false },
+        { text: 'Reusable insulated water bottles', checked: false }
+      ]},
+      { category: 'Family & Tech Accessories', icon: '📱', items: [
+        { text: 'Pocket Wi-Fi or eSIMs', checked: true },
+        { text: 'Compact lightweight travel stroller', checked: false },
+        { text: 'High-capacity power bank (20,000 mAh)', checked: true },
+        { text: 'Type-A Japan plug adapters', checked: true }
+      ]}
     ]
   };
 
-  // Active state
   let currentTripIndex = 0;
   let activeDayIndex = 0;
   let activeStayFilter = 'all';
@@ -1598,7 +1474,7 @@
   }
 
   // ==========================================================================
-  // 4. UI Rendering Functions
+  // 4b. Hero Rendering
   // ==========================================================================
   function renderTripHero() {
     const trip = getCurrentTrip();
@@ -1607,6 +1483,7 @@
     const heroTripType      = document.getElementById('heroTripType');
     const heroDuration      = document.getElementById('heroDuration');
     const heroWeatherBadge  = document.getElementById('heroWeatherBadge');
+    const heroTransportBadge= document.getElementById('heroTransportBadge');
     const heroTitle         = document.getElementById('heroTitle');
     const heroSubtitle      = document.getElementById('heroSubtitle');
     const metricTravelers   = document.getElementById('metricTravelers');
@@ -1619,6 +1496,7 @@
       if (heroTripType) heroTripType.style.display = 'none';
       if (heroDuration) heroDuration.style.display = 'none';
       if (heroWeatherBadge) heroWeatherBadge.style.display = 'none';
+      if (heroTransportBadge) heroTransportBadge.style.display = 'none';
       if (heroTitle) heroTitle.textContent = t('heroWelcomeTitle');
       if (heroSubtitle) heroSubtitle.textContent = t('heroWelcomeSub');
       if (metricTravelers) metricTravelers.textContent = '—';
@@ -1640,8 +1518,22 @@
     }
 
     if (heroTripType) heroTripType.textContent = trip.tripType;
-
     if (heroDuration) heroDuration.textContent = `${trip.durationDays} ${trip.durationDays === 1 ? 'Day' : 'Days'}`;
+
+    // Transportation badge
+    if (heroTransportBadge) {
+      if (trip.transport && TRANSPORT_RATES[trip.transport]) {
+        const rate = TRANSPORT_RATES[trip.transport];
+        const transKey = 'transport' + trip.transport.charAt(0).toUpperCase() + trip.transport.slice(1);
+        const iconEl = document.getElementById('heroTransportIcon');
+        const labelEl = document.getElementById('heroTransportLabel');
+        if (iconEl) iconEl.textContent = rate.icon;
+        if (labelEl) labelEl.textContent = t(transKey) || trip.transport;
+        heroTransportBadge.style.display = 'inline-flex';
+      } else {
+        heroTransportBadge.style.display = 'none';
+      }
+    }
 
     const heroWeatherIcon     = document.getElementById('heroWeatherIcon');
     const heroWeatherTemp     = document.getElementById('heroWeatherTemp');
@@ -1662,9 +1554,7 @@
 
     if (heroTitle) heroTitle.textContent = trip.title;
     if (heroSubtitle) heroSubtitle.textContent = trip.subtitle;
-
     if (metricTravelers) metricTravelers.textContent = trip.travelers?.summary || '';
-
     if (metricStay && trip.stays && trip.stays.length > 0) metricStay.textContent = trip.stays[0].name;
 
     if (metricDailySpend && trip.budgetBreakdown) {
@@ -1695,7 +1585,7 @@
   }
 
   // ==========================================================================
-  // My Trips — Grid view with load + delete
+  // 4c. My Trips Grid
   // ==========================================================================
   function renderTripsGrid() {
     const container = document.getElementById('tripsGridContainer');
@@ -1808,7 +1698,7 @@
   }
 
   // ==========================================================================
-  // Delete Confirmation Dialog
+  // 4d. Delete Confirmation Dialog
   // ==========================================================================
   function showDeleteConfirm(tripIdx) {
     const trip = PRESET_TRIPS[tripIdx];
@@ -1895,6 +1785,82 @@
     });
   }
 
+  // ==========================================================================
+  // 4e. Local Transit — "Getting Around" card (OpenStreetMap)
+  // ==========================================================================
+  async function renderTransitCard() {
+    const container = document.getElementById('transitCardContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const trip = getCurrentTrip();
+    if (!trip) return;
+
+    const lat = trip.destinationMeta?.lat;
+    const lng = trip.destinationMeta?.lng;
+
+    if (!window.TransitService) return;
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
+
+    container.innerHTML = `
+      <div class="transit-card">
+        <div class="transit-card-header">
+          <span class="transit-icon">🚏</span>
+          <h3 class="transit-card-title">${t('transitNearbyTitle') || 'Nearby Public Transport'}</h3>
+        </div>
+        <div class="transit-loading">
+          <span class="spinner"></span>
+          <span>${t('transitLoading') || 'Finding nearby stops…'}</span>
+        </div>
+      </div>
+    `;
+
+    try {
+      const stops = await window.TransitService.findNearbyStops(lat, lng, 800);
+      if (!stops || stops.length === 0) { container.innerHTML = ''; return; }
+
+      const stopsHtml = stops.map(stop => {
+        const routesHtml = (stop.routes || [])
+          .map(r => `<span class="transit-route-chip">${r}</span>`).join('');
+        const wheelchair = stop.wheelchair
+          ? '<span class="transit-a11y" title="Wheelchair accessible">♿</span>' : '';
+
+        return `
+          <div class="transit-stop-row">
+            <div class="transit-stop-info">
+              <div class="transit-stop-name">
+                <span class="transit-type-icon">${stop.icon}</span>
+                ${wheelchair}${stop.name}
+              </div>
+            </div>
+            <div class="transit-stop-routes">${routesHtml}</div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="transit-card">
+          <div class="transit-card-header">
+            <span class="transit-icon">🚏</span>
+            <h3 class="transit-card-title">${t('transitNearbyTitle') || 'Nearby Public Transport'}</h3>
+            <span class="transit-stop-count">${stops.length} ${t('transitStops') || 'stops'}</span>
+          </div>
+          <div class="transit-stops-list">${stopsHtml}</div>
+          <div class="transit-card-footer">
+            <span class="transit-attribution">${t('transitAttribution') || 'Data © OpenStreetMap contributors'}</span>
+          </div>
+        </div>
+      `;
+
+    } catch (err) {
+      console.warn('[app] Transit card failed:', err);
+      container.innerHTML = '';
+    }
+  }
+
+  // ==========================================================================
+  // 4f. Itinerary
+  // ==========================================================================
   function renderItinerary() {
     const trip = getCurrentTrip();
     if (!trip || !trip.days || trip.days.length === 0) {
@@ -1902,6 +1868,8 @@
       if (pills) pills.innerHTML = '';
       const container = document.getElementById('timelineCardsContainer');
       if (container) container.innerHTML = '';
+      const transit = document.getElementById('transitCardContainer');
+      if (transit) transit.innerHTML = '';
       return;
     }
 
@@ -1934,6 +1902,9 @@
 
     const dayWeatherAdaptationText = document.getElementById('dayWeatherAdaptationText');
     if (dayWeatherAdaptationText) dayWeatherAdaptationText.textContent = day.weatherPlan;
+
+    // Trigger transit card
+    renderTransitCard();
 
     const container = document.getElementById('timelineCardsContainer');
     if (!container) return;
@@ -2029,6 +2000,9 @@
     });
   }
 
+  // ==========================================================================
+  // 4g. Stays
+  // ==========================================================================
   function renderStays() {
     const trip = getCurrentTrip();
     const container = document.getElementById('staysContainer');
@@ -2078,6 +2052,9 @@
     });
   }
 
+  // ==========================================================================
+  // 4h. Budget
+  // ==========================================================================
   function renderBudget() {
     const trip = getCurrentTrip();
     if (!trip) return;
@@ -2142,6 +2119,9 @@
     }
   }
 
+  // ==========================================================================
+  // 4i. Customize Console
+  // ==========================================================================
   function renderCustomizeConsole() {
     const trip = getCurrentTrip();
     if (!trip) return;
@@ -2186,68 +2166,20 @@
 
   const ALTERNATES_CATALOG = {
     morning: [
-      {
-        dualName: '築地場外市場 (Tsukiji Outer Market Tasting Tour)',
-        category: 'Culinary Heritage',
-        desc: 'Taste fresh tamagoyaki, strawberry daifuku mochi, and artisanal green tea from morning market stalls.',
-        cost: 25,
-        weatherBadge: '☀️ Covered Morning Walkway'
-      },
-      {
-        dualName: '浜離宮恩賜庭園 (Hamarikyu Traditional Gardens)',
-        category: 'Imperial Nature',
-        desc: 'Stroll around a tranquil tidal pond with traditional matcha tea service in the central floating pavilion.',
-        cost: 15,
-        weatherBadge: '🌳 Shaded Scenic Garden'
-      }
+      { dualName: '築地場外市場 (Tsukiji Outer Market Tasting Tour)', category: 'Culinary Heritage', desc: 'Taste fresh tamagoyaki, strawberry daifuku mochi, and artisanal green tea from morning market stalls.', cost: 25, weatherBadge: '☀️ Covered Morning Walkway' },
+      { dualName: '浜離宮恩賜庭園 (Hamarikyu Traditional Gardens)', category: 'Imperial Nature', desc: 'Stroll around a tranquil tidal pond with traditional matcha tea service.', cost: 15, weatherBadge: '🌳 Shaded Scenic Garden' }
     ],
     lunch: [
-      {
-        dualName: '一蘭 浅草店 (Ichiran Ramen Individual Booths)',
-        category: 'Family-Favorite Tonkotsu',
-        desc: 'World-famous rich tonkotsu broth with custom flavor ordering sheets in English, perfect for kids & solo diners.',
-        cost: 32,
-        weatherBadge: '❄️ Air-Conditioned Comfort'
-      },
-      {
-        dualName: '玄品 ふぐ & 和食 (Guenpin Washoku Seasonal Set)',
-        category: 'Traditional Japanese Washoku',
-        desc: 'Relaxed private dining rooms serving fresh seasonal sashimi, tempura, and simmered black wagyu beef.',
-        cost: 60,
-        weatherBadge: '❄️ Quiet Private Dining'
-      }
+      { dualName: '一蘭 浅草店 (Ichiran Ramen Individual Booths)', category: 'Family-Favorite Tonkotsu', desc: 'World-famous rich tonkotsu broth with custom flavor ordering sheets in English.', cost: 32, weatherBadge: '❄️ Air-Conditioned Comfort' },
+      { dualName: '玄品 ふぐ & 和食 (Guenpin Washoku Seasonal Set)', category: 'Traditional Japanese Washoku', desc: 'Relaxed private dining rooms serving fresh seasonal sashimi and tempura.', cost: 60, weatherBadge: '❄️ Quiet Private Dining' }
     ],
     afternoon: [
-      {
-        dualName: '江戸東京博物館 (Edo-Tokyo Cultural Museum & Crafts)',
-        category: 'Living History',
-        desc: 'Walk across a life-size replica of Nihonbashi bridge and explore historic Edo merchant districts.',
-        cost: 20,
-        weatherBadge: '🏛️ Indoor Air-Conditioned Museum'
-      },
-      {
-        dualName: '隅田水族館 (Sumida Aquarium & Penguins)',
-        category: 'Aquatic Life & Nursery',
-        desc: 'Modern indoor aquarium inside Tokyo Solamachi featuring Magellanic penguins and glowing jellyfish tanks.',
-        cost: 45,
-        weatherBadge: '🏛️ Modern Indoor Oasis'
-      }
+      { dualName: '江戸東京博物館 (Edo-Tokyo Cultural Museum & Crafts)', category: 'Living History', desc: 'Walk across a life-size replica of Nihonbashi bridge.', cost: 20, weatherBadge: '🏛️ Indoor Air-Conditioned Museum' },
+      { dualName: '隅田水族館 (Sumida Aquarium & Penguins)', category: 'Aquatic Life & Nursery', desc: 'Modern indoor aquarium featuring Magellanic penguins and jellyfish tanks.', cost: 45, weatherBadge: '🏛️ Modern Indoor Oasis' }
     ],
     evening: [
-      {
-        dualName: '屋形船 ナイトクルーズ (Yakatabune Traditional Houseboat Dinner)',
-        category: 'Dinner Cruise Experience',
-        desc: 'Glide under lantern-lit bridges enjoying unlimited freshly fried tempura and panoramic night views.',
-        cost: 110,
-        weatherBadge: '🌆 River Evening Panorama'
-      },
-      {
-        dualName: '浅草ホッピー通り (Hoppy Street Lantern Alleys)',
-        category: 'Retro Izakaya & Stew',
-        desc: 'Open-air lively alley with family-run taverns famous for slow-simmered beef tendon stew (gyusuji nikomi).',
-        cost: 40,
-        weatherBadge: '🌆 Outdoor Lantern Atmosphere'
-      }
+      { dualName: '屋形船 ナイトクルーズ (Yakatabune Traditional Houseboat Dinner)', category: 'Dinner Cruise Experience', desc: 'Glide under lantern-lit bridges enjoying unlimited freshly fried tempura.', cost: 110, weatherBadge: '🌆 River Evening Panorama' },
+      { dualName: '浅草ホッピー通り (Hoppy Street Lantern Alleys)', category: 'Retro Izakaya & Stew', desc: 'Open-air lively alley with family-run taverns famous for slow-simmered beef tendon stew.', cost: 40, weatherBadge: '🌆 Outdoor Lantern Atmosphere' }
     ]
   };
 
@@ -2292,6 +2224,9 @@
     });
   }
 
+  // ==========================================================================
+  // 4j. Packing
+  // ==========================================================================
   function renderPacking() {
     const trip = getCurrentTrip();
     const container = document.getElementById('packingCardsGrid');
@@ -2362,7 +2297,7 @@
   }
 
   // ==========================================================================
-  // 5. Trip Generator Engine
+  // 5. Trip Generator
   // ==========================================================================
   function generateCustomTrip(formData) {
     const dest = formData.destination.trim();
@@ -2373,33 +2308,37 @@
     const totalTravelers = adults + children + seniors;
     const tripType = formData.tripType || 'Family Vacation';
     const budgetPref = formData.budgetPref || 'moderate';
+    const transport = formData.transport || 'flight';
+    const tripDirection = formData.tripDirection || 'round';
+
+    // Transportation cost
+    const transportRate = TRANSPORT_RATES[transport] || TRANSPORT_RATES.flight;
+    const directionMultiplier = (tripDirection === 'round') ? 1 : 0.55;
+    const payingTravelers = adults + seniors + (children * 0.75);
+    const transportTotal = Math.round(
+      transportRate.costPerPerson * payingTravelers * directionMultiplier
+    );
 
     let dailyRatePerPerson = budgetPref === 'luxury' ? 450 : (budgetPref === 'budget' ? 75 : 160);
     let lodgingRateNight = budgetPref === 'luxury' ? 520 : (budgetPref === 'budget' ? 85 : 220);
 
-    const totalCost = (dailyRatePerPerson * totalTravelers * duration) + (lodgingRateNight * duration);
+    const baseCost = (dailyRatePerPerson * totalTravelers * duration) + (lodgingRateNight * duration);
+    const totalCost = baseCost + transportTotal;
 
     let heroImg = 'assets/hero-tokyo.jpg';
     let destImg = 'assets/dest-tokyo.jpg';
     if (dest.toLowerCase().includes('paris') || dest.toLowerCase().includes('france')) {
-      heroImg = 'assets/hero-paris.jpg';
-      destImg = 'assets/dest-paris.jpg';
+      heroImg = 'assets/hero-paris.jpg'; destImg = 'assets/dest-paris.jpg';
     } else if (dest.toLowerCase().includes('amalfi') || dest.toLowerCase().includes('italy') || dest.toLowerCase().includes('rome')) {
-      heroImg = 'assets/dest-amalfi.jpg';
-      destImg = 'assets/dest-amalfi.jpg';
+      heroImg = 'assets/dest-amalfi.jpg'; destImg = 'assets/dest-amalfi.jpg';
     } else if (dest.toLowerCase().includes('swiss') || dest.toLowerCase().includes('zermatt') || dest.toLowerCase().includes('alps')) {
-      heroImg = 'assets/dest-swiss.jpg';
-      destImg = 'assets/dest-swiss.jpg';
+      heroImg = 'assets/dest-swiss.jpg'; destImg = 'assets/dest-swiss.jpg';
     } else if (dest.toLowerCase().includes('bali') || dest.toLowerCase().includes('indonesia') || dest.toLowerCase().includes('tropical')) {
-      heroImg = 'assets/dest-bali.jpg';
-      destImg = 'assets/dest-bali.jpg';
+      heroImg = 'assets/dest-bali.jpg'; destImg = 'assets/dest-bali.jpg';
     }
 
     const liveImage = window.__selectedDestinationImage;
-    if (liveImage?.url) {
-      heroImg = liveImage.url;
-      destImg = liveImage.url;
-    }
+    if (liveImage?.url) { heroImg = liveImage.url; destImg = liveImage.url; }
 
     const generatedDays = [];
     const neighborhoodsList = [
@@ -2426,18 +2365,16 @@
           desc: `Begin your morning exploring signature architecture and vibrant pedestrian avenues in ${nName}.`,
           weatherBadge: '☀️ Cooler Morning Outdoor',
           accessibility: children > 0 ? ['👶 Stroller-Friendly', '👨‍👩‍👧 Great for Kids'] : ['♿ Wheelchair Accessible', '👴 Senior Friendly'],
-          cost: 15 * totalTravelers,
-          completed: false
+          cost: 15 * totalTravelers, completed: false
         },
         lunch: {
           dualName: `Authentic Local Kitchen (${dest} Specialties)`,
           category: 'Local Food Pick',
           time: '12:30 - 14:00',
-          desc: `Sample traditional seasonal dishes and family-style culinary traditions prepared with regional ingredients.`,
+          desc: `Sample traditional seasonal dishes and family-style culinary traditions.`,
           weatherBadge: '❄️ Air-Conditioned Dining',
           accessibility: ['👨‍👩‍👧 Family Seating', '🥗 Dietary Options Available'],
-          cost: 25 * totalTravelers,
-          completed: false
+          cost: 25 * totalTravelers, completed: false
         },
         afternoon: {
           dualName: `Artisan Gallery & Science Discovery (${dest})`,
@@ -2446,8 +2383,7 @@
           desc: `Discover world-class galleries, local craftsmanship, and panoramic city lookouts.`,
           weatherBadge: '🏛️ Midday Indoor Comfort',
           accessibility: ['♿ Universal Access Elevators', '👶 Rest Areas & Facilities'],
-          cost: 20 * totalTravelers,
-          completed: false
+          cost: 20 * totalTravelers, completed: false
         },
         evening: {
           dualName: `Sunset Promenade & Dinner (${nName})`,
@@ -2456,20 +2392,14 @@
           desc: `Relax with a peaceful evening walk through illuminated plazas, concluding with an authentic dinner.`,
           weatherBadge: '🌆 Evening Golden Hour',
           accessibility: ['👶 Smooth Paved Avenues', '🍷 Relaxed Dining Atmosphere'],
-          cost: 35 * totalTravelers,
-          completed: false
+          cost: 35 * totalTravelers, completed: false
         }
       });
     }
 
     const structured = window.__selectedDestination;
     const destinationMeta = structured
-      ? {
-          lat: structured.lat,
-          lng: structured.lng,
-          geonameId: structured.geonameId,
-          countryCode: structured.countryCode
-        }
+      ? { lat: structured.lat, lng: structured.lng, geonameId: structured.geonameId, countryCode: structured.countryCode }
       : null;
 
     const liveWeather = window.__selectedDestinationWeather;
@@ -2484,9 +2414,7 @@
           windUnit: liveWeather.windUnit
         }
       : {
-          temp: '22°C',
-          condition: 'weatherClear',
-          icon: '☀️',
+          temp: '22°C', condition: 'weatherClear', icon: '☀️',
           notes: 'Weather Optimized: Outdoor visits organized for cooler morning and late afternoon slots.'
         };
 
@@ -2499,81 +2427,63 @@
       subtitle: `Curated ${tripType.toLowerCase()} designed for ${totalTravelers} travelers with weather adaptation and neighborhood clustering.`,
       tripType: tripType,
       durationDays: duration,
+      transport: transport,
+      tripDirection: tripDirection,
+      transportTotal: transportTotal,
       startDate: formData.startDate || null,
       specialNotes: formData.specialNotes || null,
       travelers: {
-        total: totalTravelers,
-        adults: adults,
-        children: children,
-        seniors: seniors,
+        total: totalTravelers, adults, children, seniors,
         summary: `${totalTravelers} Travelers (${adults} Adults${children ? `, ${children} Kids` : ''}${seniors ? `, ${seniors} Seniors` : ''})`
       },
       budgetTier: budgetPref,
       weather: weatherBlock,
       destinationMeta: destinationMeta,
       currentPace: 'balanced',
-      stays: [
-        {
-          id: `stay-${Date.now()}`,
-          name: `${dest} Grand Heritage Residence`,
-          type: 'Boutique Hotel & Suites',
-          neighborhood: neighborhoodsList[0],
-          image: destImg,
-          rating: '4.91',
-          pricePerNight: lodgingRateNight,
-          fitBanner: `✓ Accommodates ${totalTravelers} Guests (${tripType} Configuration)`,
-          features: ['👶 Stroller-Friendly', '♿ Level Entry & Elevators', '📍 Central Walkable Location', '🥐 Breakfast Included'],
-          bookingUrl: '#',
-          description: `Centrally positioned boutique accommodation in ${dest} offering spacious interconnected suites and personalized concierge.`
-        }
-      ],
+      stays: [{
+        id: `stay-${Date.now()}`,
+        name: `${dest} Grand Heritage Residence`,
+        type: 'Boutique Hotel & Suites',
+        neighborhood: neighborhoodsList[0],
+        image: destImg,
+        rating: '4.91',
+        pricePerNight: lodgingRateNight,
+        fitBanner: `✓ Accommodates ${totalTravelers} Guests (${tripType} Configuration)`,
+        features: ['👶 Stroller-Friendly', '♿ Level Entry & Elevators', '📍 Central Walkable Location', '🥐 Breakfast Included'],
+        bookingUrl: '#',
+        description: `Centrally positioned boutique accommodation in ${dest} offering spacious interconnected suites and personalized concierge.`
+      }],
       days: generatedDays,
       budgetBreakdown: {
         totalTripCost: totalCost,
         dailyAverage: Math.round(totalCost / duration),
         perPersonTotal: Math.round(totalCost / totalTravelers),
         lodgingTotal: lodgingRateNight * duration,
-        diningTotal: Math.round(totalCost * 0.3),
-        ticketsTotal: Math.round(totalCost * 0.15),
-        transitTotal: Math.round(totalCost * 0.08),
-        lodgingPct: 47,
-        diningPct: 30,
-        ticketsPct: 15,
-        transitPct: 8
+        diningTotal: Math.round(baseCost * 0.3),
+        ticketsTotal: Math.round(baseCost * 0.15),
+        transitTotal: Math.round(baseCost * 0.08),
+        transportTotal: transportTotal,
+        lodgingPct: 42,
+        diningPct: 22,
+        ticketsPct: 11,
+        transitPct: 6,
+        transportPct: Math.round((transportTotal / totalCost) * 100)
       },
       bookingLinks: [
-        {
-          title: `${dest} All-Inclusive Tourist City Card`,
-          desc: `Combines unlimited public transit with priority admission to top museums and historic monuments.`,
-          icon: '🎟️',
-          actionText: 'Official City Tourism Pass'
-        },
-        {
-          title: 'Direct Airport Express Transit Pass',
-          desc: `Pre-booked seamless high-speed airport link directly to the central district.`,
-          icon: '🚄',
-          actionText: 'Official Railway Transit'
-        }
+        { title: `${dest} All-Inclusive Tourist City Card`, desc: `Combines unlimited public transit with priority admission.`, icon: '🎟️', actionText: 'Official City Tourism Pass' },
+        { title: 'Direct Airport Express Transit Pass', desc: `Pre-booked seamless high-speed airport link.`, icon: '🚄', actionText: 'Official Railway Transit' }
       ],
       packing: [
-        {
-          category: 'Travel Documents & Money',
-          icon: '🛂',
-          items: [
-            { text: 'Passports / National ID cards for all travelers', checked: true },
-            { text: 'Travel health insurance documents', checked: true },
-            { text: 'Local currency cash + debit cards', checked: false }
-          ]
-        },
-        {
-          category: 'Weather & Everyday Comfort',
-          icon: '👟',
-          items: [
-            { text: 'Comfortable broken-in walking shoes', checked: true },
-            { text: 'Lightweight layered clothing & sun protection', checked: false },
-            { text: 'Compact umbrella or light rain shell', checked: false }
-          ]
-        }
+        { category: 'Travel Documents & Money', icon: '🛂', items: [
+          { text: 'Passports / National ID cards for all travelers', checked: true },
+          { text: 'Travel health insurance documents', checked: true },
+          { text: 'Local currency cash + debit cards', checked: false }
+        ]},
+        { category: 'Weather & Everyday Comfort', icon: '👟', items: [
+          { text: 'Comfortable broken-in walking shoes', checked: true },
+          { text: 'Lightweight layered clothing & sun protection', checked: false },
+          { text: 'Compact umbrella or light rain shell', checked: false }
+        ]}
       ]
     };
 
@@ -2594,7 +2504,7 @@
   }
 
   // ==========================================================================
-  // 6. Navigation & Tab Switching
+  // 6. Tab Switching
   // ==========================================================================
   function switchTab(tabId) {
     document.querySelectorAll('.app-tab-navigation .tab-btn').forEach(btn => {
@@ -2635,7 +2545,7 @@
   }
 
   // ==========================================================================
-  // 8. Event Listeners & Initialization
+  // 8. Initialization
   // ==========================================================================
   function init() {
     // Theme toggle
@@ -2688,7 +2598,7 @@
       });
     }
 
-    // Trip selector — with lazy hydration
+    // Trip selector
     const tripSelect = document.getElementById('tripSelect');
     if (tripSelect) {
       tripSelect.addEventListener('change', async (e) => {
@@ -2790,15 +2700,17 @@
 
         try {
           const data = {
-            destination:  destDisplay,
-            duration:     document.getElementById('inputDuration').value,
-            adults:       document.getElementById('inputAdults').value,
-            children:     document.getElementById('inputChildren').value,
-            seniors:      document.getElementById('inputSeniors').value,
-            tripType:     document.getElementById('selectTripType').value,
-            budgetPref:   document.getElementById('selectBudgetPref').value,
-            startDate:    document.getElementById('inputStartDate').value || null,
-            specialNotes: document.getElementById('inputSpecialNotes').value || null
+            destination:    destDisplay,
+            duration:       document.getElementById('inputDuration').value,
+            adults:         document.getElementById('inputAdults').value,
+            children:       document.getElementById('inputChildren').value,
+            seniors:        document.getElementById('inputSeniors').value,
+            tripType:       document.getElementById('selectTripType').value,
+            budgetPref:     document.getElementById('selectBudgetPref').value,
+            transport:      document.getElementById('selectTransport')?.value || 'flight',
+            tripDirection:  document.getElementById('selectTripDirection')?.value || 'round',
+            startDate:      document.getElementById('inputStartDate').value || null,
+            specialNotes:   document.getElementById('inputSpecialNotes').value || null
           };
 
           generateCustomTrip(data);
@@ -2855,7 +2767,6 @@
           if (!existingIds.has(rt.id)) PRESET_TRIPS.push(rt);
         });
 
-        // Hydrate the first trip's days before rendering
         await ensureCurrentTripDays();
 
         renderTripHero();
@@ -2866,7 +2777,7 @@
       }
     });
 
-    // Footer & header shortcuts
+    // Shortcut buttons
     const btnAdjustPaceHeader = document.getElementById('btnAdjustPaceHeader');
     if (btnAdjustPaceHeader) {
       btnAdjustPaceHeader.addEventListener('click', () => {
@@ -2878,9 +2789,7 @@
 
     const btnPrintItinerary = document.getElementById('btnPrintItinerary');
     if (btnPrintItinerary) {
-      btnPrintItinerary.addEventListener('click', () => {
-        window.print();
-      });
+      btnPrintItinerary.addEventListener('click', () => { window.print(); });
     }
 
     const btnQuickSwapActivity = document.getElementById('btnQuickSwapActivity');
@@ -2908,9 +2817,7 @@
 
     const btnQuickAdjustPace = document.getElementById('btnQuickAdjustPace');
     if (btnQuickAdjustPace) {
-      btnQuickAdjustPace.addEventListener('click', () => {
-        switchTab('customize');
-      });
+      btnQuickAdjustPace.addEventListener('click', () => { switchTab('customize'); });
     }
 
     const btnQuickBookingGuide = document.getElementById('btnQuickBookingGuide');
@@ -2922,7 +2829,7 @@
       });
     }
 
-    // Pace selector radios
+    // Pace radios
     document.querySelectorAll('input[name="tripPace"]').forEach(radio => {
       radio.addEventListener('change', (e) => {
         document.querySelectorAll('.pace-option-card').forEach(c => c.classList.remove('active'));
@@ -2943,7 +2850,7 @@
       });
     }
 
-    // Customize slot selectors
+    // Swap selectors
     const swapDaySelect = document.getElementById('swapDaySelect');
     const swapSlotSelect = document.getElementById('swapSlotSelect');
     if (swapDaySelect) {
@@ -2960,7 +2867,7 @@
       });
     }
 
-    // ---- Load live currency rates (non-blocking) ----
+    // Load live currency rates
     if (window.CurrencyService?.loadRates) {
       window.CurrencyService.loadRates('usd').then(() => {
         renderTripHero();
@@ -2974,18 +2881,17 @@
       });
     }
 
-    // Initial render (uses fallback 1:1 rates until live rates arrive)
+    // Initial render
     applyLanguage(currentLang);
 
-    // ---- Boot: wait for trips to load, then hydrate the first one ----
+    // Boot: retry-based trip hydration
     (async () => {
       let attempts = 0;
-      const maxAttempts = 20;   // 20 × 250ms = up to 5 seconds
+      const maxAttempts = 20;
 
       while (attempts < maxAttempts) {
         attempts++;
 
-        // Case 1: No trips yet, but signed in → fetch them
         if (PRESET_TRIPS.length === 0 && window.TripCraftAuth?.isSignedIn?.() && window.TripsAPI) {
           try {
             const remoteTrips = await window.TripsAPI.listTrips();
@@ -2997,7 +2903,6 @@
           }
         }
 
-        // Case 2: Have a trip but its days aren't loaded yet
         if (PRESET_TRIPS.length > 0) {
           const hydrated = await ensureCurrentTripDays();
           if (hydrated) {
@@ -3016,7 +2921,6 @@
         await new Promise(resolve => setTimeout(resolve, 250));
       }
 
-      // After max attempts, do a final render anyway
       renderTripHero();
       renderTripsGrid();
       console.log('[app] Boot gave up waiting — rendered with whatever loaded');
@@ -3030,7 +2934,7 @@
     init();
   }
 
-  // ---- Expose for cross-module access ----
+  // Expose for cross-module access
   window.TRANSLATIONS         = TRANSLATIONS;
   window.tripcraftT           = t;
   window.tripcraftToast       = showToast;

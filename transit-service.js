@@ -1,22 +1,19 @@
 /**
- * TripCraft — Transitland Integration
- * Fetches nearby public transport stops and routes for a given location.
+ * TripCraft — Local Transit Service (OpenStreetMap Overpass API)
+ * Fetches nearby public transport stops with NO API key required.
+ * Data © OpenStreetMap contributors (ODbL license).
  */
 (function () {
   'use strict';
 
-  // =========================================================================
-  // Configuration — replace with your Transitland API key
-  // =========================================================================
-  const API_KEY = 'YOUR_TRANSITLAND_API_KEY';
-  const API_BASE = 'https://transit.land/api/v2/rest';
+  const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
 
-  // Cache to avoid repeated API calls (30 min TTL)
+  // Cache to avoid repeated calls
   const cache = new Map();
-  const CACHE_TTL = 30 * 60 * 1000;
+  const CACHE_TTL = 30 * 60 * 1000;   // 30 minutes
 
   // =========================================================================
-  // Nearby Stops
+  // Find nearby transport stops
   // =========================================================================
   async function findNearbyStops(lat, lng, radiusMeters = 800) {
     if (typeof lat !== 'number' || typeof lng !== 'number') return [];
@@ -25,87 +22,106 @@
     const cached = cache.get(key);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data;
 
-    const url =
-      `${API_BASE}/stops?` +
-      `lat=${lat}&lon=${lng}&radius=${radiusMeters}` +
-      `&limit=8` +
-      `&apikey=${encodeURIComponent(API_KEY)}`;
+    // Overpass QL query — finds all public transport nodes within radius
+    const query = `
+      [out:json][timeout:15];
+      (
+        node["public_transport"~"platform|station"](around:${radiusMeters},${lat},${lng});
+        node["railway"~"station|halt|tram_stop"](around:${radiusMeters},${lat},${lng});
+        node["highway"="bus_stop"](around:${radiusMeters},${lat},${lng});
+        node["amenity"="ferry_terminal"](around:${radiusMeters},${lat},${lng});
+      );
+      out body 20;
+    `;
 
     try {
-      const res = await fetch(url);
+      const res = await fetch(OVERPASS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query)
+      });
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      const stops = (data.stops || []).map(s => ({
-        onestopId:  s.onestop_id,
-        name:       s.name || 'Transit Stop',
-        lat:        s.geometry?.coordinates?.[1],
-        lng:        s.geometry?.coordinates?.[0],
-        types:      s.served_by_vehicle_types || [],
-        routes:     (s.routes_serving_stop || []).slice(0, 3).map(r => r.route_name),
-        wheelchair: s.wheelchair_boarding === true
-      }));
+      const stops = (data.elements || [])
+        .filter(el => el.lat && el.lon)
+        .slice(0, 8)
+        .map(el => {
+          const tags = el.tags || {};
+          const typeInfo = detectTransportType(tags);
 
-      cache.set(key, { data: stops, timestamp: Date.now() });
-      return stops;
+          return {
+            id:        el.id,
+            name:      tags.name || tags['name:en'] || tags.ref || 'Transit Stop',
+            lat:       el.lat,
+            lng:       el.lon,
+            type:      typeInfo.type,
+            icon:      typeInfo.icon,
+            routes:    extractRoutes(tags),
+            wheelchair: tags.wheelchair === 'yes'
+          };
+        });
+
+      // Deduplicate by name
+      const seen = new Set();
+      const unique = stops.filter(s => {
+        const k = s.name.toLowerCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+
+      cache.set(key, { data: unique, timestamp: Date.now() });
+      return unique;
 
     } catch (err) {
-      console.warn('[transit-service] Stop search failed:', err.message);
+      console.warn('[transit] Overpass API failed:', err.message);
       return [];
     }
   }
 
   // =========================================================================
-  // Departures from a stop (real-time where available)
+  // Detect transport type from OSM tags
   // =========================================================================
-  async function getDepartures(onestopId, limit = 5) {
-    const key = `dep-${onestopId}-${limit}`;
-    const cached = cache.get(key);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data;
-
-    const url =
-      `${API_BASE}/stops/${encodeURIComponent(onestopId)}/departures?` +
-      `limit=${limit}` +
-      `&apikey=${encodeURIComponent(API_KEY)}`;
-
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-
-      const departures = (data.stops || []).flatMap(stop =>
-        (stop.departures || []).map(d => ({
-          routeName: d.route?.route_short_name || d.route?.route_long_name || 'Route',
-          headsign:  d.trip?.trip_headsign || '—',
-          time:      d.departure_time || '—',
-          isRealtime: !!d.realtime
-        }))
-      ).slice(0, limit);
-
-      cache.set(key, { data: departures, timestamp: Date.now() });
-      return departures;
-
-    } catch (err) {
-      console.warn('[transit-service] Departures failed:', err.message);
-      return [];
+  function detectTransportType(tags) {
+    if (tags.railway === 'station' || tags.station === 'subway' || tags.subway === 'yes') {
+      return { type: 'metro', icon: '🚇' };
     }
+    if (tags.railway === 'tram_stop' || tags.tram === 'yes') {
+      return { type: 'tram', icon: '🚊' };
+    }
+    if (tags.railway === 'halt' || tags.railway === 'station') {
+      return { type: 'rail', icon: '🚆' };
+    }
+    if (tags.highway === 'bus_stop' || tags.bus === 'yes') {
+      return { type: 'bus', icon: '🚌' };
+    }
+    if (tags.amenity === 'ferry_terminal') {
+      return { type: 'ferry', icon: '⛴️' };
+    }
+    if (tags.aerialway) {
+      return { type: 'cable', icon: '🚡' };
+    }
+    return { type: 'stop', icon: '🚏' };
   }
 
   // =========================================================================
-  // Vehicle type formatter
+  // Extract route names (if present in OSM)
   // =========================================================================
-  function formatVehicleType(type) {
-    const map = {
-      0: { icon: '🚊', key: 'transitTram' },
-      1: { icon: '🚇', key: 'transitMetro' },
-      2: { icon: '🚆', key: 'transitRail' },
-      3: { icon: '🚌', key: 'transitBus' },
-      4: { icon: '⛴️', key: 'transitFerry' },
-      5: { icon: '🚡', key: 'transitCableCar' },
-      6: { icon: '🚠', key: 'transitGondola' },
-      7: { icon: '🚃', key: 'transitFunicular' }
-    };
-    return map[type] || { icon: '🚏', key: 'transitStop' };
+  function extractRoutes(tags) {
+    const routes = [];
+    if (tags.route_ref)       routes.push(tags.route_ref);
+    if (tags.ref)             routes.push(tags.ref);
+    if (tags.local_ref)       routes.push(tags.local_ref);
+    if (tags['ref:line'])     routes.push(tags['ref:line']);
+    if (tags.line)            routes.push(tags.line);
+
+    // Some stops have "route_ref" as comma-separated
+    if (tags.route_ref && tags.route_ref.includes(';')) {
+      return tags.route_ref.split(';').map(s => s.trim()).slice(0, 3);
+    }
+    return [...new Set(routes)].slice(0, 3);
   }
 
   // =========================================================================
@@ -113,8 +129,6 @@
   // =========================================================================
   window.TransitService = {
     findNearbyStops,
-    getDepartures,
-    formatVehicleType,
-    hasApiKey: () => API_KEY && API_KEY !== 'YOUR_TRANSITLAND_API_KEY'
+    hasApiKey: () => true   // No key needed — always "ready"
   };
 })();
