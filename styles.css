@@ -1680,23 +1680,62 @@ html[data-theme="light"] .form-input {
   display: none;
 }
 
-/* On mobile, allow wrapping and hide some details for cleanliness */
+/* ==========================================================================
+   Rich Hero Weather Card — Mobile Version
+   Displays all weather details, wrapped elegantly on small screens.
+   ========================================================================== */
 @media (max-width: 640px) {
   .hero-weather-rich {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    border-radius: var(--radius-md);
+    max-width: 100%;
+  }
+
+  .hero-weather-rich .weather-icon {
+    font-size: 1.25rem;
+  }
+
+  .hero-weather-rich .weather-temp {
+    font-size: 1.05rem;
+    font-weight: 800;
+  }
+
+  .hero-weather-rich .weather-cond {
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .hero-weather-rich .weather-detail {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .hero-weather-rich .weather-divider {
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0 -0.1rem;
+  }
+
+  /* Force a graceful line break after the condition
+     so details wrap onto their own line if needed */
+  .hero-weather-rich #heroWeatherCond::after {
+    content: ' ';
+  }
+}
+
+/* Extra small screens — tighten further but keep all details visible */
+@media (max-width: 400px) {
+  .hero-weather-rich {
     font-size: 0.75rem;
-    padding: 0.45rem 0.75rem;
+    padding: 0.55rem 0.8rem;
     gap: 0.3rem 0.45rem;
   }
-  .hero-weather-rich .weather-temp { font-size: 0.9rem; }
-  .hero-weather-rich .weather-icon { font-size: 1rem; }
-  /* Hide feels-like + humidity + wind on very small screens */
-  .hero-weather-rich #heroWeatherHumidity,
-  .hero-weather-rich #heroWeatherWind,
-  .hero-weather-rich #heroWeatherFeels {
-    display: none;
-  }
-  /* Also hide dividers that came before them */
-  .hero-weather-rich .weather-divider:nth-of-type(n+2) {
-    display: none;
-  }
+  .hero-weather-rich .weather-icon { font-size: 1.1rem; }
+  .hero-weather-rich .weather-temp { font-size: 0.95rem; }
+  .hero-weather-rich .weather-detail { font-size: 0.72rem; }
 }
