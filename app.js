@@ -23,7 +23,6 @@
   function formatMoney(amountInUSD) {
     const curr = CURRENCIES[currentCurrency] || CURRENCIES.USD;
 
-    // Prefer live rate from CurrencyService; fall back to 1:1 if not loaded yet
     let liveRate = 1;
     if (window.CurrencyService?.getRate) {
       const fetched = window.CurrencyService.getRate(currentCurrency);
@@ -38,7 +37,7 @@
       return `${curr.symbol}${converted.toLocaleString()}`;
     }
     if (currentCurrency === 'SAR') {
-      return `\u200E${converted.toLocaleString()} ${curr.symbol}`;
+      return `${converted.toLocaleString()} ${curr.symbol}`;
     }
     return `${curr.symbol}${converted.toLocaleString()}`;
   }
@@ -217,20 +216,7 @@
       trySampleTrip: "Try a Sample Trip",
       sampleTripLoaded: "✓ Sample trip loaded — explore freely!",
       heroWelcomeTitle: "Welcome to TripCraft",
-      heroWelcomeSub: "Plan your first personalized journey and let us craft a day-by-day itinerary tailored to your travel style.",
-            transitNearbyTitle: "Nearby Public Transport",
-      transitLoading: "Finding nearby stops…",
-      transitStops: "stops",
-      transitAttribution: "Transit data by Transitland",
-      transitTram: "Tram",
-      transitMetro: "Metro",
-      transitRail: "Rail",
-      transitBus: "Bus",
-      transitFerry: "Ferry",
-      transitCableCar: "Cable Car",
-      transitGondola: "Gondola",
-      transitFunicular: "Funicular",
-      transitStop: "Transit Stop",
+      heroWelcomeSub: "Plan your first personalized journey and let us craft a day-by-day itinerary tailored to your travel style."
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -402,20 +388,7 @@
       trySampleTrip: "جرّب رحلة نموذجية",
       sampleTripLoaded: "✓ تم تحميل الرحلة النموذجية — استكشفها بحرية!",
       heroWelcomeTitle: "مرحباً بك في TripCraft",
-      heroWelcomeSub: "خطط لرحلتك الأولى المخصصة ودعنا نصمم لك جدولاً يومياً يناسب أسلوب سفرك.",
-            transitNearbyTitle: "وسائل النقل العام القريبة",
-      transitLoading: "جارٍ البحث عن المحطات القريبة…",
-      transitStops: "محطات",
-      transitAttribution: "بيانات النقل بواسطة Transitland",
-      transitTram: "ترام",
-      transitMetro: "مترو",
-      transitRail: "قطار",
-      transitBus: "حافلة",
-      transitFerry: "عبّارة",
-      transitCableCar: "تلفريك",
-      transitGondola: "جندول",
-      transitFunicular: "قطار جبلي",
-      transitStop: "محطة نقل",
+      heroWelcomeSub: "خطط لرحلتك الأولى المخصصة ودعنا نصمم لك جدولاً يومياً يناسب أسلوب سفرك."
     },
     es: {
       tagline: "Planificador Personal de Viajes",
@@ -587,20 +560,7 @@
       trySampleTrip: "Probar Viaje de Ejemplo",
       sampleTripLoaded: "✓ Viaje de ejemplo cargado — ¡explóralo libremente!",
       heroWelcomeTitle: "Bienvenido a TripCraft",
-      heroWelcomeSub: "Planifica tu primer viaje personalizado y deja que diseñemos un itinerario día a día a tu estilo.",
-            transitNearbyTitle: "Transporte Público Cercano",
-      transitLoading: "Buscando paradas cercanas…",
-      transitStops: "paradas",
-      transitAttribution: "Datos de tránsito por Transitland",
-      transitTram: "Tranvía",
-      transitMetro: "Metro",
-      transitRail: "Ferrocarril",
-      transitBus: "Autobús",
-      transitFerry: "Ferry",
-      transitCableCar: "Teleférico",
-      transitGondola: "Góndola",
-      transitFunicular: "Funicular",
-      transitStop: "Parada",
+      heroWelcomeSub: "Planifica tu primer viaje personalizado y deja que diseñemos un itinerario día a día a tu estilo."
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
@@ -772,20 +732,7 @@
       trySampleTrip: "Essayer un Voyage d'Exemple",
       sampleTripLoaded: "✓ Voyage d'exemple chargé — explorez librement !",
       heroWelcomeTitle: "Bienvenue sur TripCraft",
-      heroWelcomeSub: "Planifiez votre premier voyage personnalisé et laissez-nous créer un itinéraire jour par jour adapté à votre style.",
-            transitNearbyTitle: "Transports Publics à Proximité",
-      transitLoading: "Recherche des arrêts à proximité…",
-      transitStops: "arrêts",
-      transitAttribution: "Données de transport par Transitland",
-      transitTram: "Tramway",
-      transitMetro: "Métro",
-      transitRail: "Train",
-      transitBus: "Bus",
-      transitFerry: "Ferry",
-      transitCableCar: "Téléphérique",
-      transitGondola: "Gondole",
-      transitFunicular: "Funiculaire",
-      transitStop: "Arrêt",
+      heroWelcomeSub: "Planifiez votre premier voyage personnalisé et laissez-nous créer un itinéraire jour par jour adapté à votre style."
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
@@ -957,20 +904,7 @@
       trySampleTrip: "サンプル旅行を試す",
       sampleTripLoaded: "✓ サンプル旅行を読み込みました — 自由に探索してください！",
       heroWelcomeTitle: "TripCraftへようこそ",
-      heroWelcomeSub: "最初のパーソナル旅行を計画しましょう。あなたの旅行スタイルに合わせた日別旅程を作成します。",
-            transitNearbyTitle: "近くの公共交通機関",
-      transitLoading: "近くの停留所を検索中…",
-      transitStops: "停留所",
-      transitAttribution: "交通データ提供: Transitland",
-      transitTram: "路面電車",
-      transitMetro: "地下鉄",
-      transitRail: "鉄道",
-      transitBus: "バス",
-      transitFerry: "フェリー",
-      transitCableCar: "ケーブルカー",
-      transitGondola: "ゴンドラ",
-      transitFunicular: "ケーブルカー",
-      transitStop: "停留所",
+      heroWelcomeSub: "最初のパーソナル旅行を計画しましょう。あなたの旅行スタイルに合わせた日別旅程を作成します。"
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
@@ -1142,20 +1076,7 @@
       trySampleTrip: "Beispielreise Testen",
       sampleTripLoaded: "✓ Beispielreise geladen — frei erkunden!",
       heroWelcomeTitle: "Willkommen bei TripCraft",
-      heroWelcomeSub: "Plane deine erste personalisierte Reise und lass uns eine Tagesordnung nach deinem Reisestil erstellen.",
-      transitNearbyTitle: "Öffentliche Verkehrsmittel in der Nähe",
-      transitLoading: "Suche nach Haltestellen in der Nähe…",
-      transitStops: "Haltestellen",
-      transitAttribution: "Transitdaten von Transitland",
-      transitTram: "Straßenbahn",
-      transitMetro: "U-Bahn",
-      transitRail: "Bahn",
-      transitBus: "Bus",
-      transitFerry: "Fähre",
-      transitCableCar: "Seilbahn",
-      transitGondola: "Gondel",
-      transitFunicular: "Standseilbahn",
-      transitStop: "Haltestelle",
+      heroWelcomeSub: "Plane deine erste personalisierte Reise und lass uns eine Tagesordnung nach deinem Reisestil erstellen."
     }
   };
 
@@ -1196,7 +1117,7 @@
   }
 
   // ==========================================================================
-  // 3. Trips Data Store (starts empty — populated from Supabase + user trips)
+  // 3. Trips Data Store
   // ==========================================================================
   const PRESET_TRIPS = [];
 
@@ -1584,6 +1505,27 @@
   }
 
   // ==========================================================================
+  // Ensure the current trip's days are loaded before rendering
+  // ==========================================================================
+  async function ensureCurrentTripDays() {
+    const trip = getCurrentTrip();
+    if (!trip) return false;
+    if (trip.days && trip.days.length > 0) return true;
+    if (!trip.savedToCloud) return false;
+    if (!window.TripsAPI) return false;
+
+    try {
+      const full = await window.TripsAPI.getTripWithDays(trip.id);
+      Object.keys(full).forEach(k => { trip[k] = full[k]; });
+      console.log('[app] Hydrated days for', trip.destination);
+      return true;
+    } catch (err) {
+      console.warn('[app] Hydration failed for', trip.destination, err.message);
+      return false;
+    }
+  }
+
+  // ==========================================================================
   // Sample Trip Loader
   // ==========================================================================
   async function loadSampleTrip() {
@@ -1842,22 +1784,9 @@
 
       card.querySelector('.btn-load-trip').addEventListener('click', async () => {
         if (isActive) return;
-
         currentTripIndex = idx;
         activeDayIndex = 0;
-
-        const targetTrip = PRESET_TRIPS[idx];
-
-        if (targetTrip.savedToCloud && (!targetTrip.days || targetTrip.days.length === 0) && window.TripsAPI) {
-          try {
-            const full = await window.TripsAPI.getTripWithDays(targetTrip.id);
-            Object.keys(full).forEach(k => { targetTrip[k] = full[k]; });
-          } catch (err) {
-            console.warn('[app] Could not load trip days:', err.message);
-            showToast(t('tripLoadFailed'));
-            return;
-          }
-        }
+        await ensureCurrentTripDays();
 
         renderTripHero();
         renderItinerary();
@@ -1867,7 +1796,7 @@
         renderPacking();
         renderTripsGrid();
 
-        showToast(t('tripLoaded') + ' — ' + targetTrip.destination);
+        showToast(t('tripLoaded') + ' — ' + PRESET_TRIPS[idx].destination);
       });
 
       card.querySelector('.btn-delete').addEventListener('click', () => {
@@ -1966,100 +1895,6 @@
     });
   }
 
-  // ==========================================================================
-  // Local Transit — renders "Getting Around" card for the current day
-  // ==========================================================================
-  async function renderTransitCard(day, dayIndex) {
-    const container = document.getElementById('transitCardContainer');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const trip = getCurrentTrip();
-    if (!trip) return;
-
-    // Get the day's location from the trip's destination metadata
-    const lat = trip.destinationMeta?.lat;
-    const lng = trip.destinationMeta?.lng;
-
-    if (!window.TransitService || !window.TransitService.hasApiKey()) {
-      return; // silently skip if service not ready
-    }
-    if (typeof lat !== 'number' || typeof lng !== 'number') {
-      return;
-    }
-
-    // Show loading state
-    container.innerHTML = `
-      <div class="transit-card">
-        <div class="transit-card-header">
-          <span class="transit-icon">🚏</span>
-          <h3 class="transit-card-title">${t('transitNearbyTitle') || 'Nearby Public Transport'}</h3>
-        </div>
-        <div class="transit-loading">
-          <span class="spinner"></span>
-          <span>${t('transitLoading') || 'Finding nearby stops…'}</span>
-        </div>
-      </div>
-    `;
-
-    try {
-      const stops = await window.TransitService.findNearbyStops(lat, lng, 800);
-
-      if (!stops || stops.length === 0) {
-        container.innerHTML = '';
-        return;
-      }
-
-      // Build stop cards
-      const stopsHtml = stops.map(stop => {
-        const typeIcons = (stop.types || [])
-          .slice(0, 3)
-          .map(type => {
-            const v = window.TransitService.formatVehicleType(type);
-            return `<span class="transit-type-icon" title="${t(v.key) || ''}">${v.icon}</span>`;
-          })
-          .join('');
-
-        const routesHtml = (stop.routes || [])
-          .slice(0, 3)
-          .map(r => `<span class="transit-route-chip">${r}</span>`)
-          .join('');
-
-        const wheelChairBadge = stop.wheelchair
-          ? '<span class="transit-a11y" title="Wheelchair accessible">♿</span>'
-          : '';
-
-        return `
-          <div class="transit-stop-row">
-            <div class="transit-stop-info">
-              <div class="transit-stop-name">${wheelChairBadge}${stop.name}</div>
-              <div class="transit-stop-types">${typeIcons}</div>
-            </div>
-            <div class="transit-stop-routes">${routesHtml}</div>
-          </div>
-        `;
-      }).join('');
-
-      container.innerHTML = `
-        <div class="transit-card">
-          <div class="transit-card-header">
-            <span class="transit-icon">🚏</span>
-            <h3 class="transit-card-title">${t('transitNearbyTitle') || 'Nearby Public Transport'}</h3>
-            <span class="transit-stop-count">${stops.length} ${t('transitStops') || 'stops'}</span>
-          </div>
-          <div class="transit-stops-list">${stopsHtml}</div>
-          <div class="transit-card-footer">
-            <span class="transit-attribution">${t('transitAttribution') || 'Transit data by Transitland'}</span>
-          </div>
-        </div>
-      `;
-
-    } catch (err) {
-      console.warn('[app] Transit card render failed:', err);
-      container.innerHTML = '';
-    }
-  }
-
   function renderItinerary() {
     const trip = getCurrentTrip();
     if (!trip || !trip.days || trip.days.length === 0) {
@@ -2099,8 +1934,6 @@
 
     const dayWeatherAdaptationText = document.getElementById('dayWeatherAdaptationText');
     if (dayWeatherAdaptationText) dayWeatherAdaptationText.textContent = day.weatherPlan;
-    // Trigger transit card render
-    renderTransitCard(day, activeDayIndex);
 
     const container = document.getElementById('timelineCardsContainer');
     if (!container) return;
@@ -2855,22 +2688,13 @@
       });
     }
 
-    // Trip selector
+    // Trip selector — with lazy hydration
     const tripSelect = document.getElementById('tripSelect');
     if (tripSelect) {
       tripSelect.addEventListener('change', async (e) => {
         currentTripIndex = parseInt(e.target.value, 10) || 0;
         activeDayIndex = 0;
-
-        const trip = PRESET_TRIPS[currentTripIndex];
-        if (trip && (!trip.days || trip.days.length === 0) && trip.savedToCloud && window.TripsAPI) {
-          try {
-            const full = await window.TripsAPI.getTripWithDays(trip.id);
-            Object.keys(full).forEach(k => { trip[k] = full[k]; });
-          } catch (err) {
-            console.warn('[app] Could not load trip days:', err.message);
-          }
-        }
+        await ensureCurrentTripDays();
 
         renderTripHero();
         renderTripsGrid();
@@ -3031,6 +2855,9 @@
           if (!existingIds.has(rt.id)) PRESET_TRIPS.push(rt);
         });
 
+        // Hydrate the first trip's days before rendering
+        await ensureCurrentTripDays();
+
         renderTripHero();
         renderTripsGrid();
         showToast(`✓ Loaded ${remoteTrips.length} saved trip(s)`);
@@ -3136,7 +2963,6 @@
     // ---- Load live currency rates (non-blocking) ----
     if (window.CurrencyService?.loadRates) {
       window.CurrencyService.loadRates('usd').then(() => {
-        // Once rates are ready, re-render everything so all prices update
         renderTripHero();
         renderTripsGrid();
         renderItinerary();
@@ -3151,24 +2977,49 @@
     // Initial render (uses fallback 1:1 rates until live rates arrive)
     applyLanguage(currentLang);
 
-    // Hydrate the currently-selected trip if it lacks days
+    // ---- Boot: wait for trips to load, then hydrate the first one ----
     (async () => {
-      const trip = getCurrentTrip();
-      if (trip && (!trip.days || trip.days.length === 0) && trip.savedToCloud && window.TripsAPI) {
-        try {
-          const full = await window.TripsAPI.getTripWithDays(trip.id);
-          Object.keys(full).forEach(k => { trip[k] = full[k]; });
-          renderTripHero();
-          renderItinerary();
-          renderStays();
-          renderBudget();
-          renderCustomizeConsole();
-          renderPacking();
-          renderTripsGrid();
-        } catch (err) {
-          console.warn('[app] Boot hydration failed:', err.message);
+      let attempts = 0;
+      const maxAttempts = 20;   // 20 × 250ms = up to 5 seconds
+
+      while (attempts < maxAttempts) {
+        attempts++;
+
+        // Case 1: No trips yet, but signed in → fetch them
+        if (PRESET_TRIPS.length === 0 && window.TripCraftAuth?.isSignedIn?.() && window.TripsAPI) {
+          try {
+            const remoteTrips = await window.TripsAPI.listTrips();
+            remoteTrips.forEach(rt => {
+              if (!PRESET_TRIPS.some(t => t.id === rt.id)) PRESET_TRIPS.push(rt);
+            });
+          } catch (err) {
+            console.warn('[app] Boot trip fetch failed:', err.message);
+          }
         }
+
+        // Case 2: Have a trip but its days aren't loaded yet
+        if (PRESET_TRIPS.length > 0) {
+          const hydrated = await ensureCurrentTripDays();
+          if (hydrated) {
+            renderTripHero();
+            renderItinerary();
+            renderStays();
+            renderBudget();
+            renderCustomizeConsole();
+            renderPacking();
+            renderTripsGrid();
+            console.log('[app] Boot render complete after', attempts, 'attempts');
+            return;
+          }
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 250));
       }
+
+      // After max attempts, do a final render anyway
+      renderTripHero();
+      renderTripsGrid();
+      console.log('[app] Boot gave up waiting — rendered with whatever loaded');
     })();
   }
 
