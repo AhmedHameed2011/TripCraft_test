@@ -2034,3 +2034,29 @@ html[data-theme="light"] .form-input {
   .trip-grid-title { font-size: 1rem; }
   .trip-grid-actions .btn { padding: 0.6rem 0.85rem; font-size: 0.8rem; }
 }
+
+/* ==========================================================================
+   Trips Empty State — dual action buttons
+   ========================================================================== */
+.trips-empty-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+}
+
+.trips-empty-actions .btn {
+  min-width: 180px;
+}
+
+@media (max-width: 640px) {
+  .trips-empty-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .trips-empty-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+}

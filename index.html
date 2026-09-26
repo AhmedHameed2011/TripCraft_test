@@ -303,6 +303,24 @@
         </div>
       </section>
 
+<section id="tabViewTrips" class="tab-content-panel active">
+  <div class="panel-header">
+    <div>
+      <h2 class="panel-title" data-i18n="tripsHeaderTitle">My Trips</h2>
+      <p class="panel-subtitle" data-i18n="tripsHeaderSubtitle">All your planned journeys in one place...</p>
+    </div>
+    <button id="btnNewTripInline" class="btn btn-primary" type="button">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      <span data-i18n="navNewTrip">Plan New Trip</span>
+    </button>
+  </div>
+
+  <div id="tripsGridContainer" class="trips-grid"></div>
+</section>
+
       <!-- ================= TAB 2: ITINERARY ================= -->
       <section id="tabViewItinerary" class="tab-content-panel">
         <div class="itinerary-header-bar">
@@ -791,6 +809,8 @@
   <script src="destination-picker.js"></script>
   <script src="auth.js"></script>
   <script src="auth-ui.js"></script>
+  <!-- Currency Service (loads before app.js) -->
+  <script src="currency-service.js"></script>
 </body>
 
 </html>

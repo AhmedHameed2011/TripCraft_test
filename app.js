@@ -8,21 +8,32 @@
   'use strict';
 
   // ==========================================================================
-  // 1. Currency & Conversion
+  // 1. Currency & Conversion (Live rates via CurrencyService)
   // ==========================================================================
   const CURRENCIES = {
-    USD: { symbol: '$', rate: 1.0 },
-    EUR: { symbol: '€', rate: 0.92 },
-    GBP: { symbol: '£', rate: 0.79 },
-    JPY: { symbol: '¥', rate: 152.0 },
-    SAR: { symbol: 'ر.س', rate: 3.75 }
+    USD: { symbol: '$' },
+    EUR: { symbol: '€' },
+    GBP: { symbol: '£' },
+    JPY: { symbol: '¥' },
+    SAR: { symbol: 'ر.س' }
   };
 
   let currentCurrency = localStorage.getItem('tripcraft_currency') || 'USD';
 
   function formatMoney(amountInUSD) {
     const curr = CURRENCIES[currentCurrency] || CURRENCIES.USD;
-    const converted = Math.round(amountInUSD * curr.rate);
+
+    // Prefer live rate from CurrencyService; fall back to 1:1 if not loaded yet
+    let liveRate = 1;
+    if (window.CurrencyService?.getRate) {
+      const fetched = window.CurrencyService.getRate(currentCurrency);
+      if (typeof fetched === 'number' && fetched > 0) {
+        liveRate = fetched;
+      }
+    }
+
+    const converted = Math.round(amountInUSD * liveRate);
+
     if (currentCurrency === 'JPY') {
       return `${curr.symbol}${converted.toLocaleString()}`;
     }
@@ -186,7 +197,7 @@
       tripsHeaderTitle: "My Trips",
       tripsHeaderSubtitle: "All your planned journeys in one place. Load any trip to view its full itinerary, or delete trips you no longer need.",
       tripsEmptyTitle: "No saved trips yet",
-      tripsEmptySub: "Tap \"Plan New Trip\" to create your first journey.",
+      tripsEmptySub: "Tap \"Plan New Trip\" to create your first journey, or explore a sample trip to see what TripCraft can do.",
       tripCardLoad: "View Trip",
       tripCardActive: "Currently Open",
       tripCardDelete: "Delete",
@@ -202,7 +213,11 @@
       tripDeleted: "✓ Trip deleted",
       tripDeleteFailed: "⚠ Could not delete trip",
       tripLoaded: "✓ Trip loaded",
-      tripLoadFailed: "⚠ Could not load trip"
+      tripLoadFailed: "⚠ Could not load trip",
+      trySampleTrip: "Try a Sample Trip",
+      sampleTripLoaded: "✓ Sample trip loaded — explore freely!",
+      heroWelcomeTitle: "Welcome to TripCraft",
+      heroWelcomeSub: "Plan your first personalized journey and let us craft a day-by-day itinerary tailored to your travel style."
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -354,7 +369,7 @@
       tripsHeaderTitle: "رحلاتي",
       tripsHeaderSubtitle: "جميع رحلاتك المخططة في مكان واحد. حمّل أي رحلة لعرض جدولها الكامل، أو احذف الرحلات التي لم تعد بحاجة إليها.",
       tripsEmptyTitle: "لا توجد رحلات محفوظة بعد",
-      tripsEmptySub: "اضغط على \"خطط لرحلة جديدة\" لإنشاء رحلتك الأولى.",
+      tripsEmptySub: "اضغط على \"خطط لرحلة جديدة\" لإنشاء رحلتك الأولى، أو استكشف رحلة نموذجية لترى ما يمكن أن تقدمه TripCraft.",
       tripCardLoad: "عرض الرحلة",
       tripCardActive: "مفتوحة حالياً",
       tripCardDelete: "حذف",
@@ -370,7 +385,11 @@
       tripDeleted: "✓ تم حذف الرحلة",
       tripDeleteFailed: "⚠ تعذر حذف الرحلة",
       tripLoaded: "✓ تم تحميل الرحلة",
-      tripLoadFailed: "⚠ تعذر تحميل الرحلة"
+      tripLoadFailed: "⚠ تعذر تحميل الرحلة",
+      trySampleTrip: "جرّب رحلة نموذجية",
+      sampleTripLoaded: "✓ تم تحميل الرحلة النموذجية — استكشفها بحرية!",
+      heroWelcomeTitle: "مرحباً بك في TripCraft",
+      heroWelcomeSub: "خطط لرحلتك الأولى المخصصة ودعنا نصمم لك جدولاً يومياً يناسب أسلوب سفرك."
     },
     es: {
       tagline: "Planificador Personal de Viajes",
@@ -522,7 +541,7 @@
       tripsHeaderTitle: "Mis Viajes",
       tripsHeaderSubtitle: "Todos tus viajes planeados en un solo lugar. Carga cualquier viaje para ver su itinerario completo, o elimina los que ya no necesites.",
       tripsEmptyTitle: "Aún no hay viajes guardados",
-      tripsEmptySub: "Pulsa \"Planificar Nuevo Viaje\" para crear tu primera aventura.",
+      tripsEmptySub: "Pulsa \"Planificar Nuevo Viaje\" para crear tu primera aventura, o explora un viaje de ejemplo para ver lo que TripCraft puede hacer.",
       tripCardLoad: "Ver Viaje",
       tripCardActive: "Abierto Actualmente",
       tripCardDelete: "Eliminar",
@@ -538,7 +557,11 @@
       tripDeleted: "✓ Viaje eliminado",
       tripDeleteFailed: "⚠ No se pudo eliminar el viaje",
       tripLoaded: "✓ Viaje cargado",
-      tripLoadFailed: "⚠ No se pudo cargar el viaje"
+      tripLoadFailed: "⚠ No se pudo cargar el viaje",
+      trySampleTrip: "Probar Viaje de Ejemplo",
+      sampleTripLoaded: "✓ Viaje de ejemplo cargado — ¡explóralo libremente!",
+      heroWelcomeTitle: "Bienvenido a TripCraft",
+      heroWelcomeSub: "Planifica tu primer viaje personalizado y deja que diseñemos un itinerario día a día a tu estilo."
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
@@ -690,7 +713,7 @@
       tripsHeaderTitle: "Mes Voyages",
       tripsHeaderSubtitle: "Tous vos voyages planifiés en un seul endroit. Chargez un voyage pour voir son itinéraire complet, ou supprimez ceux dont vous n'avez plus besoin.",
       tripsEmptyTitle: "Aucun voyage enregistré",
-      tripsEmptySub: "Appuyez sur « Nouveau Voyage » pour créer votre première aventure.",
+      tripsEmptySub: "Appuyez sur « Nouveau Voyage » pour créer votre première aventure, ou explorez un voyage d'exemple pour découvrir TripCraft.",
       tripCardLoad: "Voir le Voyage",
       tripCardActive: "Actuellement Ouvert",
       tripCardDelete: "Supprimer",
@@ -706,7 +729,11 @@
       tripDeleted: "✓ Voyage supprimé",
       tripDeleteFailed: "⚠ Impossible de supprimer le voyage",
       tripLoaded: "✓ Voyage chargé",
-      tripLoadFailed: "⚠ Impossible de charger le voyage"
+      tripLoadFailed: "⚠ Impossible de charger le voyage",
+      trySampleTrip: "Essayer un Voyage d'Exemple",
+      sampleTripLoaded: "✓ Voyage d'exemple chargé — explorez librement !",
+      heroWelcomeTitle: "Bienvenue sur TripCraft",
+      heroWelcomeSub: "Planifiez votre premier voyage personnalisé et laissez-nous créer un itinéraire jour par jour adapté à votre style."
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
@@ -858,7 +885,7 @@
       tripsHeaderTitle: "マイ旅行",
       tripsHeaderSubtitle: "計画したすべての旅行を一か所に。旅行を読み込んで完全な旅程を表示したり、不要な旅行を削除できます。",
       tripsEmptyTitle: "保存された旅行はまだありません",
-      tripsEmptySub: "「新しい旅を計画」をタップして最初の旅行を作成しましょう。",
+      tripsEmptySub: "「新しい旅を計画」をタップして最初の旅行を作成するか、サンプル旅行を探索してTripCraftの機能を確認しましょう。",
       tripCardLoad: "旅行を見る",
       tripCardActive: "現在開いています",
       tripCardDelete: "削除",
@@ -874,7 +901,11 @@
       tripDeleted: "✓ 旅行を削除しました",
       tripDeleteFailed: "⚠ 旅行を削除できませんでした",
       tripLoaded: "✓ 旅行を読み込みました",
-      tripLoadFailed: "⚠ 旅行を読み込めませんでした"
+      tripLoadFailed: "⚠ 旅行を読み込めませんでした",
+      trySampleTrip: "サンプル旅行を試す",
+      sampleTripLoaded: "✓ サンプル旅行を読み込みました — 自由に探索してください！",
+      heroWelcomeTitle: "TripCraftへようこそ",
+      heroWelcomeSub: "最初のパーソナル旅行を計画しましょう。あなたの旅行スタイルに合わせた日別旅程を作成します。"
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
@@ -1026,7 +1057,7 @@
       tripsHeaderTitle: "Meine Reisen",
       tripsHeaderSubtitle: "Alle deine geplanten Reisen an einem Ort. Lade eine Reise, um das vollständige Programm zu sehen, oder lösche nicht mehr benötigte Reisen.",
       tripsEmptyTitle: "Noch keine gespeicherten Reisen",
-      tripsEmptySub: "Tippe auf „Neue Reise planen“, um dein erstes Abenteuer zu erstellen.",
+      tripsEmptySub: "Tippe auf „Neue Reise planen“, um dein erstes Abenteuer zu erstellen, oder erkunde eine Beispielreise, um zu sehen, was TripCraft kann.",
       tripCardLoad: "Reise ansehen",
       tripCardActive: "Derzeit geöffnet",
       tripCardDelete: "Löschen",
@@ -1042,7 +1073,11 @@
       tripDeleted: "✓ Reise gelöscht",
       tripDeleteFailed: "⚠ Reise konnte nicht gelöscht werden",
       tripLoaded: "✓ Reise geladen",
-      tripLoadFailed: "⚠ Reise konnte nicht geladen werden"
+      tripLoadFailed: "⚠ Reise konnte nicht geladen werden",
+      trySampleTrip: "Beispielreise Testen",
+      sampleTripLoaded: "✓ Beispielreise geladen — frei erkunden!",
+      heroWelcomeTitle: "Willkommen bei TripCraft",
+      heroWelcomeSub: "Plane deine erste personalisierte Reise und lass uns eine Tagesordnung nach deinem Reisestil erstellen."
     }
   };
 
@@ -1083,572 +1118,382 @@
   }
 
   // ==========================================================================
-  // 3. Preset Rich Trips Data Store
+  // 3. Trips Data Store (starts empty — populated from Supabase + user trips)
   // ==========================================================================
-  const PRESET_TRIPS = [
-    {
-      id: 'trip-tokyo-family',
-      destination: 'Tokyo, Japan',
-      country: 'Japan',
-      heroImage: 'assets/hero-tokyo.jpg',
-      title: 'Tokyo Neon & Heritage',
-      subtitle: 'A personalized voyage balancing vibrant pop-culture districts, historic Shinto shrines, and serene imperial gardens.',
-      tripType: 'Family Vacation',
-      durationDays: 5,
-      travelers: {
-        total: 4,
-        adults: 2,
-        children: 2,
-        seniors: 0,
-        summary: '4 Travelers (2 Adults, 2 Kids: Ages 8 & 11)'
-      },
-      budgetTier: 'moderate',
-      weather: {
-        temp: '23°C',
-        condition: 'weatherClear',
-        icon: '☀️',
-        notes: 'Weather Optimized: Cooler morning temple visits, midday indoor science/ac activities, sunset river breezes.'
-      },
-      currentPace: 'balanced',
-      stays: [
-        {
-          id: 'stay-mimaru-asakusa',
-          name: 'MIMARU TOKYO Asakusa Station',
-          type: 'Apartment Hotel',
-          neighborhood: 'Asakusa & Sumida',
-          image: 'assets/dest-tokyo.jpg',
-          rating: '4.92',
-          pricePerNight: 240,
-          fitBanner: '✓ Fits 4 Guests (Family Suite with Japanese Bunk Beds & Kitchenette)',
-          features: ['👶 Stroller-Friendly', '♿ Elevator & Level Entry', '👨‍👩‍👧 Family Kitchen', '📍 2-min Walk to Asakusa Station'],
-          bookingUrl: 'https://mimaruhotels.com/en/hotel/asakusa-station/',
-          description: 'Spacious Japanese apartment hotel tailor-made for families with separate living spaces, coin laundry, and immediate access to the Ginza line.'
-        },
-        {
-          id: 'stay-keio-plaza',
-          name: 'Keio Plaza Hotel Tokyo',
-          type: 'Full-Service Hotel',
-          neighborhood: 'Shinjuku',
-          image: 'assets/dest-tokyo.jpg',
-          rating: '4.85',
-          pricePerNight: 290,
-          fitBanner: '✓ Connected Twin Rooms with City Skyline Views',
-          features: ['♿ Full Accessibility Rooms', '👨‍👩‍👧 High Chairs & Baby Cots', '🍽️ 10 In-House Restaurants', '📍 Direct Airport Limousine Bus'],
-          bookingUrl: 'https://www.keioplaza.com/',
-          description: 'Prestigious family-friendly hotel with bilingual concierge, nursing rooms, and dedicated children amenities.'
-        },
-        {
-          id: 'stay-richmond-premier',
-          name: 'Richmond Hotel Premier Asakusa',
-          type: 'Comfort Modern',
-          neighborhood: 'Asakusa',
-          image: 'assets/dest-tokyo.jpg',
-          rating: '4.78',
-          pricePerNight: 195,
-          fitBanner: '✓ Triple & Quad Rooms with Sensō-ji Views',
-          features: ['👶 Stroller Rental Free', '♿ Barrier-Free Restrooms', '📍 Above Shopping & Dining Plaza'],
-          bookingUrl: 'https://richmondhotel.jp/en/asakusa-international/',
-          description: 'Convenient central base directly across from historic Nakamise, surrounded by peaceful pedestrian walking lanes.'
-        }
-      ],
-      days: [
-        {
-          dayNumber: 1,
-          dateLabel: 'Day 1',
-          neighborhood: 'Asakusa, Sensō-ji & Sumida Riverfront',
-          weatherPlan: '☀️ Cooler Morning: Outdoor Temple • 🏛️ Midday Peak Heat: Air-Conditioned Nakamise Arcade • 🌆 Sunset Breeze: River Promenade',
-          morning: {
-            dualName: '浅草寺 (Sensō-ji Historic Temple)',
-            category: 'Heritage & Culture',
-            time: '09:00 - 11:30',
-            desc: 'Tokyo’s oldest Buddhist temple founded in 645 AD. Enter through the iconic Kaminarimon Gate with giant red lantern.',
-            weatherBadge: '☀️ Cool Morning Outdoor',
-            accessibility: ['👶 Stroller-Friendly', '♿ Step-Free Ramp at Main Hall', '👨‍👩‍👧 Great for Kids'],
-            cost: 0,
-            completed: false
-          },
-          lunch: {
-            dualName: '大黒家 天麩羅 (Daikokuya Tempura)',
-            category: 'Local Food Pick',
-            time: '12:00 - 13:15',
-            desc: 'Historic eatery founded in 1887 famed for rich, savory sesame-oil dipped tendon bowls over steaming rice.',
-            weatherBadge: '❄️ Air-Conditioned Indoor Dining',
-            accessibility: ['👨‍👩‍👧 Family-Friendly Seating', '🥢 Traditional Tatami & Chairs'],
-            cost: 45,
-            completed: false
-          },
-          afternoon: {
-            dualName: '東京スカイツリー (Tokyo Skytree & Solamachi)',
-            category: 'Sightseeing & Arcade',
-            time: '14:00 - 17:00',
-            desc: 'Towering observation deck with panoramic views across Greater Tokyo and Mount Fuji, coupled with a 300-store family arcade.',
-            weatherBadge: '🏛️ Midday Indoor Air-Conditioned',
-            accessibility: ['👶 Stroller Rental Available', '♿ Full Wheelchair Accessibility', '👨‍👩‍👧 Pokemon Center & Kids Zone'],
-            cost: 65,
-            completed: false
-          },
-          evening: {
-            dualName: '隅田川遊歩道 (Sumida River Sunset Promenade & Dinner)',
-            category: 'Scenic Walk & Local Eats',
-            time: '18:00 - 20:30',
-            desc: 'Breezy evening stroll along the lit bridges of Sumida River, followed by authentic Chousuke handmade udon.',
-            weatherBadge: '🌆 Pleasant Evening Breeze',
-            accessibility: ['👶 Smooth Paved Walkway', '♿ Wheelchair Ramps'],
-            cost: 50,
-            completed: false
-          }
-        },
-        {
-          dayNumber: 2,
-          dateLabel: 'Day 2',
-          neighborhood: 'Ueno Cultural Park & Akihabara Electric Town',
-          weatherPlan: '☀️ Morning: Shaded Ueno Park Trees • 🏛️ Midday: Air-Conditioned Museum • 🌆 Evening: Neon Street Lighting',
-          morning: {
-            dualName: '上野恩賜公園 (Ueno Park & Toshogu Shrine)',
-            category: 'Nature & Heritage',
-            time: '09:30 - 11:45',
-            desc: 'Sprawling public park with ancient shrines, Shinobazu lotus pond, and gentle shaded walking avenues.',
-            weatherBadge: '🌳 Shaded Morning Trees',
-            accessibility: ['👶 Stroller Accessible', '♿ Wide Flat Paths', '👨‍👩‍👧 Open Play Spaces'],
-            cost: 0,
-            completed: false
-          },
-          lunch: {
-            dualName: 'とんかつ山家 (Tonkatsu Yamabe Ueno)',
-            category: 'Local Food Pick',
-            time: '12:15 - 13:30',
-            desc: 'Beloved neighborhood kitchen serving golden, crispy breaded pork cutlets with unlimited cabbage and miso soup.',
-            weatherBadge: '❄️ Indoor Air-Conditioned Dining',
-            accessibility: ['👨‍👩‍👧 Hearty Portions', '🥢 High Value Family Pick'],
-            cost: 38,
-            completed: false
-          },
-          afternoon: {
-            dualName: '国立科学博物館 (National Museum of Nature & Science)',
-            category: 'Museum & Discovery',
-            time: '14:00 - 16:45',
-            desc: 'Fascinating interactive dinosaur skeletons, theater 360 projection dome, and physics experiment hall for kids.',
-            weatherBadge: '🏛️ Midday Indoor Climate-Controlled',
-            accessibility: ['👶 Nursing Rooms & Strollers', '♿ 100% Barrier-Free Elevators', '👨‍👩‍👧 Hands-on Discovery Zone'],
-            cost: 24,
-            completed: false
-          },
-          evening: {
-            dualName: '秋葉原電気街 (Akihabara Tech & Retro Arcade)',
-            category: 'Culture & Entertainment',
-            time: '17:30 - 20:30',
-            desc: 'Wander the vibrant multi-story arcade centers and retro gaming shops, dining on authentic charcoal yakitori.',
-            weatherBadge: '🌆 Evening Vibrant Walk',
-            accessibility: ['♿ Elevator access in large department stores', '👨‍👩‍👧 Fun for teens and gamers'],
-            cost: 55,
-            completed: false
-          }
-        },
-        {
-          dayNumber: 3,
-          dateLabel: 'Day 3',
-          neighborhood: 'Harajuku, Meiji Shrine & Shibuya Crossing',
-          weatherPlan: '🌳 Morning: Forest Canopy of Meiji Shrine • 🏛️ Midday: Omotesando Indoor Boutiques • 🌆 Evening: Shibuya Sky',
-          morning: {
-            dualName: '明治神宮 (Meiji Jingu Sacred Forest Shrine)',
-            category: 'Spiritual Heritage',
-            time: '09:00 - 11:30',
-            desc: 'Tranquil Shinto shrine nestled in an evergreen forest of 120,000 trees donated from all over Japan.',
-            weatherBadge: '🌳 Cool Dense Forest Canopy',
-            accessibility: ['👶 Compact Gravel Walks (Stroller-friendly main routes)', '♿ Accessible Restrooms', '👴 Relaxing for Seniors'],
-            cost: 0,
-            completed: false
-          },
-          lunch: {
-            dualName: '牛かつ もと村 (Gyukatsu Motomura Harajuku)',
-            category: 'Local Food Pick',
-            time: '12:00 - 13:30',
-            desc: 'Crispy breaded beef cutlet that guests finish sizzling on their personal tabletop stone grills.',
-            weatherBadge: '❄️ Indoor Air-Conditioned',
-            accessibility: ['👨‍👩‍👧 Engaging tabletop cooking', '🥢 Highly rated local specialty'],
-            cost: 60,
-            completed: false
-          },
-          afternoon: {
-            dualName: '竹下通り & 表参道 (Takeshita Street & Omotesando Hills)',
-            category: 'Pop Culture & Shopping',
-            time: '14:00 - 17:00',
-            desc: 'Vibrant youth fashion, colorful rainbow cotton candy, artisan crepe cafes, and architectural promenades.',
-            weatherBadge: '🏛️ Shaded Avenues & Malls',
-            accessibility: ['👶 Baby strollers welcome in Omotesando Hills', '♿ Elevators in all major stores'],
-            cost: 35,
-            completed: false
-          },
-          evening: {
-            dualName: '渋谷スクランブル交差点 (Shibuya Crossing & Sky Rooftop)',
-            category: 'Iconic Landmarks',
-            time: '17:30 - 20:30',
-            desc: 'The world’s busiest pedestrian crossing, followed by Shibuya Sky’s 360-degree sunset observation platform.',
-            weatherBadge: '🌆 Sunset Golden Hour',
-            accessibility: ['♿ Full ADA Wheelchair Lifts', '👨‍👩‍👧 High excitement for whole family'],
-            cost: 55,
-            completed: false
-          }
-        },
-        {
-          dayNumber: 4,
-          dateLabel: 'Day 4',
-          neighborhood: 'Odaiba Bay & Waterfront Entertainment',
-          weatherPlan: '☀️ Morning: Monorail Scenic Views • 🏛️ Midday: TeamLab Immersive Art & Miraikan • 🌆 Evening: Rainbow Bridge Bay',
-          morning: {
-            dualName: '日本科学未来館 (Miraikan Science & Innovation)',
-            category: 'Science & Robotics',
-            time: '10:00 - 12:30',
-            desc: 'Interactive robotics exhibits, humanoid ASIMO demonstrations, and the breathtaking floating Geo-Cosmos globe.',
-            weatherBadge: '🏛️ Indoor High-Tech Experience',
-            accessibility: ['👶 Strollers & Family Lounges', '♿ Universal Design & Tactile Guides', '👨‍👩‍👧 Top Kid Pick'],
-            cost: 32,
-            completed: false
-          },
-          lunch: {
-            dualName: '月島もんじゃ (Tsukishima Monjayaki Waterfront)',
-            category: 'Local Food Pick',
-            time: '13:00 - 14:30',
-            desc: 'Tokyo’s savory comfort pancake cooked right in front of you on a sizzling teppan griddle.',
-            weatherBadge: '❄️ Indoor Waterfront Dining',
-            accessibility: ['👨‍👩‍👧 Fun communal family dining experience'],
-            cost: 50,
-            completed: false
-          },
-          afternoon: {
-            dualName: 'チームラボプラネッツ (teamLab Planets Immersive Art)',
-            category: 'Digital Art Museum',
-            time: '15:00 - 17:30',
-            desc: 'Walk barefoot through water and immerse your senses in crystalline infinite flower mirrors.',
-            weatherBadge: '🏛️ Indoor Sensory Oasis',
-            accessibility: ['♿ Wheelchair loan options available on request', '👨‍👩‍👧 Unforgettable sensory fun for kids'],
-            cost: 95,
-            completed: false
-          },
-          evening: {
-            dualName: 'お台場海浜公園 (Odaiba Seaside Park & Rainbow Bridge)',
-            category: 'Seaside & Statue of Liberty',
-            time: '18:00 - 20:30',
-            desc: 'Watch the sunset over Tokyo Bay with views of the illuminated Rainbow Bridge and Tokyo Tower.',
-            weatherBadge: '🌆 Cooling Sea Breeze',
-            accessibility: ['👶 Smooth Boardwalk Paths', '♿ Wheelchair Accessible Seafront'],
-            cost: 20,
-            completed: false
-          }
-        },
-        {
-          dayNumber: 5,
-          dateLabel: 'Day 5',
-          neighborhood: 'Shinjuku & Imperial Palace Gardens',
-          weatherPlan: '🌳 Morning: Royal Garden Shaded Lawn • 🏛️ Midday: Metropolitan Tower Views • 🌆 Evening: Omoide Yokocho',
-          morning: {
-            dualName: '新宿御苑 (Shinjuku Gyoen National Garden)',
-            category: 'National Garden & Teahouse',
-            time: '09:30 - 12:00',
-            desc: '58 hectares of manicured traditional Japanese, English landscape, and French formal gardens.',
-            weatherBadge: '🌳 Shaded Lawn & Greenhouses',
-            accessibility: ['👶 Wide Paved Buggy Paths', '♿ Wheelchair Accessible Restrooms', '👴 Tranquil Resting Benches'],
-            cost: 15,
-            completed: false
-          },
-          lunch: {
-            dualName: '新宿 つな八 (Shinjuku Tsunahachi Tempura)',
-            category: 'Local Food Pick',
-            time: '12:30 - 13:45',
-            desc: 'Master tempura chefs frying seasonal fresh seafood and vegetables piece-by-piece in front of guests since 1923.',
-            weatherBadge: '❄️ Indoor Air-Conditioned Comfort',
-            accessibility: ['👨‍👩‍👧 Non-smoking environment', '🥢 Traditional English menu available'],
-            cost: 65,
-            completed: false
-          },
-          afternoon: {
-            dualName: '東京都庁舎 (Tokyo Metropolitan Government Observatories)',
-            category: 'City Views & Architecture',
-            time: '14:30 - 16:30',
-            desc: 'Free observation towers at 202 meters offering 360-degree vistas of Tokyo, Mount Fuji, and Tokyo Dome.',
-            weatherBadge: '🏛️ Indoor Panoramic Observatories',
-            accessibility: ['👶 Stroller Accessible High-Speed Elevators', '♿ Full Barrier-Free Access'],
-            cost: 0,
-            completed: false
-          },
-          evening: {
-            dualName: '思い出横丁 & 新宿の夜 (Omoide Yokocho & Farewell Banquet)',
-            category: 'Atmospheric Alleys & Dining',
-            time: '17:30 - 20:30',
-            desc: 'Historic lantern-lit alleyways with savory yakitori skewers and comforting ramen to celebrate the journey.',
-            weatherBadge: '🌆 Evening Lantern Atmosphere',
-            accessibility: ['🥢 Casual street vibes', '👨‍👩‍👧 Memorable family farewell dinner'],
-            cost: 75,
-            completed: false
-          }
-        }
-      ],
-      budgetBreakdown: {
-        totalTripCost: 2450,
-        dailyAverage: 490,
-        perPersonTotal: 612.50,
-        lodgingTotal: 1200,
-        diningTotal: 620,
-        ticketsTotal: 380,
-        transitTotal: 250,
-        lodgingPct: 49,
-        diningPct: 25,
-        ticketsPct: 16,
-        transitPct: 10
-      },
-      bookingLinks: [
-        {
-          title: 'Tokyo Metro 72-Hour Tourist Pass',
-          desc: 'Unlimited rides on all 13 Tokyo subway lines for ¥1,500 (~$10), saving up to 60% on daily family transit.',
-          icon: '🚇',
-          actionText: 'Official Metro Portal'
-        },
-        {
-          title: 'teamLab Planets Official Ticket Portal',
-          desc: 'Book designated time slots 4 weeks in advance directly to bypass scalpers and ensure guaranteed entry.',
-          icon: '🎟️',
-          actionText: 'Official teamLab Site'
-        },
-        {
-          title: 'Welcome Suica IC Card for Tourists',
-          desc: 'Tap-and-go contactless card for trains, buses, vending machines, and coin lockers across Japan with zero deposit.',
-          icon: '💳',
-          actionText: 'JR East Tourism Site'
-        },
-        {
-          title: 'Tokyo Skytree Fast Pass',
-          desc: 'Skip the standard ticket counter line directly to the 350m & 450m observation decks.',
-          icon: '🗼',
-          actionText: 'Official Skytree Portal'
-        }
-      ],
-      packing: [
-        {
-          category: 'Essential Documents & Finance',
-          icon: '🛂',
-          items: [
-            { text: 'Passports with 6+ months validity for all 4 travelers', checked: true },
-            { text: 'Visit Japan Web QR codes generated for customs & immigration', checked: true },
-            { text: 'Physical cash (¥30,000) for traditional street shrines & food stalls', checked: true },
-            { text: 'No-foreign-transaction-fee credit / debit cards', checked: false }
-          ]
-        },
-        {
-          category: 'Weather & Walking Gear (23°C Mild)',
-          icon: '👟',
-          items: [
-            { text: 'Ultra-comfortable broken-in walking shoes (10,000+ steps/day)', checked: true },
-            { text: 'Light breathable layers & light evening cardigan/jacket', checked: true },
-            { text: 'Compact UV umbrella / rain ponchos for kids', checked: false },
-            { text: 'Reusable insulated water bottles', checked: false }
-          ]
-        },
-        {
-          category: 'Family & Tech Accessories',
-          icon: '📱',
-          items: [
-            { text: 'Pocket Wi-Fi or eSims installed for constant navigation', checked: true },
-            { text: 'Compact lightweight travel stroller for Asakusa & parks', checked: false },
-            { text: 'High-capacity power bank (20,000 mAh) for phones', checked: true },
-            { text: 'Type-A Japan plug adapters', checked: true }
-          ]
-        }
-      ]
+  const PRESET_TRIPS = [];
+
+  // --------------------------------------------------------------------------
+  // Sample Trip (Tokyo) — loaded only when user clicks "Try a Sample Trip"
+  // --------------------------------------------------------------------------
+  const SAMPLE_TOKYO_TRIP = {
+    id: 'trip-tokyo-family',
+    destination: 'Tokyo, Japan',
+    country: 'Japan',
+    heroImage: 'assets/hero-tokyo.jpg',
+    title: 'Tokyo Neon & Heritage',
+    subtitle: 'A personalized voyage balancing vibrant pop-culture districts, historic Shinto shrines, and serene imperial gardens.',
+    tripType: 'Family Vacation',
+    durationDays: 5,
+    travelers: {
+      total: 4,
+      adults: 2,
+      children: 2,
+      seniors: 0,
+      summary: '4 Travelers (2 Adults, 2 Kids: Ages 8 & 11)'
     },
-    {
-      id: 'trip-paris-romantic',
-      destination: 'Paris, France',
-      country: 'France',
-      heroImage: 'assets/hero-paris.jpg',
-      title: 'Paris Art, Culture & Romantic Heights',
-      subtitle: 'A refined cultural journey wandering the historic Seine riverbanks, world-renowned impressionist galleries, and atmospheric bistros.',
-      tripType: 'Celebration & Romance',
-      durationDays: 4,
-      travelers: {
-        total: 2,
-        adults: 2,
-        children: 0,
-        seniors: 0,
-        summary: '2 Travelers (Couples Celebration)'
+    budgetTier: 'moderate',
+    weather: {
+      temp: '23°C',
+      condition: 'weatherClear',
+      icon: '☀️',
+      notes: 'Weather Optimized: Cooler morning temple visits, midday indoor science/ac activities, sunset river breezes.'
+    },
+    currentPace: 'balanced',
+    stays: [
+      {
+        id: 'stay-mimaru-asakusa',
+        name: 'MIMARU TOKYO Asakusa Station',
+        type: 'Apartment Hotel',
+        neighborhood: 'Asakusa & Sumida',
+        image: 'assets/dest-tokyo.jpg',
+        rating: '4.92',
+        pricePerNight: 240,
+        fitBanner: '✓ Fits 4 Guests (Family Suite with Japanese Bunk Beds & Kitchenette)',
+        features: ['👶 Stroller-Friendly', '♿ Elevator & Level Entry', '👨‍👩‍👧 Family Kitchen', '📍 2-min Walk to Asakusa Station'],
+        bookingUrl: 'https://mimaruhotels.com/en/hotel/asakusa-station/',
+        description: 'Spacious Japanese apartment hotel tailor-made for families with separate living spaces, coin laundry, and immediate access to the Ginza line.'
       },
-      budgetTier: 'luxury',
-      weather: {
-        temp: '19°C',
-        condition: 'weatherPartlyCloudy',
-        icon: '⛅',
-        notes: 'Weather Optimized: Crisp morning strolls in Luxembourg Gardens, afternoon Louvre gallery climate, golden hour Seine cruise.'
+      {
+        id: 'stay-keio-plaza',
+        name: 'Keio Plaza Hotel Tokyo',
+        type: 'Full-Service Hotel',
+        neighborhood: 'Shinjuku',
+        image: 'assets/dest-tokyo.jpg',
+        rating: '4.85',
+        pricePerNight: 290,
+        fitBanner: '✓ Connected Twin Rooms with City Skyline Views',
+        features: ['♿ Full Accessibility Rooms', '👨‍👩‍👧 High Chairs & Baby Cots', '🍽️ 10 In-House Restaurants', '📍 Direct Airport Limousine Bus'],
+        bookingUrl: 'https://www.keioplaza.com/',
+        description: 'Prestigious family-friendly hotel with bilingual concierge, nursing rooms, and dedicated children amenities.'
       },
-      currentPace: 'balanced',
-      stays: [
-        {
-          id: 'stay-relais-christine',
-          name: 'Relais Christine',
-          type: 'Boutique Luxury Mansion',
-          neighborhood: 'Saint-Germain-des-Prés',
-          image: 'assets/dest-paris.jpg',
-          rating: '4.96',
-          pricePerNight: 480,
-          fitBanner: '✓ Romantic Deluxe Suite with Courtyard Garden View',
-          features: ['♿ Elevator to all rooms', '🍷 Private Spa Guerlain', '🥐 Gourmet French Breakfast', '📍 3-min to Seine River'],
-          bookingUrl: 'https://www.relais-christine.com/',
-          description: 'A discreet 17th-century private mansion built over abbey remains, located in the heart of the artistic Latin Quarter.'
+      {
+        id: 'stay-richmond-premier',
+        name: 'Richmond Hotel Premier Asakusa',
+        type: 'Comfort Modern',
+        neighborhood: 'Asakusa',
+        image: 'assets/dest-tokyo.jpg',
+        rating: '4.78',
+        pricePerNight: 195,
+        fitBanner: '✓ Triple & Quad Rooms with Sensō-ji Views',
+        features: ['👶 Stroller Rental Free', '♿ Barrier-Free Restrooms', '📍 Above Shopping & Dining Plaza'],
+        bookingUrl: 'https://richmondhotel.jp/en/asakusa-international/',
+        description: 'Convenient central base directly across from historic Nakamise, surrounded by peaceful pedestrian walking lanes.'
+      }
+    ],
+    days: [
+      {
+        dayNumber: 1,
+        dateLabel: 'Day 1',
+        neighborhood: 'Asakusa, Sensō-ji & Sumida Riverfront',
+        weatherPlan: '☀️ Cooler Morning: Outdoor Temple • 🏛️ Midday Peak Heat: Air-Conditioned Nakamise Arcade • 🌆 Sunset Breeze: River Promenade',
+        morning: {
+          dualName: '浅草寺 (Sensō-ji Historic Temple)',
+          category: 'Heritage & Culture',
+          time: '09:00 - 11:30',
+          desc: 'Tokyo’s oldest Buddhist temple founded in 645 AD. Enter through the iconic Kaminarimon Gate with giant red lantern.',
+          weatherBadge: '☀️ Cool Morning Outdoor',
+          accessibility: ['👶 Stroller-Friendly', '♿ Step-Free Ramp at Main Hall', '👨‍👩‍👧 Great for Kids'],
+          cost: 0,
+          completed: false
         },
-        {
-          id: 'stay-hotel-dame-des-arts',
-          name: 'Hôtel Dame des Arts',
-          type: 'Design Hotel',
-          neighborhood: 'Latin Quarter',
-          image: 'assets/dest-paris.jpg',
-          rating: '4.88',
-          pricePerNight: 350,
-          fitBanner: '✓ Panoramic Eiffel Tower Balcony Room',
-          features: ['🍸 360-Degree Rooftop Bar', '♿ Accessible Bathrooms', '📍 Steps from Saint-Michel Metro'],
-          bookingUrl: 'https://www.damedesarts.com/',
-          description: 'Contemporary Parisian luxury with custom woodwork, curated art pieces, and an extraordinary rooftop cocktail lounge.'
-        }
-      ],
-      days: [
-        {
-          dayNumber: 1,
-          dateLabel: 'Day 1',
-          neighborhood: 'Île de la Cité & Saint-Germain',
-          weatherPlan: '⛅ Morning: Gothic Cathedral & Sainte-Chapelle • 🏛️ Midday: Conciergerie • 🌆 Sunset: Pont Neuf River Walk',
-          morning: {
-            dualName: 'Cathédrale Notre-Dame & Sainte-Chapelle (Holy Chapel)',
-            category: 'Gothic Heritage',
-            time: '09:30 - 12:00',
-            desc: 'Gaze at the 1,113 magnificent 13th-century stained-glass panels rising 15 meters high inside Sainte-Chapelle.',
-            weatherBadge: '☀️ Mild Morning Light',
-            accessibility: ['♿ Elevator to upper chapel', '👴 Guided audio headsets available'],
-            cost: 32,
-            completed: false
-          },
-          lunch: {
-            dualName: 'Café de Flore (Historic Literary Bistro)',
-            category: 'Local Food Pick',
-            time: '12:30 - 14:00',
-            desc: 'The iconic Saint-Germain café frequented by Sartre and Hemingway, serving hot croque-monsieur and artisanal chocolat chaud.',
-            weatherBadge: '❄️ Terrace / Indoor Dining',
-            accessibility: ['🍷 Authentic Parisian sidewalk terrace'],
-            cost: 75,
-            completed: false
-          },
-          afternoon: {
-            dualName: 'Jardin du Luxembourg (Luxembourg Palace Gardens)',
-            category: 'Royal Parks & Statues',
-            time: '14:30 - 17:00',
-            desc: 'Stroll around the famous Medici Fountain, shaded chestnut tree alleys, and watch vintage wooden sailboats on the grand basin.',
-            weatherBadge: '🌳 Shaded Tree Allées',
-            accessibility: ['👶 Smooth Gravel Paths', '♿ Wheelchair Accessible Gates', '👴 Ample Vintage Green Chairs'],
-            cost: 0,
-            completed: false
-          },
-          evening: {
-            dualName: 'Croisière sur la Seine (Sunset Seine River Cruise)',
-            category: 'Scenic Cruise & Champagne',
-            time: '18:00 - 20:30',
-            desc: 'Glide past the illuminated bridges, the Louvre, and the Musée d’Orsay with live classical music and champagne.',
-            weatherBadge: '🌆 Golden Hour River Breeze',
-            accessibility: ['♿ Ramp boarding at Pont Neuf', '🍷 Heated panoramic interior salons'],
-            cost: 90,
-            completed: false
-          }
+        lunch: {
+          dualName: '大黒家 天麩羅 (Daikokuya Tempura)',
+          category: 'Local Food Pick',
+          time: '12:00 - 13:15',
+          desc: 'Historic eatery founded in 1887 famed for rich, savory sesame-oil dipped tendon bowls over steaming rice.',
+          weatherBadge: '❄️ Air-Conditioned Indoor Dining',
+          accessibility: ['👨‍👩‍👧 Family-Friendly Seating', '🥢 Traditional Tatami & Chairs'],
+          cost: 45,
+          completed: false
         },
-        {
-          dayNumber: 2,
-          dateLabel: 'Day 2',
-          neighborhood: 'The Grand Boulevards & Louvre Royal Palace',
-          weatherPlan: '🏛️ Morning & Midday: Musée du Louvre Climate Galleries • 🌳 Sunset: Tuileries Promenade',
-          morning: {
-            dualName: 'Musée du Louvre (Masterpieces & Denon Wing)',
-            category: 'World Heritage Museum',
-            time: '09:00 - 12:30',
-            desc: 'Encounter the Mona Lisa, the Winged Victory of Samothrace, and the Venus de Milo in the world’s greatest art palace.',
-            weatherBadge: '🏛️ Indoor Climate-Controlled',
-            accessibility: ['♿ Full Elevators & Priority Line Access', '👶 Free Stroller Loan Desk'],
-            cost: 44,
-            completed: false
-          },
-          lunch: {
-            dualName: 'Le Soufflé (Traditional Haute Cuisine)',
-            category: 'Local Food Pick',
-            time: '13:00 - 14:30',
-            desc: 'Refined restaurant dedicated to sweet and savory soufflés, from cheese and truffle to chocolate Grand Marnier.',
-            weatherBadge: '❄️ Indoor Air-Conditioned Comfort',
-            accessibility: ['🍷 Quiet romantic ambiance'],
-            cost: 95,
-            completed: false
-          },
-          afternoon: {
-            dualName: 'Jardin des Tuileries & Palais Garnier (Paris Opera)',
-            category: 'Architecture & Grandeur',
-            time: '15:00 - 17:30',
-            desc: 'Marvel at the phantom-inspiring gilded Grand Foyer, Italian auditorium, and Marc Chagall’s colorful ceiling at Opéra Garnier.',
-            weatherBadge: '🏛️ Indoor Gilded Palace',
-            accessibility: ['♿ Wheelchair lifts to grand salons'],
-            cost: 38,
-            completed: false
-          },
-          evening: {
-            dualName: 'Dîner Romantique au Marais (Fine Dining in Le Marais)',
-            category: 'Culinary Excellence',
-            time: '19:00 - 21:30',
-            desc: 'Intimate candlelit dining in a medieval vaulted cellar, savoring roasted duck magret and vintage Bordeaux wines.',
-            weatherBadge: '🌆 Cozy Evening Dining',
-            accessibility: ['🍷 Reservation secured in advance'],
-            cost: 160,
-            completed: false
-          }
+        afternoon: {
+          dualName: '東京スカイツリー (Tokyo Skytree & Solamachi)',
+          category: 'Sightseeing & Arcade',
+          time: '14:00 - 17:00',
+          desc: 'Towering observation deck with panoramic views across Greater Tokyo and Mount Fuji, coupled with a 300-store family arcade.',
+          weatherBadge: '🏛️ Midday Indoor Air-Conditioned',
+          accessibility: ['👶 Stroller Rental Available', '♿ Full Wheelchair Accessibility', '👨‍👩‍👧 Pokemon Center & Kids Zone'],
+          cost: 65,
+          completed: false
+        },
+        evening: {
+          dualName: '隅田川遊歩道 (Sumida River Sunset Promenade & Dinner)',
+          category: 'Scenic Walk & Local Eats',
+          time: '18:00 - 20:30',
+          desc: 'Breezy evening stroll along the lit bridges of Sumida River, followed by authentic Chousuke handmade udon.',
+          weatherBadge: '🌆 Pleasant Evening Breeze',
+          accessibility: ['👶 Smooth Paved Walkway', '♿ Wheelchair Ramps'],
+          cost: 50,
+          completed: false
         }
-      ],
-      budgetBreakdown: {
-        totalTripCost: 3200,
-        dailyAverage: 800,
-        perPersonTotal: 1600,
-        lodgingTotal: 1920,
-        diningTotal: 840,
-        ticketsTotal: 260,
-        transitTotal: 180,
-        lodgingPct: 60,
-        diningPct: 26,
-        ticketsPct: 8,
-        transitPct: 6
       },
-      bookingLinks: [
-        {
-          title: 'Official Louvre Museum Reserved Time Slots',
-          desc: 'Skip general security lines with timed entry reservations required for all visitors.',
-          icon: '🏛️',
-          actionText: 'Louvre Official Portal'
+      {
+        dayNumber: 2,
+        dateLabel: 'Day 2',
+        neighborhood: 'Ueno Cultural Park & Akihabara Electric Town',
+        weatherPlan: '☀️ Morning: Shaded Ueno Park Trees • 🏛️ Midday: Air-Conditioned Museum • 🌆 Evening: Neon Street Lighting',
+        morning: {
+          dualName: '上野恩賜公園 (Ueno Park & Toshogu Shrine)',
+          category: 'Nature & Heritage',
+          time: '09:30 - 11:45',
+          desc: 'Sprawling public park with ancient shrines, Shinobazu lotus pond, and gentle shaded walking avenues.',
+          weatherBadge: '🌳 Shaded Morning Trees',
+          accessibility: ['👶 Stroller Accessible', '♿ Wide Flat Paths', '👨‍👩‍👧 Open Play Spaces'],
+          cost: 0,
+          completed: false
         },
-        {
-          title: 'Paris Museum Pass (48 / 96 Hours)',
-          desc: 'Free direct entry to 50+ national monuments and museums with zero queueing.',
-          icon: '🎟️',
-          actionText: 'Official Pass Site'
-        }
-      ],
-      packing: [
-        {
-          category: 'Formal & Casual Parisian Wear',
-          icon: '👗',
-          items: [
-            { text: 'Smart-casual evening dinner attire (jackets & dresses)', checked: true },
-            { text: 'Leather walking boots / comfortable loafers', checked: true },
-            { text: 'Wool trench coat or lightweight overcoat for autumn', checked: true }
-          ]
+        lunch: {
+          dualName: 'とんかつ山家 (Tonkatsu Yamabe Ueno)',
+          category: 'Local Food Pick',
+          time: '12:15 - 13:30',
+          desc: 'Beloved neighborhood kitchen serving golden, crispy breaded pork cutlets with unlimited cabbage and miso soup.',
+          weatherBadge: '❄️ Indoor Air-Conditioned Dining',
+          accessibility: ['👨‍👩‍👧 Hearty Portions', '🥢 High Value Family Pick'],
+          cost: 38,
+          completed: false
         },
-        {
-          category: 'Travel Documents & Reservations',
-          icon: '🎟️',
-          items: [
-            { text: 'Pre-printed museum & opera tickets', checked: true },
-            { text: 'Passports & travel insurance cards', checked: true }
-          ]
+        afternoon: {
+          dualName: '国立科学博物館 (National Museum of Nature & Science)',
+          category: 'Museum & Discovery',
+          time: '14:00 - 16:45',
+          desc: 'Fascinating interactive dinosaur skeletons, theater 360 projection dome, and physics experiment hall for kids.',
+          weatherBadge: '🏛️ Midday Indoor Climate-Controlled',
+          accessibility: ['👶 Nursing Rooms & Strollers', '♿ 100% Barrier-Free Elevators', '👨‍👩‍👧 Hands-on Discovery Zone'],
+          cost: 24,
+          completed: false
+        },
+        evening: {
+          dualName: '秋葉原電気街 (Akihabara Tech & Retro Arcade)',
+          category: 'Culture & Entertainment',
+          time: '17:30 - 20:30',
+          desc: 'Wander the vibrant multi-story arcade centers and retro gaming shops, dining on authentic charcoal yakitori.',
+          weatherBadge: '🌆 Evening Vibrant Walk',
+          accessibility: ['♿ Elevator access in large department stores', '👨‍👩‍👧 Fun for teens and gamers'],
+          cost: 55,
+          completed: false
         }
-      ]
-    }
-  ];
+      },
+      {
+        dayNumber: 3,
+        dateLabel: 'Day 3',
+        neighborhood: 'Harajuku, Meiji Shrine & Shibuya Crossing',
+        weatherPlan: '🌳 Morning: Forest Canopy of Meiji Shrine • 🏛️ Midday: Omotesando Indoor Boutiques • 🌆 Evening: Shibuya Sky',
+        morning: {
+          dualName: '明治神宮 (Meiji Jingu Sacred Forest Shrine)',
+          category: 'Spiritual Heritage',
+          time: '09:00 - 11:30',
+          desc: 'Tranquil Shinto shrine nestled in an evergreen forest of 120,000 trees donated from all over Japan.',
+          weatherBadge: '🌳 Cool Dense Forest Canopy',
+          accessibility: ['👶 Compact Gravel Walks (Stroller-friendly main routes)', '♿ Accessible Restrooms', '👴 Relaxing for Seniors'],
+          cost: 0,
+          completed: false
+        },
+        lunch: {
+          dualName: '牛かつ もと村 (Gyukatsu Motomura Harajuku)',
+          category: 'Local Food Pick',
+          time: '12:00 - 13:30',
+          desc: 'Crispy breaded beef cutlet that guests finish sizzling on their personal tabletop stone grills.',
+          weatherBadge: '❄️ Indoor Air-Conditioned',
+          accessibility: ['👨‍👩‍👧 Engaging tabletop cooking', '🥢 Highly rated local specialty'],
+          cost: 60,
+          completed: false
+        },
+        afternoon: {
+          dualName: '竹下通り & 表参道 (Takeshita Street & Omotesando Hills)',
+          category: 'Pop Culture & Shopping',
+          time: '14:00 - 17:00',
+          desc: 'Vibrant youth fashion, colorful rainbow cotton candy, artisan crepe cafes, and architectural promenades.',
+          weatherBadge: '🏛️ Shaded Avenues & Malls',
+          accessibility: ['👶 Baby strollers welcome in Omotesando Hills', '♿ Elevators in all major stores'],
+          cost: 35,
+          completed: false
+        },
+        evening: {
+          dualName: '渋谷スクランブル交差点 (Shibuya Crossing & Sky Rooftop)',
+          category: 'Iconic Landmarks',
+          time: '17:30 - 20:30',
+          desc: 'The world’s busiest pedestrian crossing, followed by Shibuya Sky’s 360-degree sunset observation platform.',
+          weatherBadge: '🌆 Sunset Golden Hour',
+          accessibility: ['♿ Full ADA Wheelchair Lifts', '👨‍👩‍👧 High excitement for whole family'],
+          cost: 55,
+          completed: false
+        }
+      },
+      {
+        dayNumber: 4,
+        dateLabel: 'Day 4',
+        neighborhood: 'Odaiba Bay & Waterfront Entertainment',
+        weatherPlan: '☀️ Morning: Monorail Scenic Views • 🏛️ Midday: TeamLab Immersive Art & Miraikan • 🌆 Evening: Rainbow Bridge Bay',
+        morning: {
+          dualName: '日本科学未来館 (Miraikan Science & Innovation)',
+          category: 'Science & Robotics',
+          time: '10:00 - 12:30',
+          desc: 'Interactive robotics exhibits, humanoid ASIMO demonstrations, and the breathtaking floating Geo-Cosmos globe.',
+          weatherBadge: '🏛️ Indoor High-Tech Experience',
+          accessibility: ['👶 Strollers & Family Lounges', '♿ Universal Design & Tactile Guides', '👨‍👩‍👧 Top Kid Pick'],
+          cost: 32,
+          completed: false
+        },
+        lunch: {
+          dualName: '月島もんじゃ (Tsukishima Monjayaki Waterfront)',
+          category: 'Local Food Pick',
+          time: '13:00 - 14:30',
+          desc: 'Tokyo’s savory comfort pancake cooked right in front of you on a sizzling teppan griddle.',
+          weatherBadge: '❄️ Indoor Waterfront Dining',
+          accessibility: ['👨‍👩‍👧 Fun communal family dining experience'],
+          cost: 50,
+          completed: false
+        },
+        afternoon: {
+          dualName: 'チームラボプラネッツ (teamLab Planets Immersive Art)',
+          category: 'Digital Art Museum',
+          time: '15:00 - 17:30',
+          desc: 'Walk barefoot through water and immerse your senses in crystalline infinite flower mirrors.',
+          weatherBadge: '🏛️ Indoor Sensory Oasis',
+          accessibility: ['♿ Wheelchair loan options available on request', '👨‍👩‍👧 Unforgettable sensory fun for kids'],
+          cost: 95,
+          completed: false
+        },
+        evening: {
+          dualName: 'お台場海浜公園 (Odaiba Seaside Park & Rainbow Bridge)',
+          category: 'Seaside & Statue of Liberty',
+          time: '18:00 - 20:30',
+          desc: 'Watch the sunset over Tokyo Bay with views of the illuminated Rainbow Bridge and Tokyo Tower.',
+          weatherBadge: '🌆 Cooling Sea Breeze',
+          accessibility: ['👶 Smooth Boardwalk Paths', '♿ Wheelchair Accessible Seafront'],
+          cost: 20,
+          completed: false
+        }
+      },
+      {
+        dayNumber: 5,
+        dateLabel: 'Day 5',
+        neighborhood: 'Shinjuku & Imperial Palace Gardens',
+        weatherPlan: '🌳 Morning: Royal Garden Shaded Lawn • 🏛️ Midday: Metropolitan Tower Views • 🌆 Evening: Omoide Yokocho',
+        morning: {
+          dualName: '新宿御苑 (Shinjuku Gyoen National Garden)',
+          category: 'National Garden & Teahouse',
+          time: '09:30 - 12:00',
+          desc: '58 hectares of manicured traditional Japanese, English landscape, and French formal gardens.',
+          weatherBadge: '🌳 Shaded Lawn & Greenhouses',
+          accessibility: ['👶 Wide Paved Buggy Paths', '♿ Wheelchair Accessible Restrooms', '👴 Tranquil Resting Benches'],
+          cost: 15,
+          completed: false
+        },
+        lunch: {
+          dualName: '新宿 つな八 (Shinjuku Tsunahachi Tempura)',
+          category: 'Local Food Pick',
+          time: '12:30 - 13:45',
+          desc: 'Master tempura chefs frying seasonal fresh seafood and vegetables piece-by-piece in front of guests since 1923.',
+          weatherBadge: '❄️ Indoor Air-Conditioned Comfort',
+          accessibility: ['👨‍👩‍👧 Non-smoking environment', '🥢 Traditional English menu available'],
+          cost: 65,
+          completed: false
+        },
+        afternoon: {
+          dualName: '東京都庁舎 (Tokyo Metropolitan Government Observatories)',
+          category: 'City Views & Architecture',
+          time: '14:30 - 16:30',
+          desc: 'Free observation towers at 202 meters offering 360-degree vistas of Tokyo, Mount Fuji, and Tokyo Dome.',
+          weatherBadge: '🏛️ Indoor Panoramic Observatories',
+          accessibility: ['👶 Stroller Accessible High-Speed Elevators', '♿ Full Barrier-Free Access'],
+          cost: 0,
+          completed: false
+        },
+        evening: {
+          dualName: '思い出横丁 & 新宿の夜 (Omoide Yokocho & Farewell Banquet)',
+          category: 'Atmospheric Alleys & Dining',
+          time: '17:30 - 20:30',
+          desc: 'Historic lantern-lit alleyways with savory yakitori skewers and comforting ramen to celebrate the journey.',
+          weatherBadge: '🌆 Evening Lantern Atmosphere',
+          accessibility: ['🥢 Casual street vibes', '👨‍👩‍👧 Memorable family farewell dinner'],
+          cost: 75,
+          completed: false
+        }
+      }
+    ],
+    budgetBreakdown: {
+      totalTripCost: 2450,
+      dailyAverage: 490,
+      perPersonTotal: 612.50,
+      lodgingTotal: 1200,
+      diningTotal: 620,
+      ticketsTotal: 380,
+      transitTotal: 250,
+      lodgingPct: 49,
+      diningPct: 25,
+      ticketsPct: 16,
+      transitPct: 10
+    },
+    bookingLinks: [
+      {
+        title: 'Tokyo Metro 72-Hour Tourist Pass',
+        desc: 'Unlimited rides on all 13 Tokyo subway lines for ¥1,500 (~$10), saving up to 60% on daily family transit.',
+        icon: '🚇',
+        actionText: 'Official Metro Portal'
+      },
+      {
+        title: 'teamLab Planets Official Ticket Portal',
+        desc: 'Book designated time slots 4 weeks in advance directly to bypass scalpers and ensure guaranteed entry.',
+        icon: '🎟️',
+        actionText: 'Official teamLab Site'
+      },
+      {
+        title: 'Welcome Suica IC Card for Tourists',
+        desc: 'Tap-and-go contactless card for trains, buses, vending machines, and coin lockers across Japan with zero deposit.',
+        icon: '💳',
+        actionText: 'JR East Tourism Site'
+      },
+      {
+        title: 'Tokyo Skytree Fast Pass',
+        desc: 'Skip the standard ticket counter line directly to the 350m & 450m observation decks.',
+        icon: '🗼',
+        actionText: 'Official Skytree Portal'
+      }
+    ],
+    packing: [
+      {
+        category: 'Essential Documents & Finance',
+        icon: '🛂',
+        items: [
+          { text: 'Passports with 6+ months validity for all 4 travelers', checked: true },
+          { text: 'Visit Japan Web QR codes generated for customs & immigration', checked: true },
+          { text: 'Physical cash (¥30,000) for traditional street shrines & food stalls', checked: true },
+          { text: 'No-foreign-transaction-fee credit / debit cards', checked: false }
+        ]
+      },
+      {
+        category: 'Weather & Walking Gear (23°C Mild)',
+        icon: '👟',
+        items: [
+          { text: 'Ultra-comfortable broken-in walking shoes (10,000+ steps/day)', checked: true },
+          { text: 'Light breathable layers & light evening cardigan/jacket', checked: true },
+          { text: 'Compact UV umbrella / rain ponchos for kids', checked: false },
+          { text: 'Reusable insulated water bottles', checked: false }
+        ]
+      },
+      {
+        category: 'Family & Tech Accessories',
+        icon: '📱',
+        items: [
+          { text: 'Pocket Wi-Fi or eSims installed for constant navigation', checked: true },
+          { text: 'Compact lightweight travel stroller for Asakusa & parks', checked: false },
+          { text: 'High-capacity power bank (20,000 mAh) for phones', checked: true },
+          { text: 'Type-A Japan plug adapters', checked: true }
+        ]
+      }
+    ]
+  };
 
   // Active state
   let currentTripIndex = 0;
@@ -1656,7 +1501,42 @@
   let activeStayFilter = 'all';
 
   function getCurrentTrip() {
+    if (!PRESET_TRIPS.length) return null;
     return PRESET_TRIPS[currentTripIndex] || PRESET_TRIPS[0];
+  }
+
+  // ==========================================================================
+  // Sample Trip Loader
+  // ==========================================================================
+  async function loadSampleTrip() {
+    const sample = JSON.parse(JSON.stringify(SAMPLE_TOKYO_TRIP));
+    sample.id = `trip-sample-${Date.now()}`;
+
+    PRESET_TRIPS.unshift(sample);
+    currentTripIndex = 0;
+    activeDayIndex = 0;
+
+    renderTripHero();
+    renderTripsGrid();
+    renderItinerary();
+    renderStays();
+    renderBudget();
+    renderCustomizeConsole();
+    renderPacking();
+
+    switchTab('itinerary');
+    showToast(t('sampleTripLoaded'));
+
+    if (window.TripCraftAuth?.isSignedIn() && window.TripsAPI) {
+      try {
+        const saved = await window.TripsAPI.saveTrip(sample);
+        sample.id = saved.id;
+        sample.savedToCloud = true;
+        renderTripsGrid();
+      } catch (err) {
+        console.warn('[app] Could not save sample trip to cloud:', err.message);
+      }
+    }
   }
 
   // ==========================================================================
@@ -1702,20 +1582,47 @@
   // ==========================================================================
   function renderTripHero() {
     const trip = getCurrentTrip();
-    if (!trip) return;
 
-    const heroBackdrop = document.getElementById('heroBackdrop');
+    const heroBackdrop      = document.getElementById('heroBackdrop');
+    const heroTripType      = document.getElementById('heroTripType');
+    const heroDuration      = document.getElementById('heroDuration');
+    const heroWeatherBadge  = document.getElementById('heroWeatherBadge');
+    const heroTitle         = document.getElementById('heroTitle');
+    const heroSubtitle      = document.getElementById('heroSubtitle');
+    const metricTravelers   = document.getElementById('metricTravelers');
+    const metricStay        = document.getElementById('metricStay');
+    const metricDailySpend  = document.getElementById('metricDailySpend');
+    const metricNeighborhood= document.getElementById('metricNeighborhood');
+
+    if (!trip) {
+      if (heroBackdrop) heroBackdrop.style.backgroundImage = 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)';
+      if (heroTripType) heroTripType.style.display = 'none';
+      if (heroDuration) heroDuration.style.display = 'none';
+      if (heroWeatherBadge) heroWeatherBadge.style.display = 'none';
+      if (heroTitle) heroTitle.textContent = t('heroWelcomeTitle');
+      if (heroSubtitle) heroSubtitle.textContent = t('heroWelcomeSub');
+      if (metricTravelers) metricTravelers.textContent = '—';
+      if (metricStay) metricStay.textContent = '—';
+      if (metricDailySpend) metricDailySpend.textContent = '—';
+      if (metricNeighborhood) metricNeighborhood.textContent = '—';
+
+      const tripSelect = document.getElementById('tripSelect');
+      if (tripSelect) tripSelect.innerHTML = '<option>—</option>';
+      return;
+    }
+
+    if (heroTripType) heroTripType.style.display = '';
+    if (heroDuration) heroDuration.style.display = '';
+    if (heroWeatherBadge) heroWeatherBadge.style.display = '';
+
     if (heroBackdrop && trip.heroImage) {
       heroBackdrop.style.backgroundImage = `url('${trip.heroImage}')`;
     }
 
-    const heroTripType = document.getElementById('heroTripType');
     if (heroTripType) heroTripType.textContent = trip.tripType;
 
-    const heroDuration = document.getElementById('heroDuration');
     if (heroDuration) heroDuration.textContent = `${trip.durationDays} ${trip.durationDays === 1 ? 'Day' : 'Days'}`;
 
-    // Populate hero weather widget with static fallback data
     const heroWeatherIcon     = document.getElementById('heroWeatherIcon');
     const heroWeatherTemp     = document.getElementById('heroWeatherTemp');
     const heroWeatherCond     = document.getElementById('heroWeatherCond');
@@ -1733,24 +1640,17 @@
     if (heroWeatherHumidity) heroWeatherHumidity.textContent = trip.weather?.humidity ? `💧 ${trip.weather.humidity}%` : '';
     if (heroWeatherWind)     heroWeatherWind.textContent     = trip.weather?.windSpeed ? `💨 ${trip.weather.windSpeed} ${trip.weather.windUnit || 'km/h'}` : '';
 
-    const heroTitle = document.getElementById('heroTitle');
     if (heroTitle) heroTitle.textContent = trip.title;
-
-    const heroSubtitle = document.getElementById('heroSubtitle');
     if (heroSubtitle) heroSubtitle.textContent = trip.subtitle;
 
-    const metricTravelers = document.getElementById('metricTravelers');
     if (metricTravelers) metricTravelers.textContent = trip.travelers?.summary || '';
 
-    const metricStay = document.getElementById('metricStay');
     if (metricStay && trip.stays && trip.stays.length > 0) metricStay.textContent = trip.stays[0].name;
 
-    const metricDailySpend = document.getElementById('metricDailySpend');
     if (metricDailySpend && trip.budgetBreakdown) {
       metricDailySpend.textContent = `${formatMoney(trip.budgetBreakdown.dailyAverage)} / day`;
     }
 
-    const metricNeighborhood = document.getElementById('metricNeighborhood');
     if (metricNeighborhood) {
       if (trip.days && trip.days[activeDayIndex]) {
         metricNeighborhood.textContent = trip.days[activeDayIndex].neighborhood.split(',')[0];
@@ -1771,7 +1671,6 @@
       });
     }
 
-    // Kick off a live weather refresh (non-blocking)
     refreshHeroWeather(trip);
   }
 
@@ -1789,11 +1688,32 @@
           <div class="trips-empty-icon">🧳</div>
           <h3 class="trips-empty-title">${t('tripsEmptyTitle')}</h3>
           <p class="trips-empty-sub">${t('tripsEmptySub')}</p>
-          <button type="button" class="btn btn-primary" onclick="document.getElementById('btnNewTrip').click()">
-            + ${t('navNewTrip')}
-          </button>
+          <div class="trips-empty-actions">
+            <button type="button" class="btn btn-primary" id="btnEmptyPlanNew">
+              + ${t('navNewTrip')}
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnEmptyTrySample">
+              👀 ${t('trySampleTrip')}
+            </button>
+          </div>
         </div>
       `;
+
+      const planBtn = container.querySelector('#btnEmptyPlanNew');
+      if (planBtn) {
+        planBtn.addEventListener('click', () => {
+          const modal = document.getElementById('modalNewTrip');
+          if (modal) modal.classList.add('active');
+        });
+      }
+
+      const sampleBtn = container.querySelector('#btnEmptyTrySample');
+      if (sampleBtn) {
+        sampleBtn.addEventListener('click', () => {
+          loadSampleTrip();
+        });
+      }
+
       return;
     }
 
@@ -1842,7 +1762,6 @@
         </div>
       `;
 
-      // Load trip
       card.querySelector('.btn-load-trip').addEventListener('click', async () => {
         if (isActive) return;
 
@@ -1873,7 +1792,6 @@
         showToast(t('tripLoaded') + ' — ' + targetTrip.destination);
       });
 
-      // Delete trip
       card.querySelector('.btn-delete').addEventListener('click', () => {
         showDeleteConfirm(idx);
       });
@@ -1974,7 +1892,7 @@
     const trip = getCurrentTrip();
     if (!trip || !trip.days || trip.days.length === 0) {
       const pills = document.getElementById('dayPillsContainer');
-      if (pills) pills.innerHTML = '<div style="padding:1rem;color:var(--text-tertiary);font-size:0.85rem;">Loading days…</div>';
+      if (pills) pills.innerHTML = '';
       const container = document.getElementById('timelineCardsContainer');
       if (container) container.innerHTML = '';
       return;
@@ -2109,6 +2027,7 @@
     const container = document.getElementById('staysContainer');
     if (!container) return;
     container.innerHTML = '';
+    if (!trip) return;
 
     let stays = trip.stays || [];
     if (activeStayFilter === 'family') {
@@ -2154,6 +2073,7 @@
 
   function renderBudget() {
     const trip = getCurrentTrip();
+    if (!trip) return;
     const b = trip.budgetBreakdown || {};
 
     const budgetTotalCost = document.getElementById('budgetTotalCost');
@@ -2217,6 +2137,7 @@
 
   function renderCustomizeConsole() {
     const trip = getCurrentTrip();
+    if (!trip) return;
 
     const swapDaySelect = document.getElementById('swapDaySelect');
     if (swapDaySelect) {
@@ -2344,7 +2265,7 @@
 
       item.querySelector('.btn-select-alt').addEventListener('click', () => {
         const trip = getCurrentTrip();
-        if (trip.days && trip.days[dayIdx]) {
+        if (trip && trip.days && trip.days[dayIdx]) {
           trip.days[dayIdx][slot] = {
             dualName: alt.dualName,
             category: alt.category,
@@ -2369,6 +2290,7 @@
     const container = document.getElementById('packingCardsGrid');
     if (!container) return;
     container.innerHTML = '';
+    if (!trip) return;
 
     (trip.packing || []).forEach(cat => {
       const card = document.createElement('div');
@@ -2411,6 +2333,7 @@
 
   function updatePackingProgress() {
     const trip = getCurrentTrip();
+    if (!trip) return;
     let total = 0;
     let checked = 0;
 
@@ -2532,7 +2455,6 @@
       });
     }
 
-    // Capture structured destination metadata if the picker supplied it
     const structured = window.__selectedDestination;
     const destinationMeta = structured
       ? {
@@ -2543,7 +2465,6 @@
         }
       : null;
 
-    // Capture live weather from the picker if available
     const liveWeather = window.__selectedDestinationWeather;
     const weatherBlock = liveWeather
       ? {
@@ -2680,7 +2601,6 @@
     const target = document.getElementById(`tabView${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`);
     if (target) target.classList.add('active');
 
-    // Re-render the trips grid whenever the Trips tab is shown
     if (tabId === 'trips') {
       renderTripsGrid();
     }
@@ -2761,7 +2681,7 @@
       });
     }
 
-    // Trip selector — with lazy hydration of remote trip days
+    // Trip selector
     const tripSelect = document.getElementById('tripSelect');
     if (tripSelect) {
       tripSelect.addEventListener('change', async (e) => {
@@ -2805,7 +2725,7 @@
       });
     });
 
-    // Modal open / close — New Trip
+    // Modal — New Trip
     const modalNewTrip = document.getElementById('modalNewTrip');
     const btnNewTrip = document.getElementById('btnNewTrip');
     const btnCloseNewTripModal = document.getElementById('btnCloseNewTripModal');
@@ -2844,7 +2764,7 @@
       });
     }
 
-    // Form submit — generate trip and persist if authenticated
+    // Form submit
     const formNewTrip = document.getElementById('formNewTrip');
     if (formNewTrip && modalNewTrip) {
       formNewTrip.addEventListener('submit', async (e) => {
@@ -2926,7 +2846,11 @@
       if (!user || !window.TripsAPI) return;
       try {
         const remoteTrips = await window.TripsAPI.listTrips();
-        if (remoteTrips.length === 0) return;
+        if (remoteTrips.length === 0) {
+          renderTripHero();
+          renderTripsGrid();
+          return;
+        }
 
         const existingIds = new Set(PRESET_TRIPS.map(t => t.id));
         remoteTrips.forEach(rt => {
@@ -3011,6 +2935,7 @@
         const checkedPace = document.querySelector('input[name="tripPace"]:checked');
         const paceVal = checkedPace ? checkedPace.value : 'balanced';
         const trip = getCurrentTrip();
+        if (!trip) return;
         trip.currentPace = paceVal;
         showToast(`✓ Applied ${paceVal.toUpperCase()} pace to your daily itinerary!`);
         switchTab('itinerary');
@@ -3034,10 +2959,25 @@
       });
     }
 
-    // Initial render
+    // ---- Load live currency rates (non-blocking) ----
+    if (window.CurrencyService?.loadRates) {
+      window.CurrencyService.loadRates('usd').then(() => {
+        // Once rates are ready, re-render everything so all prices update
+        renderTripHero();
+        renderTripsGrid();
+        renderItinerary();
+        renderStays();
+        renderBudget();
+        renderCustomizeConsole();
+      }).catch(err => {
+        console.warn('[app] Currency rates fetch failed:', err.message);
+      });
+    }
+
+    // Initial render (uses fallback 1:1 rates until live rates arrive)
     applyLanguage(currentLang);
 
-    // ---- Hydrate the currently-selected trip if it lacks days ----
+    // Hydrate the currently-selected trip if it lacks days
     (async () => {
       const trip = getCurrentTrip();
       if (trip && (!trip.days || trip.days.length === 0) && trip.savedToCloud && window.TripsAPI) {
