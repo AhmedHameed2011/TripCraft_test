@@ -449,6 +449,24 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   flex: 1;
   min-width: 0;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.day-pills-scroller::-webkit-scrollbar { display: none; }
+
+.itinerary-action-tools {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.day-pills-scroller {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  flex: 1;
+  min-width: 0;
+  scrollbar-width: none;
 }
 .day-pills-scroller::-webkit-scrollbar { display: none; }
 
@@ -2254,4 +2272,40 @@ html[data-theme="light"] .loading-overlay {
   margin: 0;
   text-align: center;
   max-width: 280px;
+}
+
+/* ==========================================================================
+   Mobile — Itinerary header layout
+   Stacks day pills above action buttons so nothing overlaps
+   ========================================================================== */
+@media (max-width: 640px) {
+  .itinerary-header-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .day-pills-scroller {
+    /* Full width — pills scroll horizontally */
+    width: 100%;
+    flex: none;
+    order: 1;
+  }
+
+  .day-pill-btn {
+    min-width: 110px;
+    flex-shrink: 0;
+  }
+
+  .itinerary-action-tools {
+    /* Buttons sit below the pills, right-aligned */
+    width: 100%;
+    justify-content: flex-end;
+    order: 2;
+    flex-wrap: wrap;
+  }
+
+  .itinerary-action-tools .btn {
+    flex: 0 0 auto;
+  }
 }
