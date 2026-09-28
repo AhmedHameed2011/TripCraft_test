@@ -41,6 +41,26 @@
     return `${curr.symbol}${converted.toLocaleString()}`;
   }
 
+    // ==========================================================================
+  // Loading Overlay Helpers
+  // ==========================================================================
+  function showLoading(message) {
+    const overlay = document.getElementById('loadingOverlay');
+    const messageEl = document.getElementById('loadingMessage');
+    if (messageEl && message) messageEl.textContent = message;
+    if (overlay) {
+      overlay.classList.add('active');
+      overlay.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+  }
   // ==========================================================================
   // 1b. Transportation cost estimates (per person)
   // ==========================================================================
@@ -244,7 +264,8 @@
       transitNearbyTitle: "Nearby Public Transport",
       transitLoading: "Finding nearby stops…",
       transitStops: "stops",
-      transitAttribution: "Transit data by Transitland"
+      transitAttribution: "Transit data by Transitland",
+            loadingTrip: "Loading trip…",
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -432,7 +453,8 @@
       transitNearbyTitle: "وسائل النقل العام القريبة",
       transitLoading: "جارٍ البحث عن المحطات القريبة…",
       transitStops: "محطات",
-      transitAttribution: "بيانات النقل بواسطة OpenStreetMap"
+      transitAttribution: "بيانات النقل بواسطة OpenStreetMap",
+            loadingTrip: "جارٍ تحميل الرحلة…",
     },
     es: {
       tagline: "Planificador Personal de Viajes",
@@ -620,7 +642,8 @@
       transitNearbyTitle: "Transporte Público Cercano",
       transitLoading: "Buscando paradas cercanas…",
       transitStops: "paradas",
-      transitAttribution: "Datos de tránsito por OpenStreetMap"
+      transitAttribution: "Datos de tránsito por OpenStreetMap",
+            loadingTrip: "Cargando viaje…",
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
@@ -808,7 +831,8 @@
       transitNearbyTitle: "Transports Publics à Proximité",
       transitLoading: "Recherche des arrêts à proximité…",
       transitStops: "arrêts",
-      transitAttribution: "Données de transport par OpenStreetMap"
+      transitAttribution: "Données de transport par OpenStreetMap",
+            loadingTrip: "Chargement du voyage…",
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
@@ -996,7 +1020,8 @@
       transitNearbyTitle: "近くの公共交通機関",
       transitLoading: "近くの停留所を検索中…",
       transitStops: "停留所",
-      transitAttribution: "交通データ提供: OpenStreetMap"
+      transitAttribution: "交通データ提供: OpenStreetMap",
+            loadingTrip: "旅行を読み込み中…",
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
@@ -1184,7 +1209,8 @@
       transitNearbyTitle: "Öffentliche Verkehrsmittel in der Nähe",
       transitLoading: "Suche nach Haltestellen in der Nähe…",
       transitStops: "Haltestellen",
-      transitAttribution: "Transitdaten von OpenStreetMap"
+      transitAttribution: "Transitdaten von OpenStreetMap",
+            loadingTrip: "Reise wird geladen…",
     }
   };
 
@@ -1672,21 +1698,39 @@
         </div>
       `;
 
-      card.querySelector('.btn-load-trip').addEventListener('click', async () => {
+            card.querySelector('.btn-load-trip').addEventListener('click', async () => {
         if (isActive) return;
+
+        const targetTrip = PRESET_TRIPS[idx];
+        const needsFetch = targetTrip
+          && targetTrip.savedToCloud
+          && (!targetTrip.days || targetTrip.days.length === 0);
+
+        if (needsFetch) {
+          showLoading(t('loadingTrip') || `Loading ${targetTrip.destination}…`);
+        }
+
         currentTripIndex = idx;
         activeDayIndex = 0;
-        await ensureCurrentTripDays();
 
-        renderTripHero();
-        renderItinerary();
-        renderStays();
-        renderBudget();
-        renderCustomizeConsole();
-        renderPacking();
-        renderTripsGrid();
+        try {
+          await ensureCurrentTripDays();
 
-        showToast(t('tripLoaded') + ' — ' + PRESET_TRIPS[idx].destination);
+          renderTripHero();
+          renderItinerary();
+          renderStays();
+          renderBudget();
+          renderCustomizeConsole();
+          renderPacking();
+          renderTripsGrid();
+
+          showToast(t('tripLoaded') + ' — ' + targetTrip.destination);
+        } catch (err) {
+          console.error('[app] Load trip failed:', err);
+          showToast(t('tripLoadFailed') || '⚠ Could not load trip');
+        } finally {
+          hideLoading();
+        }
       });
 
       card.querySelector('.btn-delete').addEventListener('click', () => {
@@ -2599,20 +2643,38 @@
     }
 
     // Trip selector
-    const tripSelect = document.getElementById('tripSelect');
+        const tripSelect = document.getElementById('tripSelect');
     if (tripSelect) {
       tripSelect.addEventListener('change', async (e) => {
-        currentTripIndex = parseInt(e.target.value, 10) || 0;
-        activeDayIndex = 0;
-        await ensureCurrentTripDays();
+        const idx = parseInt(e.target.value, 10) || 0;
+        const nextTrip = PRESET_TRIPS[idx];
 
-        renderTripHero();
-        renderTripsGrid();
-        renderItinerary();
-        renderStays();
-        renderBudget();
-        renderCustomizeConsole();
-        renderPacking();
+        // Show loading overlay if we need to fetch days from Supabase
+        const needsFetch = nextTrip
+          && nextTrip.savedToCloud
+          && (!nextTrip.days || nextTrip.days.length === 0);
+
+        if (needsFetch) {
+          showLoading(t('loadingTrip') || `Loading ${nextTrip.destination}…`);
+        }
+
+        currentTripIndex = idx;
+        activeDayIndex = 0;
+
+        try {
+          await ensureCurrentTripDays();
+
+          renderTripHero();
+          renderTripsGrid();
+          renderItinerary();
+          renderStays();
+          renderBudget();
+          renderCustomizeConsole();
+          renderPacking();
+        } finally {
+          // Always hide — even on error
+          hideLoading();
+        }
       });
     }
 
@@ -2885,13 +2947,15 @@
     applyLanguage(currentLang);
 
     // Boot: retry-based trip hydration
-    (async () => {
+        (async () => {
       let attempts = 0;
       const maxAttempts = 20;
+      let loadingShown = false;
 
       while (attempts < maxAttempts) {
         attempts++;
 
+        // Fetch remote trips if signed in and none loaded yet
         if (PRESET_TRIPS.length === 0 && window.TripCraftAuth?.isSignedIn?.() && window.TripsAPI) {
           try {
             const remoteTrips = await window.TripsAPI.listTrips();
@@ -2903,7 +2967,19 @@
           }
         }
 
+        // Once we have trips, hydrate and render
         if (PRESET_TRIPS.length > 0) {
+          const trip = getCurrentTrip();
+          const needsFetch = trip
+            && trip.savedToCloud
+            && (!trip.days || trip.days.length === 0);
+
+          // Show loading only if hydration is actually required
+          if (needsFetch && !loadingShown) {
+            showLoading(t('loadingTrip') || `Loading ${trip.destination}…`);
+            loadingShown = true;
+          }
+
           const hydrated = await ensureCurrentTripDays();
           if (hydrated) {
             renderTripHero();
@@ -2913,6 +2989,7 @@
             renderCustomizeConsole();
             renderPacking();
             renderTripsGrid();
+            hideLoading();
             console.log('[app] Boot render complete after', attempts, 'attempts');
             return;
           }
@@ -2921,6 +2998,8 @@
         await new Promise(resolve => setTimeout(resolve, 250));
       }
 
+      // Timeout fallback
+      hideLoading();
       renderTripHero();
       renderTripsGrid();
       console.log('[app] Boot gave up waiting — rendered with whatever loaded');
