@@ -41,7 +41,7 @@
     return `${curr.symbol}${converted.toLocaleString()}`;
   }
 
-    // ==========================================================================
+  // ==========================================================================
   // Loading Overlay Helpers
   // ==========================================================================
   function showLoading(message) {
@@ -61,6 +61,7 @@
       overlay.setAttribute('aria-hidden', 'true');
     }
   }
+
   // ==========================================================================
   // 1b. Transportation cost estimates (per person)
   // ==========================================================================
@@ -264,8 +265,10 @@
       transitNearbyTitle: "Nearby Public Transport",
       transitLoading: "Finding nearby stops…",
       transitStops: "stops",
-      transitAttribution: "Transit data by Transitland",
-            loadingTrip: "Loading trip…",
+      transitAttribution: "Transit data by OpenStreetMap",
+      loadingTrip: "Loading trip…",
+      worldBankData: "🌍 World Bank data",
+      estimatedData: "⚠ Estimate"
     },
     ar: {
       tagline: "مساعد التخطيط الشخصي للرحلات",
@@ -454,7 +457,9 @@
       transitLoading: "جارٍ البحث عن المحطات القريبة…",
       transitStops: "محطات",
       transitAttribution: "بيانات النقل بواسطة OpenStreetMap",
-            loadingTrip: "جارٍ تحميل الرحلة…",
+      loadingTrip: "جارٍ تحميل الرحلة…",
+      worldBankData: "🌍 بيانات البنك الدولي",
+      estimatedData: "⚠ تقدير"
     },
     es: {
       tagline: "Planificador Personal de Viajes",
@@ -643,7 +648,9 @@
       transitLoading: "Buscando paradas cercanas…",
       transitStops: "paradas",
       transitAttribution: "Datos de tránsito por OpenStreetMap",
-            loadingTrip: "Cargando viaje…",
+      loadingTrip: "Cargando viaje…",
+      worldBankData: "🌍 Datos del Banco Mundial",
+      estimatedData: "⚠ Estimación"
     },
     fr: {
       tagline: "Planificateur de Voyage Personnel",
@@ -832,7 +839,9 @@
       transitLoading: "Recherche des arrêts à proximité…",
       transitStops: "arrêts",
       transitAttribution: "Données de transport par OpenStreetMap",
-            loadingTrip: "Chargement du voyage…",
+      loadingTrip: "Chargement du voyage…",
+      worldBankData: "🌍 Données Banque Mondiale",
+      estimatedData: "⚠ Estimation"
     },
     ja: {
       tagline: "パーソナル旅行プランナー",
@@ -1021,7 +1030,9 @@
       transitLoading: "近くの停留所を検索中…",
       transitStops: "停留所",
       transitAttribution: "交通データ提供: OpenStreetMap",
-            loadingTrip: "旅行を読み込み中…",
+      loadingTrip: "旅行を読み込み中…",
+      worldBankData: "🌍 世界銀行データ",
+      estimatedData: "⚠ 推定"
     },
     de: {
       tagline: "Persönlicher Reiseplaner",
@@ -1210,7 +1221,9 @@
       transitLoading: "Suche nach Haltestellen in der Nähe…",
       transitStops: "Haltestellen",
       transitAttribution: "Transitdaten von OpenStreetMap",
-            loadingTrip: "Reise wird geladen…",
+      loadingTrip: "Reise wird geladen…",
+      worldBankData: "🌍 Weltbank-Daten",
+      estimatedData: "⚠ Schätzung"
     }
   };
 
@@ -1256,7 +1269,7 @@
   const PRESET_TRIPS = [];
 
   // --------------------------------------------------------------------------
-  // Sample Trip (Tokyo) — loaded only when user clicks "Try a Sample Trip"
+  // Sample Trip (Tokyo)
   // --------------------------------------------------------------------------
   const SAMPLE_TOKYO_TRIP = {
     id: 'trip-tokyo-family',
@@ -1406,9 +1419,6 @@
     return PRESET_TRIPS[currentTripIndex] || PRESET_TRIPS[0];
   }
 
-  // ==========================================================================
-  // Ensure the current trip's days are loaded before rendering
-  // ==========================================================================
   async function ensureCurrentTripDays() {
     const trip = getCurrentTrip();
     if (!trip) return false;
@@ -1427,9 +1437,6 @@
     }
   }
 
-  // ==========================================================================
-  // Sample Trip Loader
-  // ==========================================================================
   async function loadSampleTrip() {
     const sample = JSON.parse(JSON.stringify(SAMPLE_TOKYO_TRIP));
     sample.id = `trip-sample-${Date.now()}`;
@@ -1546,7 +1553,6 @@
     if (heroTripType) heroTripType.textContent = trip.tripType;
     if (heroDuration) heroDuration.textContent = `${trip.durationDays} ${trip.durationDays === 1 ? 'Day' : 'Days'}`;
 
-    // Transportation badge
     if (heroTransportBadge) {
       if (trip.transport && TRANSPORT_RATES[trip.transport]) {
         const rate = TRANSPORT_RATES[trip.transport];
@@ -1698,7 +1704,7 @@
         </div>
       `;
 
-            card.querySelector('.btn-load-trip').addEventListener('click', async () => {
+      card.querySelector('.btn-load-trip').addEventListener('click', async () => {
         if (isActive) return;
 
         const targetTrip = PRESET_TRIPS[idx];
@@ -1830,7 +1836,7 @@
   }
 
   // ==========================================================================
-  // 4e. Local Transit — "Getting Around" card (OpenStreetMap)
+  // 4e. Local Transit Card
   // ==========================================================================
   async function renderTransitCard() {
     const container = document.getElementById('transitCardContainer');
@@ -1947,7 +1953,6 @@
     const dayWeatherAdaptationText = document.getElementById('dayWeatherAdaptationText');
     if (dayWeatherAdaptationText) dayWeatherAdaptationText.textContent = day.weatherPlan;
 
-    // Trigger transit card
     renderTransitCard();
 
     const container = document.getElementById('timelineCardsContainer');
@@ -2109,7 +2114,11 @@
 
     const budgetTotalCaption = document.getElementById('budgetTotalCaption');
     if (budgetTotalCaption) {
-      budgetTotalCaption.textContent = `For ${trip.travelers?.total || 0} travelers over ${trip.durationDays || 0} days`;
+      // Show source: World Bank or Estimate
+      const src = trip.budgetSource === 'world_bank_gdp'
+        ? (t('worldBankData') || '🌍 World Bank data')
+        : (t('estimatedData') || '⚠ Estimate');
+      budgetTotalCaption.textContent = `For ${trip.travelers?.total || 0} travelers over ${trip.durationDays || 0} days • ${src}`;
     }
 
     const budgetDailyAvg = document.getElementById('budgetDailyAvg');
@@ -2341,9 +2350,9 @@
   }
 
   // ==========================================================================
-  // 5. Trip Generator
+  // 5. Trip Generator (async — with World Bank budget data)
   // ==========================================================================
-  function generateCustomTrip(formData) {
+  async function generateCustomTrip(formData) {
     const dest = formData.destination.trim();
     const duration = parseInt(formData.duration, 10) || 5;
     const adults = parseInt(formData.adults, 10) || 2;
@@ -2363,8 +2372,36 @@
       transportRate.costPerPerson * payingTravelers * directionMultiplier
     );
 
-    let dailyRatePerPerson = budgetPref === 'luxury' ? 450 : (budgetPref === 'budget' ? 75 : 160);
-    let lodgingRateNight = budgetPref === 'luxury' ? 520 : (budgetPref === 'budget' ? 85 : 220);
+    // ---- Real budget data from World Bank ----
+    let range = null;
+    let budgetSource = 'fallback';
+
+    if (window.BudgetService?.getRange) {
+      try {
+        showToast('🌍 Fetching live economic data…');
+        range = await window.BudgetService.getRange(dest, budgetPref);
+        if (range && range.source) budgetSource = range.source;
+      } catch (err) {
+        console.warn('[app] Budget range fetch failed:', err.message);
+      }
+    }
+
+    // Fallback if API failed or city not matched
+    const r = range || {
+      foodLow: 25, foodHigh: 70,
+      lodgingLow: 60, lodgingHigh: 220,
+      transitLow: 7, transitHigh: 18,
+      actLow: 15, actHigh: 45,
+      source: 'fallback'
+    };
+
+    // Compute trip totals from ranges (mid-point for the actual estimate)
+    const dailyLowPerPerson = r.foodLow + r.transitLow + r.actLow;
+    const dailyHighPerPerson = r.foodHigh + r.transitHigh + r.actHigh;
+    const avgDailyPerPerson = Math.round((dailyLowPerPerson + dailyHighPerPerson) / 2);
+
+    const dailyRatePerPerson = avgDailyPerPerson;
+    const lodgingRateNight = Math.round((r.lodgingLow + r.lodgingHigh) / 2);
 
     const baseCost = (dailyRatePerPerson * totalTravelers * duration) + (lodgingRateNight * duration);
     const totalCost = baseCost + transportTotal;
@@ -2409,7 +2446,8 @@
           desc: `Begin your morning exploring signature architecture and vibrant pedestrian avenues in ${nName}.`,
           weatherBadge: '☀️ Cooler Morning Outdoor',
           accessibility: children > 0 ? ['👶 Stroller-Friendly', '👨‍👩‍👧 Great for Kids'] : ['♿ Wheelchair Accessible', '👴 Senior Friendly'],
-          cost: 15 * totalTravelers, completed: false
+          cost: Math.round(r.actLow / 2) * totalTravelers,
+          completed: false
         },
         lunch: {
           dualName: `Authentic Local Kitchen (${dest} Specialties)`,
@@ -2418,7 +2456,8 @@
           desc: `Sample traditional seasonal dishes and family-style culinary traditions.`,
           weatherBadge: '❄️ Air-Conditioned Dining',
           accessibility: ['👨‍👩‍👧 Family Seating', '🥗 Dietary Options Available'],
-          cost: 25 * totalTravelers, completed: false
+          cost: Math.round(r.foodLow * 0.4) * totalTravelers,
+          completed: false
         },
         afternoon: {
           dualName: `Artisan Gallery & Science Discovery (${dest})`,
@@ -2427,7 +2466,8 @@
           desc: `Discover world-class galleries, local craftsmanship, and panoramic city lookouts.`,
           weatherBadge: '🏛️ Midday Indoor Comfort',
           accessibility: ['♿ Universal Access Elevators', '👶 Rest Areas & Facilities'],
-          cost: 20 * totalTravelers, completed: false
+          cost: Math.round(r.actHigh / 2) * totalTravelers,
+          completed: false
         },
         evening: {
           dualName: `Sunset Promenade & Dinner (${nName})`,
@@ -2436,7 +2476,8 @@
           desc: `Relax with a peaceful evening walk through illuminated plazas, concluding with an authentic dinner.`,
           weatherBadge: '🌆 Evening Golden Hour',
           accessibility: ['👶 Smooth Paved Avenues', '🍷 Relaxed Dining Atmosphere'],
-          cost: 35 * totalTravelers, completed: false
+          cost: Math.round(r.foodHigh * 0.6) * totalTravelers,
+          completed: false
         }
       });
     }
@@ -2481,6 +2522,7 @@
         summary: `${totalTravelers} Travelers (${adults} Adults${children ? `, ${children} Kids` : ''}${seniors ? `, ${seniors} Seniors` : ''})`
       },
       budgetTier: budgetPref,
+      budgetSource: budgetSource,
       weather: weatherBlock,
       destinationMeta: destinationMeta,
       currentPace: 'balanced',
@@ -2503,9 +2545,9 @@
         dailyAverage: Math.round(totalCost / duration),
         perPersonTotal: Math.round(totalCost / totalTravelers),
         lodgingTotal: lodgingRateNight * duration,
-        diningTotal: Math.round(baseCost * 0.3),
-        ticketsTotal: Math.round(baseCost * 0.15),
-        transitTotal: Math.round(baseCost * 0.08),
+        diningTotal: Math.round(r.foodLow * totalTravelers * duration * 1.3),
+        ticketsTotal: Math.round(r.actLow * totalTravelers * duration * 1.2),
+        transitTotal: Math.round(r.transitLow * totalTravelers * duration * 1.5),
         transportTotal: transportTotal,
         lodgingPct: 42,
         diningPct: 22,
@@ -2643,13 +2685,12 @@
     }
 
     // Trip selector
-        const tripSelect = document.getElementById('tripSelect');
+    const tripSelect = document.getElementById('tripSelect');
     if (tripSelect) {
       tripSelect.addEventListener('change', async (e) => {
         const idx = parseInt(e.target.value, 10) || 0;
         const nextTrip = PRESET_TRIPS[idx];
 
-        // Show loading overlay if we need to fetch days from Supabase
         const needsFetch = nextTrip
           && nextTrip.savedToCloud
           && (!nextTrip.days || nextTrip.days.length === 0);
@@ -2672,7 +2713,6 @@
           renderCustomizeConsole();
           renderPacking();
         } finally {
-          // Always hide — even on error
           hideLoading();
         }
       });
@@ -2775,7 +2815,7 @@
             specialNotes:   document.getElementById('inputSpecialNotes').value || null
           };
 
-          generateCustomTrip(data);
+          await generateCustomTrip(data);
 
           const newTrip = PRESET_TRIPS[0];
           newTrip.startDate = data.startDate;
@@ -2947,7 +2987,7 @@
     applyLanguage(currentLang);
 
     // Boot: retry-based trip hydration
-        (async () => {
+    (async () => {
       let attempts = 0;
       const maxAttempts = 20;
       let loadingShown = false;
@@ -2955,7 +2995,6 @@
       while (attempts < maxAttempts) {
         attempts++;
 
-        // Fetch remote trips if signed in and none loaded yet
         if (PRESET_TRIPS.length === 0 && window.TripCraftAuth?.isSignedIn?.() && window.TripsAPI) {
           try {
             const remoteTrips = await window.TripsAPI.listTrips();
@@ -2967,14 +3006,12 @@
           }
         }
 
-        // Once we have trips, hydrate and render
         if (PRESET_TRIPS.length > 0) {
           const trip = getCurrentTrip();
           const needsFetch = trip
             && trip.savedToCloud
             && (!trip.days || trip.days.length === 0);
 
-          // Show loading only if hydration is actually required
           if (needsFetch && !loadingShown) {
             showLoading(t('loadingTrip') || `Loading ${trip.destination}…`);
             loadingShown = true;
@@ -2998,7 +3035,6 @@
         await new Promise(resolve => setTimeout(resolve, 250));
       }
 
-      // Timeout fallback
       hideLoading();
       renderTripHero();
       renderTripsGrid();
