@@ -1269,7 +1269,7 @@
   const PRESET_TRIPS = [];
 
   // --------------------------------------------------------------------------
-  // Sample Trip (Tokyo)
+  // Sample Trip (Tokyo) — loaded only when user clicks "Try a Sample Trip"
   // --------------------------------------------------------------------------
   const SAMPLE_TOKYO_TRIP = {
     id: 'trip-tokyo-family',
@@ -2114,7 +2114,6 @@
 
     const budgetTotalCaption = document.getElementById('budgetTotalCaption');
     if (budgetTotalCaption) {
-      // Show source: World Bank or Estimate
       const src = trip.budgetSource === 'world_bank_gdp'
         ? (t('worldBankData') || '🌍 World Bank data')
         : (t('estimatedData') || '⚠ Estimate');
@@ -2364,7 +2363,6 @@
     const transport = formData.transport || 'flight';
     const tripDirection = formData.tripDirection || 'round';
 
-    // Transportation cost
     const transportRate = TRANSPORT_RATES[transport] || TRANSPORT_RATES.flight;
     const directionMultiplier = (tripDirection === 'round') ? 1 : 0.55;
     const payingTravelers = adults + seniors + (children * 0.75);
@@ -2372,7 +2370,6 @@
       transportRate.costPerPerson * payingTravelers * directionMultiplier
     );
 
-    // ---- Real budget data from World Bank ----
     let range = null;
     let budgetSource = 'fallback';
 
@@ -2386,7 +2383,6 @@
       }
     }
 
-    // Fallback if API failed or city not matched
     const r = range || {
       foodLow: 25, foodHigh: 70,
       lodgingLow: 60, lodgingHigh: 220,
@@ -2395,7 +2391,6 @@
       source: 'fallback'
     };
 
-    // Compute trip totals from ranges (mid-point for the actual estimate)
     const dailyLowPerPerson = r.foodLow + r.transitLow + r.actLow;
     const dailyHighPerPerson = r.foodHigh + r.transitHigh + r.actHigh;
     const avgDailyPerPerson = Math.round((dailyLowPerPerson + dailyHighPerPerson) / 2);
@@ -2414,7 +2409,7 @@
       heroImg = 'assets/dest-amalfi.jpg'; destImg = 'assets/dest-amalfi.jpg';
     } else if (dest.toLowerCase().includes('swiss') || dest.toLowerCase().includes('zermatt') || dest.toLowerCase().includes('alps')) {
       heroImg = 'assets/dest-swiss.jpg'; destImg = 'assets/dest-swiss.jpg';
-    } else if (dest.toLowerCase().includes('bali') || dest.toLowerCase().includes('indonesia') || dest.toLowerCase().includes('tropical')) {
+    } else if (dest.toLowerCase().includes('bali') || dest.toLowerCase().includes('indonesia')) {
       heroImg = 'assets/dest-bali.jpg'; destImg = 'assets/dest-bali.jpg';
     }
 
@@ -2590,7 +2585,7 @@
   }
 
   // ==========================================================================
-  // 6. Tab Switching
+  // 6. Tab Switching — with mobile event dispatch
   // ==========================================================================
   function switchTab(tabId) {
     document.querySelectorAll('.app-tab-navigation .tab-btn').forEach(btn => {
@@ -2607,6 +2602,9 @@
     if (tabId === 'trips') {
       renderTripsGrid();
     }
+
+    // Notify mobile action bar & other listeners
+    window.dispatchEvent(new CustomEvent('tripcraft:tabChanged', { detail: { tabId } }));
   }
 
   // ==========================================================================
@@ -2718,7 +2716,7 @@
       });
     }
 
-    // Tab buttons
+    // Tab buttons (desktop nav)
     document.querySelectorAll('.app-tab-navigation .tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         switchTab(btn.getAttribute('data-tab'));
@@ -2982,6 +2980,75 @@
         console.warn('[app] Currency rates fetch failed:', err.message);
       });
     }
+
+    // ========================================================================
+    // 📦 Package C — Mobile Enhancements
+    // ========================================================================
+    const isMobile = () => window.matchMedia('(max-width: 640px)').matches;
+
+    // ---- Mobile bottom action bar ----
+    const mobileBar = document.getElementById('mobileActionBar');
+    if (mobileBar) {
+      const toggleMobileBar = () => {
+        mobileBar.style.display = isMobile() ? 'flex' : 'none';
+      };
+      toggleMobileBar();
+      window.addEventListener('resize', toggleMobileBar);
+
+      // Tab buttons
+      mobileBar.querySelectorAll('[data-mobile-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.getAttribute('data-mobile-tab');
+          switchTab(tabId);
+          mobileBar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+
+      // New Trip button
+      const mobileNewTripBtn = document.getElementById('mobileNewTripBtn');
+      if (mobileNewTripBtn) {
+        mobileNewTripBtn.addEventListener('click', () => {
+          const modal = document.getElementById('modalNewTrip');
+          if (modal) modal.classList.add('active');
+        });
+      }
+
+      // Sync with desktop tab changes
+      window.addEventListener('tripcraft:tabChanged', (e) => {
+        const tabId = e.detail?.tabId;
+        if (!tabId) return;
+        mobileBar.querySelectorAll('[data-mobile-tab]').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-mobile-tab') === tabId);
+        });
+      });
+    }
+
+    // ---- Collapsible packing categories (mobile) ----
+    document.addEventListener('click', (e) => {
+      const header = e.target.closest('.packing-category-header');
+      if (header && isMobile()) {
+        const card = header.closest('.packing-category-card');
+        if (card) card.classList.toggle('collapsed');
+      }
+    });
+
+    // ---- Tab navigation scroll hint ----
+    const tabNav = document.querySelector('.app-tab-navigation');
+    if (tabNav) {
+      const updateScrollHint = () => {
+        const atEnd = tabNav.scrollLeft + tabNav.clientWidth >= tabNav.scrollWidth - 4;
+        tabNav.classList.toggle('at-end', atEnd);
+      };
+      tabNav.addEventListener('scroll', updateScrollHint, { passive: true });
+      updateScrollHint();
+    }
+
+    // ---- Sticky tab nav shadow on scroll ----
+    window.addEventListener('scroll', () => {
+      if (tabNav) tabNav.classList.toggle('is-scrolled', window.scrollY > 20);
+    }, { passive: true });
 
     // Initial render
     applyLanguage(currentLang);
