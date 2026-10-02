@@ -2360,21 +2360,56 @@ html[data-theme="light"] .form-input {
   .budget-kpi-row { grid-template-columns: 1fr; }
   .trip-grid-actions { flex-direction: column; }
   .trip-grid-actions .btn { width: 100%; }
-  .nav-controls { grid-template-columns: auto 1fr 1fr 1fr auto; gap: 0.25rem; }
-  .nav-controls .btn { 
-    min-width: 0; 
-    overflow: hidden; 
-    text-overflow: ellipsis; 
-    white-space: nowrap; 
-    padding: 0 6px; /* Reduce padding so text fits better */
-}
 
-/* Hide the text on very small screens to just show icons */
-.nav-controls .btn span {
-    display: none;
-}
-}
+  /* --- FIXED NAV CONTROLS --- */
+  .nav-controls { 
+      grid-template-columns: auto 1fr 1fr 1fr auto; 
+      gap: 0.25rem; 
+  }
 
+  .nav-controls .btn {
+      padding: 4px 8px; /* Reduced padding */
+      font-size: 0.75rem; /* Smaller text */
+      min-width: 0; 
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+  }
+
+  .nav-controls .btn svg,
+  .nav-controls .btn .icon {
+      width: 14px;
+      height: 14px;
+  }
+
+  .nav-controls .btn .icon-dropdown {
+      width: 12px;
+      height: 12px;
+  }
+
+  /* Optional: Uncomment the line below if you want to hide the text completely on mobile and only show icons */
+  /* .nav-controls .btn span { display: none; } */
+
+
+  /* --- FIX FOR THE DESTINATION CITY PILL --- */
+  .search-destination-pill .pill-text,
+  .hero-destination-picker {
+      font-size: 0.85rem; /* Smaller text for the city name */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+  }
+  
+  /* If the class name for the whole pill is different, replace this with the actual container class */
+  .search-destination-pill {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      display: block; /* or flex, depending on your HTML structure */
+  }
+}
 /* ==========================================================================
    31. Trips Grid — 2 columns on wider screens
    ========================================================================== */
