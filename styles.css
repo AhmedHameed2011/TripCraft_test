@@ -500,30 +500,34 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.35rem;
+  padding: 0 0.25rem 0.35rem;      /* small left/right padding */
   width: 100%;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  scroll-padding: 0.25rem;
 }
 
 .day-pills-scroller::-webkit-scrollbar { display: none; }
 
 .day-pill-btn {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.15rem;
-  padding: 0.55rem 0.95rem;
+  padding: 0.55rem 0.85rem;
   border-radius: var(--radius-md);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   font-size: 0.8rem;
-  white-space: nowrap;
   transition: all var(--trans-fast);
-  min-width: 120px;
+  min-width: 140px;
+  max-width: 200px;
   flex-shrink: 0;
+  text-align: left;
+  overflow: hidden;              /* keep contents contained */
 }
+
 .day-pill-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
 .day-pill-btn.active {
   background: var(--gradient-brand);
@@ -531,8 +535,25 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   border-color: transparent;
   box-shadow: 0 3px 12px var(--brand-primary-glow);
 }
-.pill-day-label { font-weight: 800; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
-.pill-day-title { font-weight: 600; font-size: 0.82rem; }
+
+.pill-day-label {
+  font-weight: 800;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: block;
+  width: 100%;
+}
+
+.pill-day-title {
+  font-weight: 600;
+  font-size: 0.82rem;
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;        /* adds the "…" */
+}
 
 .itinerary-action-tools {
   display: flex;
@@ -1243,12 +1264,16 @@ html[data-theme="light"] .loading-overlay { background: rgba(255, 255, 255, 0.65
   grid-template-columns: 1fr;
   gap: 1rem;
 }
-@media (min-width: 640px) {
-  .trips-grid {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.25rem;
+@media (max-width: 640px) {
+  .day-pill-btn {
+    min-width: 110px;
+    max-width: 150px;
+    padding: 0.45rem 0.7rem;
   }
+  .pill-day-label { font-size: 0.65rem; }
+  .pill-day-title { font-size: 0.72rem; }
 }
+
 
 .trip-grid-card {
   position: relative;
