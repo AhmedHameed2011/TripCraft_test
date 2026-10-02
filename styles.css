@@ -22,7 +22,6 @@
   --trans-med: 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Dark theme (default) */
 html[data-theme="dark"] {
   --bg-app: #0a0a14;
   --bg-surface: #12121f;
@@ -37,7 +36,6 @@ html[data-theme="dark"] {
   --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Light theme */
 html[data-theme="light"] {
   --bg-app: #f7f7fb;
   --bg-surface: #ffffff;
@@ -234,7 +232,6 @@ h1, h2, h3, h4 { margin: 0 0 0.5rem; font-family: var(--font-display); }
 .icon-btn:hover { color: var(--text-primary); background: var(--bg-surface-hover); }
 .icon-btn svg { width: 17px; height: 17px; }
 
-/* Theme icon toggling */
 html[data-theme="dark"] .theme-icon-moon { display: none; }
 html[data-theme="light"] .theme-icon-sun { display: none; }
 
@@ -300,7 +297,6 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
 .badge-accent { background: rgba(168, 85, 247, 0.9); color: #fff; }
 .badge-weather { background: rgba(255,255,255,0.18); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
 
-/* Transport badge */
 .badge-transport {
   background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
   color: #fff;
@@ -373,7 +369,6 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   min-width: 0;
 }
 
-/* Rich hero weather badge */
 .hero-weather-rich {
   display: inline-flex;
   align-items: center;
@@ -398,7 +393,6 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
 .hero-weather-rich .weather-divider { color: rgba(255, 255, 255, 0.4); font-weight: 700; }
 .hero-weather-rich .weather-detail:empty { display: none; }
 
-/* Hero image attribution */
 .hero-attribution {
   position: absolute;
   bottom: 0.75rem;
@@ -500,13 +494,11 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding: 0 0.25rem 0.35rem;      /* small left/right padding */
+  padding-bottom: 0.35rem;
   width: 100%;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  scroll-padding: 0.25rem;
 }
-
 .day-pills-scroller::-webkit-scrollbar { display: none; }
 
 .day-pill-btn {
@@ -525,9 +517,8 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   max-width: 200px;
   flex-shrink: 0;
   text-align: left;
-  overflow: hidden;              /* keep contents contained */
+  overflow: hidden;
 }
-
 .day-pill-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
 .day-pill-btn.active {
   background: var(--gradient-brand);
@@ -535,7 +526,6 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   border-color: transparent;
   box-shadow: 0 3px 12px var(--brand-primary-glow);
 }
-
 .pill-day-label {
   font-weight: 800;
   font-size: 0.72rem;
@@ -544,7 +534,6 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   display: block;
   width: 100%;
 }
-
 .pill-day-title {
   font-weight: 600;
   font-size: 0.82rem;
@@ -552,7 +541,7 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;        /* adds the "…" */
+  text-overflow: ellipsis;
 }
 
 .itinerary-action-tools {
@@ -597,7 +586,6 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
 .context-value { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
 .context-subtext { display: block; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; }
 
-/* Timeline cards */
 .timeline-blocks-wrapper { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
 
 .timeline-slot-card {
@@ -697,7 +685,6 @@ html[data-theme="light"] .theme-icon-sun { display: none; }
 
 .slot-btn-group { display: flex; gap: 0.4rem; }
 
-/* Itinerary footer */
 .itinerary-footer-card {
   padding: 1.5rem;
   background: var(--bg-surface-elevated);
@@ -1264,16 +1251,6 @@ html[data-theme="light"] .loading-overlay { background: rgba(255, 255, 255, 0.65
   grid-template-columns: 1fr;
   gap: 1rem;
 }
-@media (max-width: 640px) {
-  .day-pill-btn {
-    min-width: 110px;
-    max-width: 150px;
-    padding: 0.45rem 0.7rem;
-  }
-  .pill-day-label { font-size: 0.65rem; }
-  .pill-day-title { font-size: 0.72rem; }
-}
-
 
 .trip-grid-card {
   position: relative;
@@ -1724,7 +1701,6 @@ html[data-theme="light"] .trip-dropdown option:checked {
   background-color: #6366f1;
   color: #ffffff;
 }
-
 html[data-theme="dark"] select,
 html[data-theme="dark"] .icon-dropdown,
 html[data-theme="dark"] .trip-dropdown,
@@ -1771,4 +1747,374 @@ html[data-theme="light"] .form-input {
   body { background: #fff; color: #000; }
   .tab-content-panel { display: block !important; }
   .card, .timeline-slot-card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+}
+
+/* ==========================================================================
+   28. RESPONSIVE — Tablet (≤900px)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .app-layout { padding: 0 1rem 2rem; }
+  .navbar { padding: 0.75rem 0; }
+  .nav-brand-group { gap: 1rem; }
+  .hero-glass-overlay { padding: 2rem 1.25rem; min-height: 380px; }
+  .trip-hero-section { min-height: 380px; border-radius: var(--radius-lg); }
+}
+
+/* ==========================================================================
+   29. RESPONSIVE — Mobile (≤640px)
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* Global */
+  .app-layout { padding: 0 0.75rem 1.5rem; }
+
+  /* Navbar */
+  .navbar {
+    padding: 0.6rem 0;
+    margin-bottom: 0.75rem;
+    gap: 0.55rem;
+  }
+  .brand-tagline { display: none; }
+  .brand-title { font-size: 1.1rem; }
+  .brand-icon-wrapper { width: 36px; height: 36px; }
+  .brand-svg { width: 18px; height: 18px; }
+
+  .nav-brand-group {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.55rem;
+  }
+  .brand-logo { justify-content: space-between; gap: 0.5rem; align-items: center; }
+
+  .trip-quick-selector {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .trip-quick-selector .select-pill-wrapper {
+    flex: 1;
+    padding: 0.55rem 0.8rem;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-strong);
+  }
+  .trip-quick-selector .trip-dropdown {
+    flex: 1;
+    max-width: none;
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+  .trip-quick-selector .pill-icon {
+    color: var(--brand-primary);
+    width: 15px;
+    height: 15px;
+  }
+
+  .nav-controls {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    flex-wrap: nowrap;
+  }
+
+  #btnNewTrip {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  #btnNewTrip span { display: none; }
+  #btnNewTrip .btn-icon { width: 18px; height: 18px; display: block; }
+
+  #authModalTrigger {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  #authModalTrigger .btn-icon { display: none; }
+
+  .user-display {
+    padding: 0.25rem 0.45rem 0.25rem 0.25rem;
+    max-width: 140px;
+    flex: 1;
+    min-width: 0;
+  }
+  .user-avatar { width: 24px; height: 24px; }
+  .user-avatar svg { width: 13px; height: 13px; }
+  .user-email { font-size: 0.72rem; max-width: 80px; }
+  #logoutBtn { width: 24px; height: 24px; }
+  #logoutBtn svg { width: 13px; height: 13px; }
+
+  .dropdown-control { flex: 1; min-width: 0; }
+  .dropdown-control .select-pill-wrapper {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    gap: 0.3rem;
+    justify-content: center;
+  }
+  .icon-dropdown {
+    font-size: 0.72rem;
+    max-width: none;
+    flex: 1;
+    text-align: center;
+  }
+  .currency-badge { font-size: 0.7rem; }
+  .pill-icon { width: 12px; height: 12px; }
+
+  #themeToggleBtn {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+  #themeToggleBtn svg { width: 15px; height: 15px; }
+
+  /* Hero */
+  .trip-hero-section {
+    min-height: 520px;
+    border-radius: var(--radius-lg);
+    margin-bottom: 1rem;
+  }
+  .hero-glass-overlay {
+    min-height: 520px;
+    padding: 1.25rem 1rem 1.25rem;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.05) 0%,
+      rgba(10, 10, 20, 0.35) 40%,
+      rgba(10, 10, 20, 0.88) 85%,
+      rgba(10, 10, 20, 0.96) 100%
+    );
+  }
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+  }
+  .hero-badges-row { gap: 0.35rem; margin-bottom: 0.75rem; }
+  .badge { padding: 0.25rem 0.6rem; font-size: 0.66rem; }
+
+  .hero-weather-rich {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.72rem;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    width: auto;
+    max-width: 100%;
+    flex: 0 1 auto;
+    margin-top: 0.25rem;
+    align-self: flex-start;
+  }
+  .hero-weather-rich .weather-icon { font-size: 1rem; }
+  .hero-weather-rich .weather-temp { font-size: 0.9rem; font-weight: 800; }
+  .hero-weather-rich .weather-cond,
+  .hero-weather-rich .weather-detail { font-size: 0.7rem; font-weight: 500; }
+  .hero-weather-rich .weather-divider { font-size: 0.7rem; }
+
+  .hero-destination-title {
+    font-size: 1.45rem;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+    max-width: 100%;
+  }
+  .hero-description {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+    max-width: 100%;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .hero-metrics-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .metric-card {
+    padding: 0.55rem 0.65rem;
+    gap: 0.5rem;
+    border-radius: var(--radius-sm);
+  }
+  .metric-icon-wrap {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+  }
+  .metric-icon-wrap svg { width: 13px; height: 13px; }
+  .metric-label { font-size: 0.55rem; letter-spacing: 0.05em; }
+  .metric-value {
+    font-size: 0.68rem;
+    line-height: 1.3;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  .hero-attribution {
+    font-size: 0.58rem;
+    padding: 0.15rem 0.4rem;
+    bottom: 0.4rem;
+    right: 0.4rem;
+  }
+
+  /* Tabs */
+  .app-tab-navigation {
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+    padding: 0 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .tab-list-container { padding: 0.22rem; gap: 0.22rem; }
+  .tab-btn {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.72rem;
+    gap: 0.3rem;
+  }
+  .tab-icon { width: 12px; height: 12px; }
+
+  /* Itinerary header */
+  .itinerary-header-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+    margin-bottom: 0.75rem;
+  }
+  .day-pills-scroller { width: 100%; }
+  .day-pill-btn {
+    min-width: 110px;
+    max-width: 150px;
+    padding: 0.45rem 0.7rem;
+  }
+  .pill-day-label { font-size: 0.65rem; }
+  .pill-day-title { font-size: 0.72rem; }
+
+  .itinerary-action-tools {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 0.35rem;
+  }
+  .itinerary-action-tools .btn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  /* Panels & cards */
+  .panel-header { gap: 0.6rem; margin-bottom: 0.75rem; }
+  .panel-title { font-size: 1.15rem; }
+  .panel-subtitle { font-size: 0.78rem; }
+  .card { padding: 0.9rem; border-radius: var(--radius-md); }
+
+  .day-context-banner { padding: 0.8rem; gap: 0.75rem; }
+  .context-value { font-size: 0.78rem; }
+  .context-subtext { font-size: 0.7rem; }
+
+  .timeline-slot-card {
+    grid-template-columns: 1fr;
+    padding: 0.9rem;
+    gap: 0.6rem;
+  }
+  .slot-time-column {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .slot-phase-pill { font-size: 0.62rem; padding: 0.22rem 0.5rem; }
+  .slot-time-range { font-size: 0.72rem; }
+  .dual-name-title { font-size: 0.88rem; }
+  .slot-description { font-size: 0.8rem; }
+  .slot-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .slot-btn-group { width: 100%; }
+  .slot-btn-group .btn { flex: 1; }
+
+  /* Stays / Trips / Budget */
+  .stays-grid, .trips-grid { gap: 0.75rem; }
+  .stay-body, .trip-grid-body { padding: 0.85rem; }
+  .stay-title, .trip-grid-title { font-size: 0.9rem; }
+
+  .budget-kpi-row { grid-template-columns: 1fr; gap: 0.6rem; }
+  .kpi-card { padding: 0.9rem; }
+  .kpi-number { font-size: 1.3rem; }
+
+  .expense-legend-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  /* Modals */
+  .modal-dialog {
+    max-width: 100%;
+    border-radius: var(--radius-md);
+    max-height: 95vh;
+  }
+  .modal-header { padding: 0.9rem 1rem; }
+  .modal-body-form { padding: 1rem; }
+  .modal-title { font-size: 0.95rem; }
+  .modal-footer-actions {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+  .modal-footer-actions .btn { width: 100%; }
+
+  .form-row.two-col,
+  .form-row.three-col {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  /* Toast */
+  .toast-stack {
+    right: 0.6rem;
+    left: 0.6rem;
+    bottom: 0.6rem;
+    max-width: none;
+  }
+  [dir="rtl"] .toast-stack { right: 0.6rem; left: 0.6rem; }
+
+  /* Transit */
+  .transit-stop-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+  .transit-stop-routes { justify-content: flex-start; }
+}
+
+/* ==========================================================================
+   30. RESPONSIVE — Extra Small (≤380px)
+   ========================================================================== */
+@media (max-width: 380px) {
+  .hero-destination-title { font-size: 1.25rem; }
+  .hero-metrics-grid { grid-template-columns: 1fr 1fr; }
+  .hero-weather-rich .weather-detail { display: none; }
+  .hero-weather-rich .weather-divider { display: none; }
+  .trip-grid-actions { flex-direction: column; }
+  .trip-grid-actions .btn { width: 100%; }
+}
+
+/* ==========================================================================
+   31. Trips Grid — 2 columns on wider screens
+   ========================================================================== */
+@media (min-width: 640px) {
+  .trips-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
 }
