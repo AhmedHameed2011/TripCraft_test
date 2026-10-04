@@ -1,7 +1,7 @@
 /**
  * TripCraft — Real POI Service (OpenStreetMap Overpass API)
- * Fetches real attractions, malls, heritage sites, parks, and museums
- * for any destination, then builds a day-by-day itinerary skeleton.
+ * Fetches real attractions, malls, heritage sites, parks, museums,
+ * and restaurants for any destination, then builds a day-by-day itinerary.
  *
  * Also provides swap-alternative helpers used by app.js for the
  * "Swap Activity" feature in the Customize tab.
@@ -64,8 +64,9 @@
         node["shop"="mall"](around:${radiusMeters},${lat},${lng});
         node["leisure"~"park|water_park"](around:${radiusMeters},${lat},${lng});
         node["amenity"~"cinema|theatre|marketplace|place_of_worship"](around:${radiusMeters},${lat},${lng});
+        node["amenity"~"restaurant|cafe|fast_food"]["name"]["cuisine"](around:${radiusMeters},${lat},${lng});
       );
-      out body 150;
+      out body 200;
     `;
 
     try {
@@ -110,6 +111,8 @@
     if (!category) return null;
 
     const rules = CATEGORY_RULES[category];
+    if (!rules) return null;                 // safety net
+
     const name = tags.name || tags['name:en'];
 
     return {
@@ -125,10 +128,14 @@
       lng: el.lon,
       address: buildAddress(tags),
       openingHours: tags.opening_hours || null,
+      openingHoursParsed: tags.opening_hours ? parseOpeningHours(tags.opening_hours) : null,
       website: tags.website || null
     };
   }
 
+  // =========================================================================
+  // 3. Category classification
+  // =========================================================================
   function classifyCategory(tags) {
     if (tags.tourism === 'museum')       return 'museum';
     if (tags.tourism === 'theme_park')   return 'theme_park';
@@ -149,6 +156,9 @@
     if (tags.amenity === 'theatre')      return 'theatre';
     if (tags.amenity === 'marketplace')  return 'market';
     if (tags.amenity === 'place_of_worship') return 'religious';
+    if (tags.amenity === 'restaurant' ||
+        tags.amenity === 'cafe' ||
+        tags.amenity === 'fast_food')    return 'restaurant';
     return null;
   }
 
@@ -162,7 +172,7 @@
   }
 
   // =========================================================================
-  // 3. Haversine distance (km)
+  // 4. Haversine distance (km)
   // =========================================================================
   function distanceKm(a, b) {
     const R = 6371;
@@ -177,7 +187,7 @@
   }
 
   // =========================================================================
-  // 4. Cluster POIs greedily by proximity — one cluster per day
+  // 5. Cluster POIs greedily by proximity — one cluster per day
   // =========================================================================
   function clusterPOIs(pois, days) {
     const clusters = Array.from({ length: days }, () => []);
@@ -210,7 +220,7 @@
   }
 
   // =========================================================================
-  // 5. Build trip.days[] structure from clustered POIs + weather
+  // 6. Build trip.days[] structure from clustered POIs + weather
   // =========================================================================
   function buildDaysFromClusters(clusters, weather, pace = 'balanced') {
     const slotOrder = { morning: 0, lunch: 1, afternoon: 2, evening: 3 };
@@ -233,14 +243,24 @@
 
       const toSlot = (poi, defaultTime) => {
         if (!poi) return null;
+
+        // Opening-hours awareness
+        const openStatus = isOpenDuring(poi, poi.slot);
+        let hoursWarning = null;
+        if (openStatus === false) {
+          hoursWarning = `⚠️ Usually closed during ${poi.slot} — check hours`;
+        }
+
         return {
           dualName: poi.name,
           category: formatCategory(poi.category),
           time: defaultTime,
           desc:
             `${poi.name} — a notable ${formatCategory(poi.category).toLowerCase()}` +
-            `${poi.address ? ' located at ' + poi.address : ''}.`,
+            `${poi.address ? ' located at ' + poi.address : ''}.` +
+            `${poi.openingHours ? ' Hours: ' + poi.openingHours + '.' : ''}`,
           weatherBadge: poi.indoor ? '🏛️ Indoor' : '🌤️ Outdoor',
+          hoursBadge: hoursWarning,
           accessibility: poi.familyFriendly
             ? ['👨‍👩‍👧 Family-Friendly']
             : ['♿ Accessible'],
@@ -285,29 +305,125 @@
   }
 
   // =========================================================================
-  // 6. Swap helpers — find real alternatives from the cached POI list
+  // 7. Opening Hours parsing (lightweight OSM format)
   // =========================================================================
+  function parseOpeningHours(raw) {
+    if (!raw) return null;
 
-  /**
-   * Find alternatives for a given activity slot.
-   * Same time-of-day slot, not already used elsewhere in the itinerary.
-   * Prefers same category and same indoor/outdoor flag.
-   *
-   * @param {Object} currentPOI  - { id, category, slot, indoor }
-   * @param {Array}  allPOIs     - Full POI list from cache
-   * @param {Array}  usedPOIIds  - POI ids already used in the itinerary
-   * @returns {Array}            - Up to 4 alternative POIs
-   */
-  function findAlternatives(currentPOI, allPOIs, usedPOIIds = []) {
+    const str = raw.trim();
+    if (str === '24/7') {
+      return { is24_7: true, days: null, raw: str };
+    }
+
+    const dayMap = {
+      mo: 'mon', tu: 'tue', we: 'wed', th: 'thu',
+      fr: 'fri', sa: 'sat', su: 'sun'
+    };
+
+    const days = {
+      mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: []
+    };
+
+    const rules = str.split(';').map(r => r.trim()).filter(Boolean);
+
+    for (const rule of rules) {
+      const match = rule.match(/^([A-Za-z,\-]+)\s+(.+)$/);
+      if (!match) continue;
+
+      const [, daysPart, hoursPart] = match;
+      const expandedDays = expandDayRange(daysPart, dayMap);
+      if (expandedDays.length === 0) continue;
+
+      const ranges = [];
+      const timeRanges = hoursPart.split(',').map(t => t.trim());
+      for (const tr of timeRanges) {
+        const tm = tr.match(/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/);
+        if (tm) {
+          ranges.push([`${tm[1]}:${tm[2]}`, `${tm[3]}:${tm[4]}`]);
+        }
+      }
+
+      for (const day of expandedDays) {
+        days[day].push(...ranges);
+      }
+    }
+
+    return { is24_7: false, days, raw: str };
+  }
+
+  function expandDayRange(spec, dayMap) {
+    const result = [];
+    const parts = spec.toLowerCase().split(',').map(s => s.trim());
+    const dayKeys = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su'];
+
+    for (const part of parts) {
+      if (part.includes('-')) {
+        const [start, end] = part.split('-').map(s => s.trim());
+        const startIdx = dayKeys.indexOf(start);
+        const endIdx   = dayKeys.indexOf(end);
+        if (startIdx === -1 || endIdx === -1) continue;
+
+        let i = startIdx;
+        while (true) {
+          result.push(dayMap[dayKeys[i]]);
+          if (i === endIdx) break;
+          i = (i + 1) % 7;
+        }
+      } else {
+        const key = dayMap[part];
+        if (key) result.push(key);
+      }
+    }
+    return [...new Set(result)];
+  }
+
+  function isOpenDuring(poi, slot, weekday = null) {
+    if (!poi.openingHours) return null;    // Unknown → assume open
+
+    const parsed = poi.openingHoursParsed || parseOpeningHours(poi.openingHours);
+    if (!parsed) return null;
+    if (parsed.is24_7) return true;
+
+    const day = weekday || new Date()
+      .toLocaleDateString('en-US', { weekday: 'short' })
+      .toLowerCase()
+      .slice(0, 3);
+
+    const ranges = parsed.days[day] || [];
+    if (ranges.length === 0) return false;
+
+    const slotRanges = {
+      morning:   ['08:00', '12:00'],
+      lunch:     ['12:00', '14:30'],
+      afternoon: ['14:00', '17:30'],
+      evening:   ['17:00', '22:00']
+    };
+    const [slotStart, slotEnd] = slotRanges[slot] || ['00:00', '23:59'];
+
+    return ranges.some(([open, close]) =>
+      open <= slotEnd && close >= slotStart
+    );
+  }
+
+  // =========================================================================
+  // 8. Swap helpers — find real alternatives from the cached POI list
+  // =========================================================================
+  function findAlternatives(currentPOI, allPOIs, usedPOIIds = [], weekday = null) {
     if (!currentPOI || !Array.isArray(allPOIs)) return [];
-
     const used = new Set(usedPOIIds);
 
     return allPOIs
       .filter(p => {
-        if (p.id === currentPOI.id) return false;      // not itself
-        if (used.has(p.id)) return false;              // not already in plan
-        if (currentPOI.slot && p.slot !== currentPOI.slot) return false; // same time slot
+        if (p.id === currentPOI.id) return false;         // not itself
+        if (used.has(p.id)) return false;                 // not already in plan
+        if (currentPOI.slot && p.slot !== currentPOI.slot) return false;
+
+        // Opening-hours filter (if weekday provided)
+        if (weekday) {
+          const open = isOpenDuring(p, currentPOI.slot, weekday);
+          if (open === false) return false;
+        }
+
         return true;
       })
       .sort((a, b) => {
@@ -322,10 +438,6 @@
       .slice(0, 4);
   }
 
-  /**
-   * Collect every POI id currently referenced by a trip's itinerary.
-   * Used to avoid suggesting POIs already present.
-   */
   function collectUsedPOIIds(trip) {
     const ids = [];
     (trip.days || []).forEach(d => {
@@ -338,7 +450,7 @@
   }
 
   // =========================================================================
-  // 7. Public API
+  // 9. Public API
   // =========================================================================
   window.POIService = {
     fetchPOIs,
@@ -346,6 +458,9 @@
     buildDaysFromClusters,
     distanceKm,
     findAlternatives,
-    collectUsedPOIIds
+    collectUsedPOIIds,
+    parseOpeningHours,
+    isOpenDuring,
+    CATEGORY_RULES
   };
 })();
