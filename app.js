@@ -1730,6 +1730,12 @@ if (sample.destinationMeta?.lat && sample.destinationMeta?.lng && window.POIServ
         if (isActive) return;
 
         const targetTrip = PRESET_TRIPS[idx];
+                // Clear POI cache when switching destinations
+        if (window.__tripcraftPOICache && targetTrip &&
+            window.__tripcraftPOICache.destination !== targetTrip.destination) {
+          console.log('[load-trip] Clearing POI cache');
+          window.__tripcraftPOICache = null;
+        }
         const needsFetch = targetTrip
           && targetTrip.savedToCloud
           && (!targetTrip.days || targetTrip.days.length === 0);
@@ -2239,7 +2245,7 @@ if (sample.destinationMeta?.lat && sample.destinationMeta?.lng && window.POIServ
   }
 
   
-function renderSwapAlternates(dayIdx, slot) {
+async function renderSwapAlternates(dayIdx, slot) {
   const container = document.getElementById('swapAlternatesContainer');
   if (!container) return;
   container.innerHTML = '';
@@ -2256,15 +2262,83 @@ function renderSwapAlternates(dayIdx, slot) {
     return;
   }
 
-  // ── 1. Get alternatives from the cached POI list ─────────────────
-  const cache = window.__tripcraftPOICache;
+  // ── 1. Show loading state ───────────────────────────────────────
+  container.innerHTML = `
+    <div class="alternate-loading">
+      <span class="spinner"></span>
+      <span>Finding alternatives…</span>
+    </div>
+  `;
+
+  // ── 2. Validate or fetch POI cache ──────────────────────────────
+  let cache = window.__tripcraftPOICache;
+
+  // 👇 CRITICAL FIX: Clear cache if it belongs to a different destination
+  if (cache && cache.destination !== trip.destination) {
+    console.log('[swap] Cache mismatch — clearing stale cache for', cache.destination);
+    cache = null;
+    window.__tripcraftPOICache = null;
+  }
+
+  // If cache is missing or empty, fetch it now
+  if (!cache || !cache.pois || cache.pois.length === 0) {
+    const meta = trip.destinationMeta || window.__selectedDestination;
+
+    if (!meta || typeof meta.lat !== 'number' || typeof meta.lng !== 'number') {
+      container.innerHTML = `
+        <div class="alternate-empty-state">
+          <div class="empty-icon">📍</div>
+          <p><strong>Location unavailable</strong></p>
+          <p class="empty-sub">Regenerate this trip so we can find real alternatives nearby.</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (!window.POIService) {
+      container.innerHTML = `
+        <div class="alternate-empty-state">
+          <div class="empty-icon">⚠️</div>
+          <p><strong>POI service not loaded</strong></p>
+          <p class="empty-sub">Make sure poi-service.js is included before app.js.</p>
+        </div>
+      `;
+      return;
+    }
+
+    try {
+      console.log('[swap] Fetching POIs for', trip.destination, 'at', meta.lat, meta.lng);
+      const pois = await window.POIService.fetchPOIs(meta.lat, meta.lng, 20000);
+
+      cache = {
+        destination: trip.destination,
+        lat: meta.lat,
+        lng: meta.lng,
+        pois,
+        timestamp: Date.now()
+      };
+      window.__tripcraftPOICache = cache;
+
+      console.log('[swap] Fetched', pois.length, 'POIs for', trip.destination);
+    } catch (err) {
+      console.warn('[swap] Fetch failed:', err.message);
+      container.innerHTML = `
+        <div class="alternate-empty-state">
+          <div class="empty-icon">⚠️</div>
+          <p><strong>Could not load alternatives</strong></p>
+          <p class="empty-sub">The map service is temporarily unavailable. Please try again.</p>
+        </div>
+      `;
+      return;
+    }
+  }
+
+  // ── 3. Find alternatives ────────────────────────────────────────
   let alternatives = [];
 
   if (cache && cache.pois && cache.pois.length > 0 && window.POIService) {
     const usedIds = window.POIService.collectUsedPOIIds(trip);
-    
-    // Fallback: if the current activity has no _poiId, we can't match by ID.
-    // Instead, we filter by slot and category only.
+
     const currentPOI = {
       id: currentActivity._poiId || null,
       category: currentActivity.category,
@@ -2272,26 +2346,50 @@ function renderSwapAlternates(dayIdx, slot) {
       indoor: currentActivity.weatherBadge?.includes('Indoor')
     };
 
-    alternatives = window.POIService.findAlternatives(
-      currentPOI,
-      cache.pois,
-      usedIds
-    );
+    // Compute the weekday of the selected day for opening-hours awareness
+    let weekday = null;
+    if (trip.startDate) {
+      const start = new Date(trip.startDate);
+      const dayDate = new Date(start);
+      dayDate.setDate(start.getDate() + dayIdx);
+      weekday = dayDate.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase().slice(0, 3);
+    } else {
+      weekday = new Date().toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase().slice(0, 3);
+    }
+
+    // Pass weekday if the service supports it, otherwise 3-arg form
+    try {
+      alternatives = window.POIService.findAlternatives(
+        currentPOI,
+        cache.pois,
+        usedIds,
+        weekday
+      );
+    } catch {
+      alternatives = window.POIService.findAlternatives(
+        currentPOI,
+        cache.pois,
+        usedIds
+      );
+    }
+
+    console.log('[swap] Found', alternatives.length, 'alternatives for', trip.destination, slot);
   }
 
-  // ── 2. If no real alternatives, show a friendly empty state ──────
+  // ── 4. Render empty state or results ────────────────────────────
+  container.innerHTML = '';
+
   if (alternatives.length === 0) {
     container.innerHTML = `
       <div class="alternate-empty-state">
         <div class="empty-icon">🤔</div>
         <p><strong>No alternatives found</strong> in this neighborhood for this time slot.</p>
-        <p class="empty-sub">Try adjusting the day, or regenerate the trip for a different area.</p>
+        <p class="empty-sub">Try selecting a different day or time slot.</p>
       </div>
     `;
     return;
   }
 
-  // ── 3. Render alternatives ───────────────────────────────────────
   alternatives.forEach(alt => {
     const item = document.createElement('div');
     item.className = 'alternate-item-card';
@@ -2316,7 +2414,6 @@ function renderSwapAlternates(dayIdx, slot) {
 
       const oldActivity = targetTrip.days[dayIdx][slot];
 
-      // Replace with the new alternative
       targetTrip.days[dayIdx][slot] = {
         dualName: alt.name,
         category: formatCategoryLabel(alt.category),
@@ -2333,7 +2430,6 @@ function renderSwapAlternates(dayIdx, slot) {
         _lng: alt.lng
       };
 
-      // Re-render the itinerary and the alternates list
       renderItinerary();
       renderSwapAlternates(dayIdx, slot);
       showToast(`✓ Swapped to: ${alt.name}`);
@@ -2353,15 +2449,6 @@ function formatCategoryLabel(cat) {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-/**
- * Format "shopping_mall" → "Shopping Mall"
- */
-function formatCategoryLabel(cat) {
-  if (!cat) return 'Activity';
-  return cat
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
-}
   
   // ==========================================================================
   // 4j. Packing
@@ -2832,6 +2919,12 @@ if (generatedDays.length === 0) {
       tripSelect.addEventListener('change', async (e) => {
         const idx = parseInt(e.target.value, 10) || 0;
         const nextTrip = PRESET_TRIPS[idx];
+        // Clear POI cache when switching to a different destination
+if (window.__tripcraftPOICache && nextTrip &&
+    window.__tripcraftPOICache.destination !== nextTrip.destination) {
+  console.log('[trip-switch] Clearing POI cache');
+  window.__tripcraftPOICache = null;
+}
 
         const needsFetch = nextTrip
           && nextTrip.savedToCloud
