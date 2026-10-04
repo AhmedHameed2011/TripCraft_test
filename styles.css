@@ -2419,3 +2419,32 @@ html[data-theme="light"] .form-input {
     gap: 1.25rem;
   }
 }
+/* ---------------------------- Alternate Activity Cards ------------------- */
+.alternate-empty-state {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  background: var(--bg-surface-elevated);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+}
+.alternate-empty-state .empty-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.6;
+}
+.alternate-empty-state p {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  margin: 0.25rem 0;
+}
+.alternate-empty-state .empty-sub {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.alternate-info .alt-address {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  display: block;
+  margin-top: 0.15rem;
+}

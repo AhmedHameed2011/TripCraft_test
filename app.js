@@ -1442,6 +1442,28 @@
     sample.id = `trip-sample-${Date.now()}`;
 
     PRESET_TRIPS.unshift(sample);
+    // If the sample trip has coordinates, fetch and cache its real POIs
+if (sample.destinationMeta?.lat && sample.destinationMeta?.lng && window.POIService) {
+  try {
+    const pois = await window.POIService.fetchPOIs(
+      sample.destinationMeta.lat,
+      sample.destinationMeta.lng,
+      20000
+    );
+    if (pois.length > 0) {
+      window.__tripcraftPOICache = {
+        destination: sample.destination,
+        lat: sample.destinationMeta.lat,
+        lng: sample.destinationMeta.lng,
+        pois,
+        timestamp: Date.now()
+      };
+      console.log('[app] Sample trip POI cache loaded:', pois.length, 'POIs');
+    }
+  } catch (err) {
+    console.warn('[app] Sample POI cache failed:', err.message);
+  }
+}
     currentTripIndex = 0;
     activeDayIndex = 0;
 
@@ -2216,66 +2238,131 @@
     }
   }
 
-  const ALTERNATES_CATALOG = {
-    morning: [
-      { dualName: '築地場外市場 (Tsukiji Outer Market Tasting Tour)', category: 'Culinary Heritage', desc: 'Taste fresh tamagoyaki, strawberry daifuku mochi, and artisanal green tea from morning market stalls.', cost: 25, weatherBadge: '☀️ Covered Morning Walkway' },
-      { dualName: '浜離宮恩賜庭園 (Hamarikyu Traditional Gardens)', category: 'Imperial Nature', desc: 'Stroll around a tranquil tidal pond with traditional matcha tea service.', cost: 15, weatherBadge: '🌳 Shaded Scenic Garden' }
-    ],
-    lunch: [
-      { dualName: '一蘭 浅草店 (Ichiran Ramen Individual Booths)', category: 'Family-Favorite Tonkotsu', desc: 'World-famous rich tonkotsu broth with custom flavor ordering sheets in English.', cost: 32, weatherBadge: '❄️ Air-Conditioned Comfort' },
-      { dualName: '玄品 ふぐ & 和食 (Guenpin Washoku Seasonal Set)', category: 'Traditional Japanese Washoku', desc: 'Relaxed private dining rooms serving fresh seasonal sashimi and tempura.', cost: 60, weatherBadge: '❄️ Quiet Private Dining' }
-    ],
-    afternoon: [
-      { dualName: '江戸東京博物館 (Edo-Tokyo Cultural Museum & Crafts)', category: 'Living History', desc: 'Walk across a life-size replica of Nihonbashi bridge.', cost: 20, weatherBadge: '🏛️ Indoor Air-Conditioned Museum' },
-      { dualName: '隅田水族館 (Sumida Aquarium & Penguins)', category: 'Aquatic Life & Nursery', desc: 'Modern indoor aquarium featuring Magellanic penguins and jellyfish tanks.', cost: 45, weatherBadge: '🏛️ Modern Indoor Oasis' }
-    ],
-    evening: [
-      { dualName: '屋形船 ナイトクルーズ (Yakatabune Traditional Houseboat Dinner)', category: 'Dinner Cruise Experience', desc: 'Glide under lantern-lit bridges enjoying unlimited freshly fried tempura.', cost: 110, weatherBadge: '🌆 River Evening Panorama' },
-      { dualName: '浅草ホッピー通り (Hoppy Street Lantern Alleys)', category: 'Retro Izakaya & Stew', desc: 'Open-air lively alley with family-run taverns famous for slow-simmered beef tendon stew.', cost: 40, weatherBadge: '🌆 Outdoor Lantern Atmosphere' }
-    ]
-  };
+  
+function renderSwapAlternates(dayIdx, slot) {
+  const container = document.getElementById('swapAlternatesContainer');
+  if (!container) return;
+  container.innerHTML = '';
 
-  function renderSwapAlternates(dayIdx, slot) {
-    const container = document.getElementById('swapAlternatesContainer');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const alternates = ALTERNATES_CATALOG[slot] || ALTERNATES_CATALOG.morning;
-    alternates.forEach(alt => {
-      const item = document.createElement('div');
-      item.className = 'alternate-item-card';
-      item.innerHTML = `
-        <div class="alternate-info">
-          <strong>${alt.dualName}</strong>
-          <span>${alt.category} • ${alt.weatherBadge} • 💵 ${formatMoney(alt.cost)}</span>
-        </div>
-        <button type="button" class="btn btn-primary btn-sm btn-select-alt">
-          ${t('btnSelectThis')}
-        </button>
-      `;
-
-      item.querySelector('.btn-select-alt').addEventListener('click', () => {
-        const trip = getCurrentTrip();
-        if (trip && trip.days && trip.days[dayIdx]) {
-          trip.days[dayIdx][slot] = {
-            dualName: alt.dualName,
-            category: alt.category,
-            time: trip.days[dayIdx][slot]?.time || '14:00 - 16:30',
-            desc: alt.desc,
-            weatherBadge: alt.weatherBadge,
-            accessibility: ['👶 Stroller-Friendly', '♿ Accessible'],
-            cost: alt.cost,
-            completed: false
-          };
-          renderItinerary();
-          showToast(`✓ Swapped into Day ${trip.days[dayIdx].dayNumber} (${slot}): ${alt.dualName}`);
-        }
-      });
-
-      container.appendChild(item);
-    });
+  const trip = getCurrentTrip();
+  if (!trip || !trip.days || !trip.days[dayIdx]) {
+    container.innerHTML = '<div class="alternate-empty">No trip loaded.</div>';
+    return;
   }
 
+  const currentActivity = trip.days[dayIdx][slot];
+  if (!currentActivity) {
+    container.innerHTML = '<div class="alternate-empty">No activity in this slot to swap.</div>';
+    return;
+  }
+
+  // ── 1. Get alternatives from the cached POI list ─────────────────
+  const cache = window.__tripcraftPOICache;
+  let alternatives = [];
+
+  if (cache && cache.pois && cache.pois.length > 0 && window.POIService) {
+    const usedIds = window.POIService.collectUsedPOIIds(trip);
+    
+    // Fallback: if the current activity has no _poiId, we can't match by ID.
+    // Instead, we filter by slot and category only.
+    const currentPOI = {
+      id: currentActivity._poiId || null,
+      category: currentActivity.category,
+      slot: slot,
+      indoor: currentActivity.weatherBadge?.includes('Indoor')
+    };
+
+    alternatives = window.POIService.findAlternatives(
+      currentPOI,
+      cache.pois,
+      usedIds
+    );
+  }
+
+  // ── 2. If no real alternatives, show a friendly empty state ──────
+  if (alternatives.length === 0) {
+    container.innerHTML = `
+      <div class="alternate-empty-state">
+        <div class="empty-icon">🤔</div>
+        <p><strong>No alternatives found</strong> in this neighborhood for this time slot.</p>
+        <p class="empty-sub">Try adjusting the day, or regenerate the trip for a different area.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // ── 3. Render alternatives ───────────────────────────────────────
+  alternatives.forEach(alt => {
+    const item = document.createElement('div');
+    item.className = 'alternate-item-card';
+    item.innerHTML = `
+      <div class="alternate-info">
+        <strong>${alt.name}</strong>
+        <span>
+          ${formatCategoryLabel(alt.category)} • 
+          ${alt.indoor ? '🏛️ Indoor' : '🌤️ Outdoor'} • 
+          💵 ~$${alt.cost}
+        </span>
+        ${alt.address ? `<span class="alt-address">📍 ${alt.address}</span>` : ''}
+      </div>
+      <button type="button" class="btn btn-primary btn-sm btn-select-alt">
+        ${t('btnSelectThis')}
+      </button>
+    `;
+
+    item.querySelector('.btn-select-alt').addEventListener('click', () => {
+      const targetTrip = getCurrentTrip();
+      if (!targetTrip || !targetTrip.days[dayIdx]) return;
+
+      const oldActivity = targetTrip.days[dayIdx][slot];
+
+      // Replace with the new alternative
+      targetTrip.days[dayIdx][slot] = {
+        dualName: alt.name,
+        category: formatCategoryLabel(alt.category),
+        time: oldActivity.time,
+        desc: `${alt.name} — a notable ${formatCategoryLabel(alt.category).toLowerCase()}${alt.address ? ' at ' + alt.address : ''}.`,
+        weatherBadge: alt.indoor ? '🏛️ Indoor' : '🌤️ Outdoor',
+        accessibility: alt.familyFriendly
+          ? ['👨‍👩‍👧 Family-Friendly']
+          : ['♿ Accessible'],
+        cost: alt.cost,
+        completed: false,
+        _poiId: alt.id,
+        _lat: alt.lat,
+        _lng: alt.lng
+      };
+
+      // Re-render the itinerary and the alternates list
+      renderItinerary();
+      renderSwapAlternates(dayIdx, slot);
+      showToast(`✓ Swapped to: ${alt.name}`);
+    });
+
+    container.appendChild(item);
+  });
+}
+
+/**
+ * Format "shopping_mall" → "Shopping Mall"
+ */
+function formatCategoryLabel(cat) {
+  if (!cat) return 'Activity';
+  return cat
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/**
+ * Format "shopping_mall" → "Shopping Mall"
+ */
+function formatCategoryLabel(cat) {
+  if (!cat) return 'Activity';
+  return cat
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+  
   // ==========================================================================
   // 4j. Packing
   // ==========================================================================
@@ -2348,6 +2435,27 @@
     if (bar) bar.style.width = `${pct}%`;
   }
 
+
+async function fetchForecastForDestination(lat, lng, days) {
+  try {
+    const url =
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
+      `&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=${days}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.daily.time.map((date, i) => ({
+      date,
+      tempMax: data.daily.temperature_2m_max[i],
+      tempMin: data.daily.temperature_2m_min[i],
+      isHot: data.daily.temperature_2m_max[i] > 40,
+      isRainy: [51,53,55,61,63,65,80,81,82].includes(data.daily.weathercode[i])
+    }));
+  } catch (err) {
+    console.warn('[app] Forecast fetch failed:', err.message);
+    return [];
+  }
+}
+
   // ==========================================================================
   // 5. Trip Generator (async — with World Bank budget data)
   // ==========================================================================
@@ -2416,7 +2524,8 @@
     const liveImage = window.__selectedDestinationImage;
     if (liveImage?.url) { heroImg = liveImage.url; destImg = liveImage.url; }
 
-    const generatedDays = [];
+    // ── 1. Fetch real POIs + weather in parallel ─────────────────────────
+        // Define this here so it's available for both the fallback AND the stays section
     const neighborhoodsList = [
       'Historic Old Town & Central Square',
       'Artisan Riverside & Waterfront Promenade',
@@ -2425,57 +2534,92 @@
       'Atmospheric Market Quarters & Panoramic Heights'
     ];
 
-    for (let i = 1; i <= duration; i++) {
-      const nIndex = (i - 1) % neighborhoodsList.length;
-      const nName = neighborhoodsList[nIndex];
+    let generatedDays = [];
 
-      generatedDays.push({
-        dayNumber: i,
-        dateLabel: `Day ${i}`,
-        neighborhood: `${nName}, ${dest}`,
-        weatherPlan: `☀️ Cooler Morning: Outdoor discovery • 🏛️ Midday Peak: Climate-controlled indoor sights • 🌆 Sunset: Scenic open-air walk.`,
-        morning: {
-          dualName: `Historic Landmark & Heritage Walk (${dest})`,
-          category: 'Culture & Sightseeing',
-          time: '09:30 - 12:00',
-          desc: `Begin your morning exploring signature architecture and vibrant pedestrian avenues in ${nName}.`,
-          weatherBadge: '☀️ Cooler Morning Outdoor',
-          accessibility: children > 0 ? ['👶 Stroller-Friendly', '👨‍👩‍👧 Great for Kids'] : ['♿ Wheelchair Accessible', '👴 Senior Friendly'],
-          cost: Math.round(r.actLow / 2) * totalTravelers,
-          completed: false
-        },
-        lunch: {
-          dualName: `Authentic Local Kitchen (${dest} Specialties)`,
-          category: 'Local Food Pick',
-          time: '12:30 - 14:00',
-          desc: `Sample traditional seasonal dishes and family-style culinary traditions.`,
-          weatherBadge: '❄️ Air-Conditioned Dining',
-          accessibility: ['👨‍👩‍👧 Family Seating', '🥗 Dietary Options Available'],
-          cost: Math.round(r.foodLow * 0.4) * totalTravelers,
-          completed: false
-        },
-        afternoon: {
-          dualName: `Artisan Gallery & Science Discovery (${dest})`,
-          category: 'Museum & Discovery',
-          time: '14:30 - 17:00',
-          desc: `Discover world-class galleries, local craftsmanship, and panoramic city lookouts.`,
-          weatherBadge: '🏛️ Midday Indoor Comfort',
-          accessibility: ['♿ Universal Access Elevators', '👶 Rest Areas & Facilities'],
-          cost: Math.round(r.actHigh / 2) * totalTravelers,
-          completed: false
-        },
-        evening: {
-          dualName: `Sunset Promenade & Dinner (${nName})`,
-          category: 'Scenic Evening & Dining',
-          time: '18:00 - 20:30',
-          desc: `Relax with a peaceful evening walk through illuminated plazas, concluding with an authentic dinner.`,
-          weatherBadge: '🌆 Evening Golden Hour',
-          accessibility: ['👶 Smooth Paved Avenues', '🍷 Relaxed Dining Atmosphere'],
-          cost: Math.round(r.foodHigh * 0.6) * totalTravelers,
-          completed: false
-        }
-      });
-    }
+const meta = window.__selectedDestination;
+
+if (meta && typeof meta.lat === 'number' && typeof meta.lng === 'number' && window.POIService) {
+  showToast('🗺️ Finding real places to visit…');
+
+  const [pois, weather] = await Promise.all([
+    window.POIService.fetchPOIs(meta.lat, meta.lng, 20000),
+    fetchForecastForDestination(meta.lat, meta.lng, duration)
+  ]);
+
+  if (pois.length > 0) {
+  const clusters = window.POIService.clusterPOIs(pois, duration);
+  generatedDays = window.POIService.buildDaysFromClusters(clusters, weather, 'balanced');
+
+  // 👇 Store the full POI list so we can swap activities later
+  window.__tripcraftPOICache = {
+    destination: dest,
+    lat: meta.lat,
+    lng: meta.lng,
+    pois,                       // full list for alternatives
+    timestamp: Date.now()
+  };
+
+  console.log('[app] Generated', generatedDays.length, 'days from', pois.length, 'real POIs');
+} else {
+  window.__tripcraftPOICache = null;
+}
+}
+
+// ── 2. Fallback if POIs returned nothing ─────────────────────────────
+if (generatedDays.length === 0) {
+  
+  for (let i = 1; i <= duration; i++) {
+    const nIndex = (i - 1) % neighborhoodsList.length;
+    const nName = neighborhoodsList[nIndex];
+
+    generatedDays.push({
+      dayNumber: i,
+      dateLabel: `Day ${i}`,
+      neighborhood: `${nName}, ${dest}`,
+      weatherPlan: '☀️ Cooler Morning • 🏛️ Midday Indoor • 🌆 Evening Walk',
+      morning: {
+        dualName: `Historic Landmark Walk (${dest})`,
+        category: 'Culture & Sightseeing',
+        time: '09:30 - 12:00',
+        desc: `Explore signature architecture in ${nName}.`,
+        weatherBadge: '☀️ Outdoor',
+        accessibility: children > 0 ? ['👶 Stroller-Friendly'] : ['♿ Accessible'],
+        cost: 20,
+        completed: false
+      },
+      lunch: {
+        dualName: `Local Kitchen (${dest})`,
+        category: 'Local Food Pick',
+        time: '12:30 - 14:00',
+        desc: `Sample traditional dishes.`,
+        weatherBadge: '❄️ Indoor',
+        accessibility: ['👨‍👩‍👧 Family Seating'],
+        cost: 25,
+        completed: false
+      },
+      afternoon: {
+        dualName: `Museum & Gallery (${dest})`,
+        category: 'Museum & Discovery',
+        time: '14:30 - 17:00',
+        desc: `Discover local galleries and craftsmanship.`,
+        weatherBadge: '🏛️ Indoor',
+        accessibility: ['♿ Accessible'],
+        cost: 30,
+        completed: false
+      },
+      evening: {
+        dualName: `Sunset Promenade (${nName})`,
+        category: 'Scenic Evening',
+        time: '18:00 - 20:30',
+        desc: `Evening stroll and dinner.`,
+        weatherBadge: '🌆 Golden Hour',
+        accessibility: ['👶 Paved Paths'],
+        cost: 40,
+        completed: false
+      }
+    });
+  }
+}
 
     const structured = window.__selectedDestination;
     const destinationMeta = structured
