@@ -4,8 +4,8 @@
  * restaurants, and Wikipedia-notable landmarks for any destination,
  * then builds a day-by-day itinerary.
  *
- * Also provides swap-alternative helpers used by app.js for the
- * "Swap Activity" feature in the Customize tab.
+ * Uses multi-endpoint failover for reliability.
+ * Also provides swap-alternative helpers used by app.js.
  *
  * No API key required. Data © OpenStreetMap contributors (ODbL).
  */
@@ -13,14 +13,20 @@
   'use strict';
 
   // =========================================================================
-  // Configuration
+  // Configuration — Multiple Overpass endpoints for redundancy
   // =========================================================================
-  const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
+  const OVERPASS_ENDPOINTS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+  ];
+
   const CACHE_TTL = 60 * 60 * 1000;   // 1 hour
-  const cache = new Map();            // key → { data, timestamp }
+  const cache = new Map();
 
   // =========================================================================
-  // Category rules — map OSM categories to TripCraft slots & metadata
+  // Category rules
   // =========================================================================
   const CATEGORY_RULES = {
     museum:        { slot: 'afternoon', icon: '🏛️', cost: 15, indoor: true,  family: true  },
@@ -46,7 +52,50 @@
   };
 
   // =========================================================================
-  // 1. Fetch POIs from Overpass API
+  // Fetch with failover across multiple Overpass endpoints
+  // =========================================================================
+  async function fetchFromOverpass(query) {
+    let lastError = null;
+
+    for (const endpoint of OVERPASS_ENDPOINTS) {
+      const startTime = Date.now();
+
+      try {
+        console.log(`[poi-service] Trying ${endpoint}…`);
+
+        // 30s timeout per endpoint
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'data=' + encodeURIComponent(query),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        const elapsed = Date.now() - startTime;
+
+        console.log(`[poi-service] ✓ ${endpoint} responded in ${elapsed}ms`);
+        return data;
+
+      } catch (err) {
+        const elapsed = Date.now() - startTime;
+        console.warn(`[poi-service] ✗ ${endpoint} failed after ${elapsed}ms:`, err.message);
+        lastError = err;
+      }
+    }
+
+    throw new Error(`All Overpass endpoints failed. Last: ${lastError?.message}`);
+  }
+
+  // =========================================================================
+  // 1. Fetch POIs
   // =========================================================================
   async function fetchPOIs(lat, lng, radiusMeters = 20000) {
     if (typeof lat !== 'number' || typeof lng !== 'number') return [];
@@ -73,21 +122,13 @@
     `;
 
     try {
-      const res = await fetch(OVERPASS_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(query)
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await fetchFromOverpass(query);
 
       const pois = (data.elements || [])
         .filter(el => el.tags && (el.tags.name || el.tags['name:en']))
         .map(el => normalizePOI(el))
         .filter(Boolean);
 
-      // Deduplicate by name (case-insensitive)
       const seen = new Set();
       const unique = pois.filter(p => {
         const k = p.name.toLowerCase();
@@ -97,16 +138,17 @@
       });
 
       cache.set(key, { data: unique, timestamp: Date.now() });
+      console.log(`[poi-service] Total unique POIs: ${unique.length}`);
       return unique;
 
     } catch (err) {
-      console.warn('[poi-service] Overpass API failed:', err.message);
+      console.warn('[poi-service] fetchPOIs failed:', err.message);
       return [];
     }
   }
 
   // =========================================================================
-  // 2. Normalize raw OSM node → TripCraft POI object
+  // 2. Normalize OSM node
   // =========================================================================
   function normalizePOI(el) {
     const tags = el.tags || {};
@@ -138,7 +180,7 @@
   }
 
   // =========================================================================
-  // 3. Category classification
+  // 3. Classification
   // =========================================================================
   function classifyCategory(tags) {
     if (tags.tourism === 'museum')       return 'museum';
@@ -160,7 +202,6 @@
     if (tags.amenity === 'theatre')      return 'theatre';
     if (tags.amenity === 'marketplace')  return 'market';
 
-    // Only keep notable religious sites (with Wikipedia / heritage tag)
     if (tags.amenity === 'place_of_worship') {
       if (tags.wikipedia || tags.wikidata || tags.heritage) return 'religious';
       return null;
@@ -170,7 +211,6 @@
         tags.amenity === 'cafe' ||
         tags.amenity === 'fast_food')    return 'restaurant';
 
-    // Wikipedia-tagged nodes → treat as generic attraction
     if (tags.wikipedia && tags.name) {
       return 'attraction';
     }
@@ -188,7 +228,7 @@
   }
 
   // =========================================================================
-  // 4. Haversine distance (km)
+  // 4. Distance
   // =========================================================================
   function distanceKm(a, b) {
     const R = 6371;
@@ -203,13 +243,11 @@
   }
 
   // =========================================================================
-  // 5. Cluster POIs greedily by proximity — one cluster per day
+  // 5. Clustering
   // =========================================================================
   function clusterPOIs(pois, days) {
     const clusters = Array.from({ length: days }, () => []);
     const used = new Set();
-
-    // Prioritize by cost (paid attractions tend to be more "notable")
     const sorted = [...pois].sort((a, b) => b.cost - a.cost);
 
     for (let d = 0; d < days; d++) {
@@ -219,7 +257,6 @@
       clusters[d].push(seed);
       used.add(seed.id);
 
-      // Attach up to 3 nearest neighbors to fill the day
       const neighbors = sorted
         .filter(p => !used.has(p.id))
         .map(p => ({ poi: p, dist: distanceKm(seed, p) }))
@@ -236,7 +273,7 @@
   }
 
   // =========================================================================
-  // 6. Build trip.days[] structure from clustered POIs + weather
+  // 6. Build days
   // =========================================================================
   function buildDaysFromClusters(clusters, weather, pace = 'balanced') {
     const slotOrder = { morning: 0, lunch: 1, afternoon: 2, evening: 3 };
@@ -318,7 +355,7 @@
   }
 
   // =========================================================================
-  // 7. Opening Hours parsing (lightweight OSM format)
+  // 7. Opening Hours
   // =========================================================================
   function parseOpeningHours(raw) {
     if (!raw) return null;
@@ -473,6 +510,7 @@
     collectUsedPOIIds,
     parseOpeningHours,
     isOpenDuring,
-    CATEGORY_RULES
+    CATEGORY_RULES,
+    OVERPASS_ENDPOINTS
   };
 })();
