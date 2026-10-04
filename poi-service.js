@@ -1,7 +1,8 @@
 /**
  * TripCraft — Real POI Service (OpenStreetMap Overpass API)
  * Fetches real attractions, malls, heritage sites, parks, museums,
- * and restaurants for any destination, then builds a day-by-day itinerary.
+ * restaurants, and Wikipedia-notable landmarks for any destination,
+ * then builds a day-by-day itinerary.
  *
  * Also provides swap-alternative helpers used by app.js for the
  * "Swap Activity" feature in the Customize tab.
@@ -59,14 +60,16 @@
     const query = `
       [out:json][timeout:25];
       (
-        node["tourism"~"museum|attraction|theme_park|viewpoint|zoo|aquarium|art_gallery"](around:${radiusMeters},${lat},${lng});
-        node["historic"~"castle|fort|monument|ruins|archaeological_site"](around:${radiusMeters},${lat},${lng});
-        node["shop"="mall"](around:${radiusMeters},${lat},${lng});
-        node["leisure"~"park|water_park"](around:${radiusMeters},${lat},${lng});
-        node["amenity"~"cinema|theatre|marketplace|place_of_worship"](around:${radiusMeters},${lat},${lng});
-        node["amenity"~"restaurant|cafe|fast_food"]["name"]["cuisine"](around:${radiusMeters},${lat},${lng});
+        node["tourism"~"museum|attraction|theme_park|viewpoint|zoo|aquarium|art_gallery"]["name"](around:${radiusMeters},${lat},${lng});
+        node["historic"~"castle|fort|monument|ruins|archaeological_site"]["name"](around:${radiusMeters},${lat},${lng});
+        node["shop"="mall"]["name"](around:${radiusMeters},${lat},${lng});
+        node["leisure"~"park|water_park"]["name"](around:${radiusMeters},${lat},${lng});
+        node["amenity"~"cinema|theatre|marketplace"]["name"](around:${radiusMeters},${lat},${lng});
+        node["amenity"~"restaurant|cafe|fast_food"]["name"](around:${radiusMeters},${lat},${lng});
+        node["wikipedia"]["name"](around:${radiusMeters},${lat},${lng});
+        node["amenity"="place_of_worship"]["wikipedia"](around:${radiusMeters},${lat},${lng});
       );
-      out body 200;
+      out body 300;
     `;
 
     try {
@@ -111,7 +114,7 @@
     if (!category) return null;
 
     const rules = CATEGORY_RULES[category];
-    if (!rules) return null;                 // safety net
+    if (!rules) return null;
 
     const name = tags.name || tags['name:en'];
 
@@ -129,7 +132,8 @@
       address: buildAddress(tags),
       openingHours: tags.opening_hours || null,
       openingHoursParsed: tags.opening_hours ? parseOpeningHours(tags.opening_hours) : null,
-      website: tags.website || null
+      website: tags.website || null,
+      wikipedia: tags.wikipedia || null
     };
   }
 
@@ -155,10 +159,22 @@
     if (tags.amenity === 'cinema')       return 'cinema';
     if (tags.amenity === 'theatre')      return 'theatre';
     if (tags.amenity === 'marketplace')  return 'market';
-    if (tags.amenity === 'place_of_worship') return 'religious';
+
+    // Only keep notable religious sites (with Wikipedia / heritage tag)
+    if (tags.amenity === 'place_of_worship') {
+      if (tags.wikipedia || tags.wikidata || tags.heritage) return 'religious';
+      return null;
+    }
+
     if (tags.amenity === 'restaurant' ||
         tags.amenity === 'cafe' ||
         tags.amenity === 'fast_food')    return 'restaurant';
+
+    // Wikipedia-tagged nodes → treat as generic attraction
+    if (tags.wikipedia && tags.name) {
+      return 'attraction';
+    }
+
     return null;
   }
 
@@ -230,12 +246,10 @@
     return clusters.map((cluster, i) => {
       const dayWeather = weather[i] || weather[0] || {};
 
-      // Sort cluster into morning → lunch → afternoon → evening
       const sorted = [...cluster].sort(
         (a, b) => slotOrder[a.slot] - slotOrder[b.slot]
       );
 
-      // Trim to pace limit
       const trimmed = sorted.slice(0, maxSlots);
 
       const pick = (slot, fallbackIdx = 0) =>
@@ -244,7 +258,6 @@
       const toSlot = (poi, defaultTime) => {
         if (!poi) return null;
 
-        // Opening-hours awareness
         const openStatus = isOpenDuring(poi, poi.slot);
         let hoursWarning = null;
         if (openStatus === false) {
@@ -378,7 +391,7 @@
   }
 
   function isOpenDuring(poi, slot, weekday = null) {
-    if (!poi.openingHours) return null;    // Unknown → assume open
+    if (!poi.openingHours) return null;
 
     const parsed = poi.openingHoursParsed || parseOpeningHours(poi.openingHours);
     if (!parsed) return null;
@@ -406,7 +419,7 @@
   }
 
   // =========================================================================
-  // 8. Swap helpers — find real alternatives from the cached POI list
+  // 8. Swap helpers
   // =========================================================================
   function findAlternatives(currentPOI, allPOIs, usedPOIIds = [], weekday = null) {
     if (!currentPOI || !Array.isArray(allPOIs)) return [];
@@ -414,11 +427,10 @@
 
     return allPOIs
       .filter(p => {
-        if (p.id === currentPOI.id) return false;         // not itself
-        if (used.has(p.id)) return false;                 // not already in plan
+        if (p.id === currentPOI.id) return false;
+        if (used.has(p.id)) return false;
         if (currentPOI.slot && p.slot !== currentPOI.slot) return false;
 
-        // Opening-hours filter (if weekday provided)
         if (weekday) {
           const open = isOpenDuring(p, currentPOI.slot, weekday);
           if (open === false) return false;
