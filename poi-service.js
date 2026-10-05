@@ -16,11 +16,8 @@
   // Configuration — Multiple Overpass endpoints for redundancy
   // =========================================================================
   const OVERPASS_ENDPOINTS = [
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
-    'https://overpass.private.coffee/api/interpreter',
-    'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
-  ];
+  'https://script.google.com/macros/s/AKfycbyipH8X2r0Ar8WBN8gSPuEsX49JB1eWUUcHmUgYL1s3vTONNUrg_ld6Hz38vZ5kax08JQ/exec'
+];
 
   const CACHE_TTL = 60 * 60 * 1000;   // 1 hour
   const cache = new Map();
@@ -63,14 +60,15 @@
       try {
         console.log(`[poi-service] Trying ${endpoint}…`);
 
+        // URL-encode the query for GET request
+        const url = `${endpoint}?data=${encodeURIComponent(query)}`;
+
         // 30s timeout per endpoint
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: 'data=' + encodeURIComponent(query),
+        const res = await fetch(url, {
+          method: 'GET',
           signal: controller.signal
         });
 
