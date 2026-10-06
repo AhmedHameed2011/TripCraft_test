@@ -1,11 +1,13 @@
 /**
  * TripCraft — Real POI Service (OpenStreetMap Overpass API)
  * Fetches real attractions, malls, heritage sites, parks, museums,
- * restaurants, and Wikipedia-notable landmarks for any destination,
- * then builds a day-by-day itinerary.
+ * and restaurants for any destination, then builds a day-by-day itinerary.
  *
- * Uses multi-endpoint failover for reliability.
- * Also provides swap-alternative helpers used by app.js.
+ * Also provides swap-alternative helpers used by app.js for the
+ * "Swap Activity" feature in the Customize tab.
+ *
+ * Works on personal devices / open networks.
+ * On restricted corporate networks, gracefully returns empty arrays.
  *
  * No API key required. Data © OpenStreetMap contributors (ODbL).
  */
@@ -13,14 +15,12 @@
   'use strict';
 
   // =========================================================================
-  // Configuration — Multiple Overpass endpoints for redundancy
+  // Configuration
   // =========================================================================
-  const OVERPASS_ENDPOINTS = [
-  'https://script.google.com/macros/s/AKfycbyipH8X2r0Ar8WBN8gSPuEsX49JB1eWUUcHmUgYL1s3vTONNUrg_ld6Hz38vZ5kax08JQ/exec'
-];
-
-  const CACHE_TTL = 60 * 60 * 1000;   // 1 hour
-  const cache = new Map();
+  const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
+  const FETCH_TIMEOUT_MS = 10000;      // 10s — fail fast if blocked
+  const CACHE_TTL = 60 * 60 * 1000;    // 1 hour
+  const cache = new Map();             // key → { data, timestamp }
 
   // =========================================================================
   // Category rules
@@ -49,51 +49,7 @@
   };
 
   // =========================================================================
-  // Fetch with failover across multiple Overpass endpoints
-  // =========================================================================
-  async function fetchFromOverpass(query) {
-    let lastError = null;
-
-    for (const endpoint of OVERPASS_ENDPOINTS) {
-      const startTime = Date.now();
-
-      try {
-        console.log(`[poi-service] Trying ${endpoint}…`);
-
-        // URL-encode the query for GET request
-        const url = `${endpoint}?data=${encodeURIComponent(query)}`;
-
-        // 30s timeout per endpoint
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-        const res = await fetch(url, {
-          method: 'GET',
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const data = await res.json();
-        const elapsed = Date.now() - startTime;
-
-        console.log(`[poi-service] ✓ ${endpoint} responded in ${elapsed}ms`);
-        return data;
-
-      } catch (err) {
-        const elapsed = Date.now() - startTime;
-        console.warn(`[poi-service] ✗ ${endpoint} failed after ${elapsed}ms:`, err.message);
-        lastError = err;
-      }
-    }
-
-    throw new Error(`All Overpass endpoints failed. Last: ${lastError?.message}`);
-  }
-
-  // =========================================================================
-  // 1. Fetch POIs
+  // 1. Fetch POIs from Overpass — with fast failure
   // =========================================================================
   async function fetchPOIs(lat, lng, radiusMeters = 20000) {
     if (typeof lat !== 'number' || typeof lng !== 'number') return [];
@@ -113,20 +69,40 @@
         node["leisure"~"park|water_park"]["name"](around:${radiusMeters},${lat},${lng});
         node["amenity"~"cinema|theatre|marketplace"]["name"](around:${radiusMeters},${lat},${lng});
         node["amenity"~"restaurant|cafe|fast_food"]["name"](around:${radiusMeters},${lat},${lng});
-        node["wikipedia"]["name"](around:${radiusMeters},${lat},${lng});
-        node["amenity"="place_of_worship"]["wikipedia"](around:${radiusMeters},${lat},${lng});
       );
-      out body 300;
+      out body 200;
     `;
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
     try {
-      const data = await fetchFromOverpass(query);
+      const res = await fetch(OVERPASS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+
+      // Detect XML error pages
+      if (text.trim().startsWith('<')) {
+        console.warn('[poi-service] Overpass returned XML — likely blocked');
+        return [];
+      }
+
+      const data = JSON.parse(text);
 
       const pois = (data.elements || [])
         .filter(el => el.tags && (el.tags.name || el.tags['name:en']))
         .map(el => normalizePOI(el))
         .filter(Boolean);
 
+      // Deduplicate by name
       const seen = new Set();
       const unique = pois.filter(p => {
         const k = p.name.toLowerCase();
@@ -136,17 +112,19 @@
       });
 
       cache.set(key, { data: unique, timestamp: Date.now() });
-      console.log(`[poi-service] Total unique POIs: ${unique.length}`);
+      console.log('[poi-service] Loaded', unique.length, 'POIs');
       return unique;
 
     } catch (err) {
-      console.warn('[poi-service] fetchPOIs failed:', err.message);
+      clearTimeout(timeoutId);
+      // Silent failure — this is expected on restricted networks
+      console.warn('[poi-service] Fetch failed (this is OK on restricted networks):', err.message);
       return [];
     }
   }
 
   // =========================================================================
-  // 2. Normalize OSM node
+  // 2. Normalize raw OSM node
   // =========================================================================
   function normalizePOI(el) {
     const tags = el.tags || {};
@@ -156,11 +134,9 @@
     const rules = CATEGORY_RULES[category];
     if (!rules) return null;
 
-    const name = tags.name || tags['name:en'];
-
     return {
       id: `osm-${el.id}`,
-      name,
+      name: tags.name || tags['name:en'],
       category,
       icon: rules.icon,
       slot: rules.slot,
@@ -172,8 +148,7 @@
       address: buildAddress(tags),
       openingHours: tags.opening_hours || null,
       openingHoursParsed: tags.opening_hours ? parseOpeningHours(tags.opening_hours) : null,
-      website: tags.website || null,
-      wikipedia: tags.wikipedia || null
+      website: tags.website || null
     };
   }
 
@@ -209,10 +184,6 @@
         tags.amenity === 'cafe' ||
         tags.amenity === 'fast_food')    return 'restaurant';
 
-    if (tags.wikipedia && tags.name) {
-      return 'attraction';
-    }
-
     return null;
   }
 
@@ -226,7 +197,7 @@
   }
 
   // =========================================================================
-  // 4. Distance
+  // 4. Distance (Haversine, km)
   // =========================================================================
   function distanceKm(a, b) {
     const R = 6371;
@@ -241,7 +212,7 @@
   }
 
   // =========================================================================
-  // 5. Clustering
+  // 5. Cluster POIs
   // =========================================================================
   function clusterPOIs(pois, days) {
     const clusters = Array.from({ length: days }, () => []);
@@ -271,7 +242,7 @@
   }
 
   // =========================================================================
-  // 6. Build days
+  // 6. Build days from clusters
   // =========================================================================
   function buildDaysFromClusters(clusters, weather, pace = 'balanced') {
     const slotOrder = { morning: 0, lunch: 1, afternoon: 2, evening: 3 };
@@ -334,9 +305,7 @@
   }
 
   function formatCategory(cat) {
-    return cat
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase());
+    return cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
   function buildWeatherNote(w) {
@@ -359,19 +328,14 @@
     if (!raw) return null;
 
     const str = raw.trim();
-    if (str === '24/7') {
-      return { is24_7: true, days: null, raw: str };
-    }
+    if (str === '24/7') return { is24_7: true, days: null, raw: str };
 
     const dayMap = {
       mo: 'mon', tu: 'tue', we: 'wed', th: 'thu',
       fr: 'fri', sa: 'sat', su: 'sun'
     };
 
-    const days = {
-      mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: []
-    };
-
+    const days = { mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] };
     const rules = str.split(';').map(r => r.trim()).filter(Boolean);
 
     for (const rule of rules) {
@@ -386,9 +350,7 @@
       const timeRanges = hoursPart.split(',').map(t => t.trim());
       for (const tr of timeRanges) {
         const tm = tr.match(/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/);
-        if (tm) {
-          ranges.push([`${tm[1]}:${tm[2]}`, `${tm[3]}:${tm[4]}`]);
-        }
+        if (tm) ranges.push([`${tm[1]}:${tm[2]}`, `${tm[3]}:${tm[4]}`]);
       }
 
       for (const day of expandedDays) {
@@ -408,7 +370,7 @@
       if (part.includes('-')) {
         const [start, end] = part.split('-').map(s => s.trim());
         const startIdx = dayKeys.indexOf(start);
-        const endIdx   = dayKeys.indexOf(end);
+        const endIdx = dayKeys.indexOf(end);
         if (startIdx === -1 || endIdx === -1) continue;
 
         let i = startIdx;
@@ -434,8 +396,7 @@
 
     const day = weekday || new Date()
       .toLocaleDateString('en-US', { weekday: 'short' })
-      .toLowerCase()
-      .slice(0, 3);
+      .toLowerCase().slice(0, 3);
 
     const ranges = parsed.days[day] || [];
     if (ranges.length === 0) return false;
@@ -448,9 +409,7 @@
     };
     const [slotStart, slotEnd] = slotRanges[slot] || ['00:00', '23:59'];
 
-    return ranges.some(([open, close]) =>
-      open <= slotEnd && close >= slotStart
-    );
+    return ranges.some(([open, close]) => open <= slotEnd && close >= slotStart);
   }
 
   // =========================================================================
@@ -470,7 +429,6 @@
           const open = isOpenDuring(p, currentPOI.slot, weekday);
           if (open === false) return false;
         }
-
         return true;
       })
       .sort((a, b) => {
@@ -508,7 +466,6 @@
     collectUsedPOIIds,
     parseOpeningHours,
     isOpenDuring,
-    CATEGORY_RULES,
-    OVERPASS_ENDPOINTS
+    CATEGORY_RULES
   };
 })();
