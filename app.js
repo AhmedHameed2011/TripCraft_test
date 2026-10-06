@@ -2752,19 +2752,29 @@ if (generatedDays.length === 0) {
       weather: weatherBlock,
       destinationMeta: destinationMeta,
       currentPace: 'balanced',
-      stays: [{
-        id: `stay-${Date.now()}`,
-        name: `${dest} Grand Heritage Residence`,
-        type: 'Boutique Hotel & Suites',
-        neighborhood: neighborhoodsList[0],
-        image: destImg,
-        rating: '4.91',
-        pricePerNight: lodgingRateNight,
-        fitBanner: `✓ Accommodates ${totalTravelers} Guests (${tripType} Configuration)`,
-        features: ['👶 Stroller-Friendly', '♿ Level Entry & Elevators', '📍 Central Walkable Location', '🥐 Breakfast Included'],
-        bookingUrl: '#',
-        description: `Centrally positioned boutique accommodation in ${dest} offering spacious interconnected suites and personalized concierge.`
-      }],
+      stays: (window.StayService && window.StayService.generateStays)
+  ? window.StayService.generateStays(
+      {
+        destination: dest,
+        days: generatedDays,
+        budgetTier: budgetPref,
+        heroImage: destImg
+      },
+      { total: totalTravelers, adults, children, seniors }
+    )
+  : [{
+      id: `stay-${Date.now()}`,
+      name: `${dest} Boutique Hotel`,
+      type: 'Boutique Hotel',
+      neighborhood: neighborhoodsList[0],
+      image: destImg,
+      rating: '4.9',
+      pricePerNight: lodgingRateNight,
+      fitBanner: `✓ Accommodates ${totalTravelers} Guests`,
+      features: ['👶 Stroller-Friendly', '📍 Central Location'],
+      bookingUrl: '#',
+      description: `Comfortable stay in ${dest}.`
+    }],
       days: generatedDays,
       budgetBreakdown: {
         totalTripCost: totalCost,
