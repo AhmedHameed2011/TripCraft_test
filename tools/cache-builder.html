@@ -4,22 +4,25 @@
 <meta charset="UTF-8">
 <title>TripCraft POI Cache Builder</title>
 <style>
-body { font-family: system-ui; max-width: 900px; margin: 2rem auto; padding: 1rem; background: #0a0a14; color: #f5f5fa; }
-input, button { padding: 0.6rem 1rem; font-size: 1rem; border-radius: 8px; border: 1px solid #444; background: #1a1a2e; color: #fff; }
+body { font-family: system-ui, -apple-system, sans-serif; max-width: 950px; margin: 2rem auto; padding: 1rem; background: #0a0a14; color: #f5f5fa; }
+h1 { margin-bottom: 0.25rem; }
+p { color: #a8a8c0; margin-top: 0.25rem; }
+input, button { padding: 0.6rem 1rem; font-size: 0.95rem; border-radius: 8px; border: 1px solid #444; background: #1a1a2e; color: #fff; }
 button { cursor: pointer; background: linear-gradient(135deg, #6366f1, #a855f7); border: none; font-weight: 700; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
-.city-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; margin: 1rem 0; }
-.city-btn { padding: 0.6rem; text-align: left; background: #1a1a2e; border: 1px solid #333; border-radius: 8px; font-size: 0.85rem; }
-.city-btn.done { background: #10b98122; border-color: #10b981; }
-.city-btn.error { background: #f43f5e22; border-color: #f43f5e; }
-pre { background: #000; padding: 1rem; border-radius: 8px; font-size: 0.8rem; max-height: 300px; overflow: auto; }
-.download-all { margin-top: 1rem; padding: 1rem 2rem; font-size: 1.1rem; }
+.city-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; margin: 1rem 0; }
+.city-btn { padding: 0.7rem; text-align: left; background: #1a1a2e; border: 1px solid #333; border-radius: 8px; font-size: 0.82rem; line-height: 1.3; }
+.city-btn.done { background: #10b98122; border-color: #10b981; color: #10b981; }
+.city-btn.error { background: #f43f5e22; border-color: #f43f5e; color: #f43f5e; }
+.city-btn.loading { background: #f59e0b22; border-color: #f59e0b; }
+pre { background: #000; padding: 1rem; border-radius: 8px; font-size: 0.8rem; max-height: 350px; overflow: auto; font-family: 'SF Mono', monospace; }
+.download-all { margin-top: 1rem; padding: 1rem 2rem; font-size: 1.05rem; }
 </style>
 </head>
 <body>
 
 <h1>🌍 TripCraft POI Cache Builder</h1>
-<p>Fetches POIs from OpenStreetMap for major cities. Downloads as JSON files for your GitHub repo.</p>
+<p>Fetches POIs from OpenStreetMap. Downloads JSON files for your GitHub repo.</p>
 
 <div>
   <input id="customCity" placeholder="Add custom city..." style="width: 300px;">
@@ -51,171 +54,7 @@ const results = {};
 let doneCount = 0;
 let totalCount = 0;
 
-function renderGrid() {
-  const grid = document.getElementById('cityGrid');
-  grid.innerHTML = '';
-  CITIES.forEach(city => {
-    const btn = document.createElement('div');
-    btn.className = 'city-btn';
-    btn.id = 'city-' + city.replace(/[^a-z0-9]/gi, '-');
-    btn.textContent = city;
-    grid.appendChild(btn);
-  });
-  totalCount = CITIES.length;
-  updateDownloadBtn();
-}
-
-function setCityStatus(city, status, msg) {
-  const el = document.getElementById('city-' + city.replace(/[^a-z0-9]/gi, '-'));
-  if (!el) return;
-  el.className = 'city-btn ' + status;
-  el.textContent = city + (msg ? ' — ' + msg : '');
-}
-
-function log(msg) {
-  const pre = document.getElementById('log');
-  pre.textContent += '\n' + msg;
-  pre.scrollTop = pre.scrollHeight;
-}
-
-async function fetchCity(city) {
-  try {
-    setCityStatus(city, '', 'geocoding...');
-
-    const geoRes = await fetch(
-      'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(city) + '&format=json&limit=1',
-      { headers: { 'User-Agent': 'TripCraft-Cache-Builder/1.0' } }
-    );
-    const geoData = await geoRes.json();
-    if (!geoData.length) { setCityStatus(city, 'error', 'not found'); return null; }
-
-    const lat = parseFloat(geoData[0].lat);
-    const lon = parseFloat(geoData[0].lon);
-    setCityStatus(city, '', 'fetching POIs...');
-
-    const query = `
-      [out:json][timeout:60];
-      (
-        node["tourism"~"museum|attraction|theme_park|viewpoint|zoo|aquarium|art_gallery"]["name"](around:20000,${lat},${lon});
-        node["historic"~"castle|fort|monument|ruins|archaeological_site"]["name"](around:20000,${lat},${lon});
-        node["shop"="mall"]["name"](around:20000,${lat},${lon});
-        node["leisure"~"park|water_park"]["name"](around:20000,${lat},${lon});
-        node["amenity"~"cinema|theatre|marketplace"]["name"](around:20000,${lat},${lon});
-        node["amenity"~"restaurant|cafe|fast_food"]["name"](around:20000,${lat},${lon});
-        node["wikipedia"]["name"](around:20000,${lat},${lon});
-      );
-      out body 300;
-    `;
-
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: 'data=' + encodeURIComponent(query)
-    });
-    const data = await res.json();
-
-    const pois = (data.elements || [])
-      .filter(el => el.tags && (el.tags.name || el.tags['name:en']))
-      .map(el => {
-        const tags = el.tags || {};
-        const category = classifyCategory(tags);
-        if (!category) return null;
-        const rules = CATEGORY_RULES[category];
-        if (!rules) return null;
-
-        return {
-          id: 'osm-' + el.id,
-          name: tags.name || tags['name:en'],
-          category,
-          icon: rules.icon,
-          slot: rules.slot,
-          cost: rules.cost,
-          indoor: rules.indoor,
-          familyFriendly: rules.family,
-          lat: el.lat,
-          lng: el.lon,
-          address: buildAddress(tags),
-          openingHours: tags.opening_hours || null,
-          website: tags.website || null
-        };
-      })
-      .filter(Boolean);
-
-    const seen = new Set();
-    const unique = pois.filter(p => {
-      const k = p.name.toLowerCase();
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    });
-
-    results[city] = {
-      city, lat, lng,
-      count: unique.length,
-      generated: new Date().toISOString(),
-      pois: unique
-    };
-
-    setCityStatus(city, 'done', unique.length + ' POIs');
-    doneCount++;
-    updateDownloadBtn();
-    return unique.length;
-
-  } catch (err) {
-    setCityStatus(city, 'error', err.message.slice(0, 40));
-    return null;
-  }
-}
-
-async function runAll() {
-  document.getElementById('runBtn').disabled = true;
-  document.getElementById('log').textContent = 'Starting...';
-  doneCount = 0;
-
-  for (const city of CITIES) {
-    if (results[city]) continue;
-    log('\n📍 ' + city);
-    const count = await fetchCity(city);
-    if (count) log('   ✓ ' + count + ' POIs');
-    await new Promise(r => setTimeout(r, 1200));
-  }
-
-  log('\n\n✅ All done! ' + doneCount + ' cities fetched.');
-  document.getElementById('runBtn').disabled = false;
-}
-
-function updateDownloadBtn() {
-  const btn = document.getElementById('dlAllBtn');
-  btn.textContent = '⬇️ Download All (' + doneCount + '/' + totalCount + ')';
-  btn.disabled = doneCount === 0;
-}
-
-function downloadAll() {
-  for (const [city, data] of Object.entries(results)) {
-    const filename = city.toLowerCase()
-      .replace(/,/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '') + '.json';
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-  log('\n⬇️ Downloaded ' + Object.keys(results).length + ' files.');
-}
-
-function addCustomCity() {
-  const input = document.getElementById('customCity');
-  const city = input.value.trim();
-  if (!city || CITIES.includes(city)) return;
-  CITIES.push(city);
-  input.value = '';
-  renderGrid();
-}
-
+// ---- Category rules (mirror poi-service.js) ----
 const CATEGORY_RULES = {
   museum:        { slot: 'afternoon', icon: '🏛️', cost: 15, indoor: true,  family: true  },
   attraction:    { slot: 'morning',   icon: '🎡', cost: 25, indoor: false, family: true  },
@@ -272,6 +111,220 @@ function classifyCategory(tags) {
 function buildAddress(tags) {
   const parts = [tags['addr:street'], tags['addr:housenumber'], tags['addr:city']].filter(Boolean);
   return parts.join(' ') || '';
+}
+
+// ---- UI helpers ----
+function renderGrid() {
+  const grid = document.getElementById('cityGrid');
+  grid.innerHTML = '';
+  CITIES.forEach(city => {
+    const btn = document.createElement('div');
+    btn.className = 'city-btn';
+    btn.id = 'city-' + city.replace(/[^a-z0-9]/gi, '-');
+    btn.textContent = city;
+    grid.appendChild(btn);
+  });
+  totalCount = CITIES.length;
+  updateDownloadBtn();
+}
+
+function setCityStatus(city, status, msg) {
+  const el = document.getElementById('city-' + city.replace(/[^a-z0-9]/gi, '-'));
+  if (!el) return;
+  el.className = 'city-btn ' + status;
+  el.textContent = city + (msg ? ' — ' + msg : '');
+}
+
+function log(msg) {
+  const pre = document.getElementById('log');
+  pre.textContent += '\n' + msg;
+  pre.scrollTop = pre.scrollHeight;
+}
+
+function updateDownloadBtn() {
+  const btn = document.getElementById('dlAllBtn');
+  btn.textContent = '⬇️ Download All (' + doneCount + '/' + totalCount + ')';
+  btn.disabled = doneCount === 0;
+}
+
+// ---- Geocoding ----
+async function geocode(city) {
+  const url = 'https://nominatim.openstreetmap.org/search?q=' +
+              encodeURIComponent(city) + '&format=json&limit=1';
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'TripCraft-Cache-Builder/1.0' }
+  });
+  if (!res.ok) throw new Error('Geocode HTTP ' + res.status);
+  const data = await res.json();
+  if (!data || data.length === 0) throw new Error('City not found');
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+}
+
+// ---- Overpass fetch with failover ----
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter'
+];
+
+async function fetchOverpass(query) {
+  let lastErr = null;
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query)
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      if (text.trim().startsWith('<')) {
+        // Got XML error page
+        const match = text.match(/<p[^>]*>(.*?)<\/p>/);
+        throw new Error('Overpass error: ' + (match ? match[1] : 'XML response'));
+      }
+      return JSON.parse(text);
+    } catch (err) {
+      lastErr = err;
+      log('   ⚠️ ' + endpoint.split('/')[2] + ': ' + err.message);
+    }
+  }
+  throw lastErr;
+}
+
+// ---- Fetch one city ----
+async function fetchCity(city) {
+  try {
+    setCityStatus(city, 'loading', 'geocoding...');
+    const { lat, lng } = await geocode(city);
+
+    setCityStatus(city, 'loading', 'fetching...');
+
+    // Simpler query — split into two to avoid timeouts
+    const query = `
+      [out:json][timeout:60];
+      (
+        node["tourism"~"museum|attraction|theme_park|viewpoint|zoo|aquarium|art_gallery"]["name"](around:20000,${lat},${lng});
+        node["historic"~"castle|fort|monument|ruins|archaeological_site"]["name"](around:20000,${lat},${lng});
+        node["shop"="mall"]["name"](around:20000,${lat},${lng});
+        node["leisure"~"park|water_park"]["name"](around:20000,${lat},${lng});
+        node["amenity"~"cinema|theatre|marketplace"]["name"](around:20000,${lat},${lng});
+        node["amenity"~"restaurant|cafe|fast_food"]["name"](around:20000,${lat},${lng});
+      );
+      out body 300;
+    `;
+
+    const data = await fetchOverpass(query);
+    const elements = (data && data.elements) ? data.elements : [];
+
+    const pois = elements
+      .filter(el => el.tags && (el.tags.name || el.tags['name:en']))
+      .map(el => {
+        const tags = el.tags || {};
+        const category = classifyCategory(tags);
+        if (!category) return null;
+        const rules = CATEGORY_RULES[category];
+        if (!rules) return null;
+
+        return {
+          id: 'osm-' + el.id,
+          name: tags.name || tags['name:en'],
+          category,
+          icon: rules.icon,
+          slot: rules.slot,
+          cost: rules.cost,
+          indoor: rules.indoor,
+          familyFriendly: rules.family,
+          lat: el.lat,
+          lng: el.lon,
+          address: buildAddress(tags),
+          openingHours: tags.opening_hours || null,
+          website: tags.website || null
+        };
+      })
+      .filter(Boolean);
+
+    // Deduplicate by name
+    const seen = new Set();
+    const unique = pois.filter(p => {
+      const k = p.name.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
+    if (unique.length === 0) throw new Error('No POIs found');
+
+    results[city] = {
+      city, lat, lng,
+      count: unique.length,
+      generated: new Date().toISOString(),
+      pois: unique
+    };
+
+    setCityStatus(city, 'done', unique.length + ' POIs');
+    doneCount++;
+    updateDownloadBtn();
+    return unique.length;
+
+  } catch (err) {
+    setCityStatus(city, 'error', err.message.slice(0, 45));
+    return null;
+  }
+}
+
+// ---- Main loop ----
+async function runAll() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  document.getElementById('log').textContent = 'Starting...';
+  doneCount = 0;
+
+  for (const city of CITIES) {
+    if (results[city]) {
+      log('\n⏭️  Skipping ' + city + ' (already done)');
+      continue;
+    }
+    log('\n📍 ' + city);
+    const count = await fetchCity(city);
+    if (count) log('   ✓ ' + count + ' POIs');
+    else log('   ✗ Failed');
+    // Rate limit for Nominatim: 1 req/sec
+    await new Promise(r => setTimeout(r, 1200));
+  }
+
+  log('\n\n✅ Finished! ' + doneCount + '/' + totalCount + ' cities.');
+  btn.disabled = false;
+}
+
+// ---- Download ----
+function downloadAll() {
+  for (const [city, data] of Object.entries(results)) {
+    const filename = city.toLowerCase()
+      .replace(/,/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '') + '.json';
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  log('\n⬇️ Downloaded ' + Object.keys(results).length + ' files.');
+}
+
+function addCustomCity() {
+  const input = document.getElementById('customCity');
+  const city = input.value.trim();
+  if (!city || CITIES.includes(city)) return;
+  CITIES.push(city);
+  input.value = '';
+  renderGrid();
 }
 
 renderGrid();
