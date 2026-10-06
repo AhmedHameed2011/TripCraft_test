@@ -1,1 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TripCraft POI Cache Builder</title>
+<style>
+body { font-family: system-ui; max-width: 900px; margin: 2rem auto; padding: 1rem; background: #0a0a14; color: #f5f5fa; }
+input, button { padding: 0.6rem 1rem; font-size: 1rem; border-radius: 8px; border: 1px solid #444; background: #1a1a2e; color: #fff; }
+button { cursor: pointer; background: linear-gradient(135deg, #6366f1, #a855f7); border: none; font-weight: 700; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.city-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; margin: 1rem 0; }
+.city-btn { padding: 0.6rem; text-align: left; background: #1a1a2e; border: 1px solid #333; border-radius: 8px; font-size: 0.85rem; }
+.city-btn.done { background: #10b98122; border-color: #10b981; }
+.city-btn.error { background: #f43f5e22; border-color: #f43f5e; }
+pre { background: #000; padding: 1rem; border-radius: 8px; font-size: 0.8rem; max-height: 300px; overflow: auto; }
+.download-all { margin-top: 1rem; padding: 1rem 2rem; font-size: 1.1rem; }
+</style>
+</head>
+<body>
 
+<h1>🌍 TripCraft POI Cache Builder</h1>
+<p>Fetches POIs from OpenStreetMap for major cities. Downloads as JSON files for your GitHub repo.</p>
+
+<div>
+  <input id="customCity" placeholder="Add custom city..." style="width: 300px;">
+  <button onclick="addCustomCity()">+ Add</button>
+  <button onclick="runAll()" id="runBtn">▶️ Fetch All Cities</button>
+</div>
+
+<div class="city-grid" id="cityGrid"></div>
+
+<pre id="log">Ready. Click "Fetch All Cities" to begin.</pre>
+
+<button class="download-all" onclick="downloadAll()" id="dlAllBtn" disabled>
+  ⬇️ Download All (0/0)
+</button>
+
+<script>
+const CITIES = [
+  'New York, USA', 'Paris, France', 'London, UK', 'Tokyo, Japan',
+  'Dubai, UAE', 'Abu Dhabi, UAE', 'Singapore', 'Barcelona, Spain',
+  'Rome, Italy', 'Amsterdam, Netherlands', 'Berlin, Germany', 'Istanbul, Turkey',
+  'Bangkok, Thailand', 'Hong Kong', 'Seoul, South Korea', 'Sydney, Australia',
+  'Los Angeles, USA', 'San Francisco, USA', 'Chicago, USA', 'Toronto, Canada',
+  'Vienna, Austria', 'Prague, Czech Republic', 'Lisbon, Portugal', 'Cairo, Egypt',
+  'Marrakech, Morocco', 'Mumbai, India', 'Delhi, India', 'Beijing, China',
+  'Shanghai, China', 'Mexico City, Mexico'
+];
+
+const results = {};
+let doneCount = 0;
+let totalCount = 0;
+
+function renderGrid() {
+  const grid = document.getElementById('cityGrid');
+  grid.innerHTML = '';
+  CITIES.forEach(city => {
+    const btn = document.createElement('div');
+    btn.className = 'city-btn';
+    btn.id = 'city-' + city.replace(/[^a-z0-9]/gi, '-');
+    btn.textContent = city;
+    grid.appendChild(btn);
+  });
+  totalCount = CITIES.length;
+  updateDownloadBtn();
+}
+
+function setCityStatus(city, status, msg) {
+  const el = document.getElementById('city-' + city.replace(/[^a-z0-9]/gi, '-'));
+  if (!el) return;
+  el.className = 'city-btn ' + status;
+  el.textContent = city + (msg ? ' — ' + msg : '');
+}
+
+function log(msg) {
+  const pre = document.getElementById('log');
+  pre.textContent += '\n' + msg;
+  pre.scrollTop = pre.scrollHeight;
+}
+
+async function fetchCity(city) {
+  try {
+    setCityStatus(city, '', 'geocoding...');
+
+    const geoRes = await fetch(
+      'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(city) + '&format=json&limit=1',
+      { headers: { 'User-Agent': 'TripCraft-Cache-Builder/1.0' } }
+    );
+    const geoData = await geoRes.json();
+    if (!geoData.length) { setCityStatus(city, 'error', 'not found'); return null; }
+
+    const lat = parseFloat(geoData[0].lat);
+    const lon = parseFloat(geoData[0].lon);
+    setCityStatus(city, '', 'fetching POIs...');
+
+    const query = `
+      [out:json][timeout:60];
+      (
+        node["tourism"~"museum|attraction|theme_park|viewpoint|zoo|aquarium|art_gallery"]["name"](around:20000,${lat},${lon});
+        node["historic"~"castle|fort|monument|ruins|archaeological_site"]["name"](around:20000,${lat},${lon});
+        node["shop"="mall"]["name"](around:20000,${lat},${lon});
+        node["leisure"~"park|water_park"]["name"](around:20000,${lat},${lon});
+        node["amenity"~"cinema|theatre|marketplace"]["name"](around:20000,${lat},${lon});
+        node["amenity"~"restaurant|cafe|fast_food"]["name"](around:20000,${lat},${lon});
+        node["wikipedia"]["name"](around:20000,${lat},${lon});
+      );
+      out body 300;
+    `;
+
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query)
+    });
+    const data = await res.json();
+
+    const pois = (data.elements || [])
+      .filter(el => el.tags && (el.tags.name || el.tags['name:en']))
+      .map(el => {
+        const tags = el.tags || {};
+        const category = classifyCategory(tags);
+        if (!category) return null;
+        const rules = CATEGORY_RULES[category];
+        if (!rules) return null;
+
+        return {
+          id: 'osm-' + el.id,
+          name: tags.name || tags['name:en'],
+          category,
+          icon: rules.icon,
+          slot: rules.slot,
+          cost: rules.cost,
+          indoor: rules.indoor,
+          familyFriendly: rules.family,
+          lat: el.lat,
+          lng: el.lon,
+          address: buildAddress(tags),
+          openingHours: tags.opening_hours || null,
+          website: tags.website || null
+        };
+      })
+      .filter(Boolean);
+
+    const seen = new Set();
+    const unique = pois.filter(p => {
+      const k = p.name.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
+    results[city] = {
+      city, lat, lng,
+      count: unique.length,
+      generated: new Date().toISOString(),
+      pois: unique
+    };
+
+    setCityStatus(city, 'done', unique.length + ' POIs');
+    doneCount++;
+    updateDownloadBtn();
+    return unique.length;
+
+  } catch (err) {
+    setCityStatus(city, 'error', err.message.slice(0, 40));
+    return null;
+  }
+}
+
+async function runAll() {
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('log').textContent = 'Starting...';
+  doneCount = 0;
+
+  for (const city of CITIES) {
+    if (results[city]) continue;
+    log('\n📍 ' + city);
+    const count = await fetchCity(city);
+    if (count) log('   ✓ ' + count + ' POIs');
+    await new Promise(r => setTimeout(r, 1200));
+  }
+
+  log('\n\n✅ All done! ' + doneCount + ' cities fetched.');
+  document.getElementById('runBtn').disabled = false;
+}
+
+function updateDownloadBtn() {
+  const btn = document.getElementById('dlAllBtn');
+  btn.textContent = '⬇️ Download All (' + doneCount + '/' + totalCount + ')';
+  btn.disabled = doneCount === 0;
+}
+
+function downloadAll() {
+  for (const [city, data] of Object.entries(results)) {
+    const filename = city.toLowerCase()
+      .replace(/,/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '') + '.json';
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  log('\n⬇️ Downloaded ' + Object.keys(results).length + ' files.');
+}
+
+function addCustomCity() {
+  const input = document.getElementById('customCity');
+  const city = input.value.trim();
+  if (!city || CITIES.includes(city)) return;
+  CITIES.push(city);
+  input.value = '';
+  renderGrid();
+}
+
+const CATEGORY_RULES = {
+  museum:        { slot: 'afternoon', icon: '🏛️', cost: 15, indoor: true,  family: true  },
+  attraction:    { slot: 'morning',   icon: '🎡', cost: 25, indoor: false, family: true  },
+  theme_park:    { slot: 'afternoon', icon: '🎢', cost: 80, indoor: false, family: true  },
+  heritage:      { slot: 'morning',   icon: '🏰', cost: 8,  indoor: false, family: true  },
+  castle:        { slot: 'morning',   icon: '🏯', cost: 12, indoor: false, family: true  },
+  fort:          { slot: 'morning',   icon: '🏰', cost: 8,  indoor: false, family: true  },
+  monument:      { slot: 'morning',   icon: '🗿', cost: 5,  indoor: false, family: true  },
+  ruins:         { slot: 'morning',   icon: '🏛️', cost: 6,  indoor: false, family: false },
+  religious:     { slot: 'morning',   icon: '🕌', cost: 0,  indoor: false, family: true  },
+  shopping_mall: { slot: 'afternoon', icon: '🛍️', cost: 0,  indoor: true,  family: true  },
+  park:          { slot: 'evening',   icon: '🌳', cost: 0,  indoor: false, family: true  },
+  water_park:    { slot: 'afternoon', icon: '💦', cost: 30, indoor: false, family: true  },
+  cinema:        { slot: 'evening',   icon: '🎬', cost: 12, indoor: true,  family: true  },
+  theatre:       { slot: 'evening',   icon: '🎭', cost: 20, indoor: true,  family: false },
+  viewpoint:     { slot: 'evening',   icon: '🌇', cost: 5,  indoor: false, family: true  },
+  zoo:           { slot: 'morning',   icon: '🦁', cost: 15, indoor: false, family: true  },
+  aquarium:      { slot: 'afternoon', icon: '🐠', cost: 20, indoor: true,  family: true  },
+  art_gallery:   { slot: 'afternoon', icon: '🖼️', cost: 12, indoor: true,  family: false },
+  market:        { slot: 'lunch',     icon: '🥘', cost: 10, indoor: false, family: true  },
+  restaurant:    { slot: 'lunch',     icon: '🍽️', cost: 15, indoor: true,  family: true  }
+};
+
+function classifyCategory(tags) {
+  if (tags.tourism === 'museum')       return 'museum';
+  if (tags.tourism === 'theme_park')   return 'theme_park';
+  if (tags.tourism === 'attraction')   return 'attraction';
+  if (tags.tourism === 'zoo')          return 'zoo';
+  if (tags.tourism === 'aquarium')     return 'aquarium';
+  if (tags.tourism === 'art_gallery')  return 'art_gallery';
+  if (tags.tourism === 'viewpoint')    return 'viewpoint';
+  if (tags.historic === 'castle')      return 'castle';
+  if (tags.historic === 'fort')        return 'fort';
+  if (tags.historic === 'monument')    return 'monument';
+  if (tags.historic === 'ruins')       return 'ruins';
+  if (tags.historic)                   return 'heritage';
+  if (tags.shop === 'mall')            return 'shopping_mall';
+  if (tags.leisure === 'park')         return 'park';
+  if (tags.leisure === 'water_park')   return 'water_park';
+  if (tags.amenity === 'cinema')       return 'cinema';
+  if (tags.amenity === 'theatre')      return 'theatre';
+  if (tags.amenity === 'marketplace')  return 'market';
+  if (tags.amenity === 'place_of_worship') {
+    if (tags.wikipedia || tags.wikidata || tags.heritage) return 'religious';
+    return null;
+  }
+  if (tags.amenity === 'restaurant' || tags.amenity === 'cafe' || tags.amenity === 'fast_food') {
+    return 'restaurant';
+  }
+  if (tags.wikipedia && tags.name) return 'attraction';
+  return null;
+}
+
+function buildAddress(tags) {
+  const parts = [tags['addr:street'], tags['addr:housenumber'], tags['addr:city']].filter(Boolean);
+  return parts.join(' ') || '';
+}
+
+renderGrid();
+</script>
+</body>
+</html>
