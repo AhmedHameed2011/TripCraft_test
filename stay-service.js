@@ -280,23 +280,40 @@
   // =========================================================================
   // 7. Extract primary neighborhood from trip
   // =========================================================================
-  function extractPrimaryNeighborhood(trip) {
+   function extractPrimaryNeighborhood(trip) {
+    const cityName = (trip.destination || '').split(',')[0].trim() || 'City Center';
+
     const neighborhoods = (trip.days || [])
       .map(d => d.neighborhood || '')
       .filter(Boolean);
 
     if (neighborhoods.length === 0) {
-      const cityName = (trip.destination || '').split(',')[0].trim();
-      return cityName || 'City Center';
+      return cityName;
     }
 
-    let primary = neighborhoods[0]
+    // Check if the neighborhood looks generic (fallback placeholder)
+    const GENERIC_PLACEHOLDERS = [
+      'Historic Old Town',
+      'Central Square',
+      'Cultural Hilltop',
+      'Garden District',
+      'Atmospheric Market'
+    ];
+
+    const first = neighborhoods[0];
+
+    // If it contains generic placeholders, use the city name instead
+    if (GENERIC_PLACEHOLDERS.some(p => first.includes(p))) {
+      return cityName;
+    }
+
+    let primary = first
       .replace(/^Near\s+/i, '')
       .replace(/,.*$/, '')
       .trim();
 
     if (primary.length > 40) primary = primary.slice(0, 40) + '…';
-    return primary || 'City Center';
+    return primary || cityName;
   }
 
   // =========================================================================
@@ -336,12 +353,21 @@
       if (!spec) continue;
 
       // Compute nightly rate based on property tier + budget multiplier
+           // Compute nightly rate — vary by index so all 3 stays differ
       let baseRate;
-      if (spec.tier === 'high') baseRate = rateRange.high;
-      else if (spec.tier === 'low') baseRate = rateRange.low;
-      else baseRate = rateRange.mid;
+      if (spec.tier === 'high') {
+        baseRate = rateRange.high;
+      } else if (spec.tier === 'low') {
+        baseRate = rateRange.low;
+      } else {
+        // Stagger mid-tier across low/mid/high for variety
+        const midTiers = [rateRange.low, rateRange.mid, rateRange.high];
+        baseRate = midTiers[i % midTiers.length];
+      }
 
-      const nightlyRate = Math.round(baseRate * budgetMult.mid);
+      // Add slight randomization (±8%) so prices feel organic
+      const jitter = 0.92 + Math.random() * 0.16;
+      const nightlyRate = Math.round(baseRate * budgetMult.mid * jitter);
 
       // Build the stay
       stays.push(buildStay({
@@ -364,10 +390,19 @@
   // =========================================================================
   // 9. Build a single stay object
   // =========================================================================
+   const STAY_IMAGE_POOL = [
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format',
+    'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format',
+    'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&auto=format',
+    'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=800&auto=format',
+    'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&auto=format',
+    'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=800&auto=format'
+  ];
+
   function buildStay({ index, spec, cityName, country, neighborhood, nightlyRate, travelers, trip, detectedTier }) {
     const id = `stay-${cityName.toLowerCase().replace(/\s+/g, '-')}-${index}-${Date.now()}`;
 
-    // Vary the area label so each stay feels distinct
+    // Vary the area label
     const areaLabels = [
       neighborhood,
       `${neighborhood} District`,
@@ -375,21 +410,17 @@
     ];
     const area = areaLabels[index % areaLabels.length];
 
-    // Vary ratings per property
-    const ratings = ['4.92', '4.85', '4.78', '4.71', '4.65'];
-    const rating = ratings[index % ratings.length];
+    // More realistic ratings
+    const baseRating = 4.4 + Math.random() * 0.5;
+    const rating = baseRating.toFixed(2);
 
-    // Pick 4 features from the pool (with slight randomness)
+    // Pick 4 varied features
     const features = shuffle(spec.featurePool).slice(0, 4);
 
-    // Add accessibility features based on travelers
+    // Accessibility features
     const accessibilityFeatures = [];
-    if (travelers.children > 0) {
-      accessibilityFeatures.push('👶 Stroller-Friendly');
-    }
-    if (travelers.seniors > 0) {
-      accessibilityFeatures.push('♿ Accessible Rooms');
-    }
+    if (travelers.children > 0) accessibilityFeatures.push('👶 Stroller-Friendly');
+    if (travelers.seniors > 0) accessibilityFeatures.push('♿ Accessible Rooms');
     if (features.some(f => f.includes('Location')) || features.some(f => f.includes('Metro'))) {
       accessibilityFeatures.push('📍 Central Walkable Location');
     }
@@ -401,7 +432,7 @@
       name: spec.namePattern(cityName, area),
       type: spec.type,
       neighborhood: `${area}${country ? ', ' + country : ''}`,
-      image: trip.heroImage || 'assets/hero-tokyo.jpg',
+      image: STAY_IMAGE_POOL[index % STAY_IMAGE_POOL.length] || trip.heroImage,
       rating,
       pricePerNight: nightlyRate,
       detectedTier,
@@ -472,7 +503,9 @@
       console.log('[stay-service] Tier cache cleared');
     } catch {}
   }
-
+    // ---------------------------------------------------------------------
+  // Variation images (used if the trip doesn't provide enough)
+  // ---------------------------------------------------------------------
   // =========================================================================
   // Public API
   // =========================================================================

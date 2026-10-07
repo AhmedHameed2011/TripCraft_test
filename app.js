@@ -2662,7 +2662,7 @@ if (generatedDays.length === 0) {
     generatedDays.push({
       dayNumber: i,
       dateLabel: `Day ${i}`,
-      neighborhood: `${nName}, ${dest}`,
+      neighborhood: `${cityName} — ${nName}`,
       weatherPlan: '☀️ Cooler Morning • 🏛️ Midday Indoor • 🌆 Evening Walk',
       morning: {
         dualName: `Historic Landmark Walk (${dest})`,
