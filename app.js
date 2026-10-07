@@ -7,6 +7,40 @@
   'use strict';
 
   // ==========================================================================
+  // Auto-load services with cache-busting (no manual version bumps!)
+  // ==========================================================================
+  const __servicePromises = (function loadServicesDynamically() {
+    const services = [
+      { name: 'stay-service.js', global: 'StayService' }
+    ];
+
+    const promises = services.map(svc => {
+      if (window[svc.global]) return Promise.resolve();
+
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        // Hourly cache buster: changes every hour, so updates propagate within 1 hour
+        // For instant propagation, use Date.now() instead
+        const buster = Math.floor(Date.now() / (1000 * 60 * 60));
+        script.src = `${svc.name}?v=${buster}`;
+        script.dataset.service = svc.name;
+        script.async = false;
+        script.onload = resolve;
+        script.onerror = () => {
+          console.warn(`[app] Failed to load ${svc.name}`);
+          resolve(); // don't block app on load failure
+        };
+        document.head.appendChild(script);
+      });
+    });
+
+    return Promise.all(promises);
+  })();
+
+  window.__tripcraftServicesReady = __servicePromises;
+
+  
+  // ==========================================================================
   // 1. Currency & Conversion (Live rates via CurrencyService)
   // ==========================================================================
   const CURRENCIES = {
@@ -2547,7 +2581,12 @@ async function fetchForecastForDestination(lat, lng, days) {
   // 5. Trip Generator (async — with World Bank budget data)
   // ==========================================================================
   async function generateCustomTrip(formData) {
+    // Ensure all dynamically-loaded services are ready
+    if (window.__tripcraftServicesReady) {
+      await window.__tripcraftServicesReady;
+    }
     const dest = formData.destination.trim();
+    const cityName = dest.split(',')[0].trim();
     const duration = parseInt(formData.duration, 10) || 5;
     const adults = parseInt(formData.adults, 10) || 2;
     const children = parseInt(formData.children, 10) || 0;
