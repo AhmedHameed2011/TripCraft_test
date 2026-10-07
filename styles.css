@@ -2448,3 +2448,187 @@ html[data-theme="light"] .form-input {
   display: block;
   margin-top: 0.15rem;
 }
+/* ==========================================================================
+   Generation Progress Overlay
+   ========================================================================== */
+.gen-progress-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 20, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9500;
+  padding: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.gen-progress-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+html[data-theme="light"] .gen-progress-overlay {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.gen-progress-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 2rem 2rem 1.75rem;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: var(--shadow-elevated);
+  animation: genProgressIn 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes genProgressIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.gen-progress-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.gen-progress-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--brand-primary);
+  animation: genSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes genSpin { to { transform: rotate(360deg); } }
+
+.gen-progress-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+.gen-progress-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0.2rem 0 0;
+}
+
+.gen-progress-bar {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface-elevated);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+.gen-progress-fill {
+  height: 100%;
+  background: var(--gradient-brand);
+  border-radius: var(--radius-pill);
+  width: 0%;
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gen-progress-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.gen-step {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  font-size: 0.83rem;
+  color: var(--text-tertiary);
+  transition: all 0.3s ease;
+  opacity: 0.55;
+}
+.gen-step.active {
+  opacity: 1;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.gen-step.done {
+  opacity: 1;
+  color: var(--text-primary);
+}
+.gen-step.done .gen-step-icon::after {
+  content: '✓';
+  color: #10b981;
+}
+.gen-step.done .gen-step-icon {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.gen-step-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.gen-step.active .gen-step-icon {
+  background: var(--gradient-brand);
+  color: #fff;
+  border-color: transparent;
+  animation: genPulse 1.4s ease-in-out infinite;
+}
+@keyframes genPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(99, 102, 241, 0); }
+}
+
+.gen-step-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.gen-step-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.gen-step-subtext {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  margin-top: 0.15rem;
+}
+.gen-step.active .gen-step-subtext {
+  color: var(--text-secondary);
+}
+
+.gen-progress-footer {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .gen-progress-card { padding: 1.5rem 1.25rem 1.25rem; }
+  .gen-progress-title { font-size: 0.95rem; }
+  .gen-step { font-size: 0.78rem; padding: 0.55rem 0.7rem; }
+  .gen-step-icon { width: 22px; height: 22px; font-size: 0.8rem; }
+}

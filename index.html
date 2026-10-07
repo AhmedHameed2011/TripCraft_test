@@ -871,6 +871,30 @@
   <script src="transit-service.js"></script>
   <script src="budget-service.js"></script>
   <script src="poi-service.js"></script>
+    <!-- ============================== GENERATION PROGRESS OVERLAY ============================== -->
+  <div class="gen-progress-overlay" id="genProgressOverlay" aria-hidden="true" role="status" aria-live="polite">
+    <div class="gen-progress-card">
+      <div class="gen-progress-header">
+        <div class="gen-progress-spinner"></div>
+        <div>
+          <h3 class="gen-progress-title">Crafting Your Perfect Trip</h3>
+          <p class="gen-progress-subtitle" id="genProgressSubtitle">This usually takes 10–20 seconds…</p>
+        </div>
+      </div>
+
+      <div class="gen-progress-bar">
+        <div class="gen-progress-fill" id="genProgressFill"></div>
+      </div>
+
+      <div class="gen-progress-steps" id="genProgressSteps">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="gen-progress-footer">
+        <span id="genProgressEta">⏱️ Estimated time: 15 seconds</span>
+      </div>
+    </div>
+  </div>
   <script src="app.js"></script>
   <script src="destination-service.js"></script>
   <script src="destination-picker.js"></script>

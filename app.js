@@ -97,6 +97,155 @@
     }
   }
 
+    // ==========================================================================
+  // Generation Progress Overlay
+  // ==========================================================================
+  const GEN_STEPS = [
+    { id: 'geo',     icon: '🌍', label: 'Fetching economic data',      sub: 'Live World Bank indices' },
+    { id: 'weather', icon: '☀️', label: 'Checking weather forecast',    sub: 'Next 5–14 days for your destination' },
+    { id: 'pois',    icon: '🗺️', label: 'Finding real places to visit', sub: 'Attractions, museums, restaurants nearby' },
+    { id: 'plan',    icon: '📅', label: 'Building your itinerary',      sub: 'Clustering activities by neighborhood' },
+    { id: 'stays',   icon: '🏨', label: 'Curating stays',               sub: 'Matching hotels to your budget & family' },
+    { id: 'images',  icon: '🖼️', label: 'Fetching hotel photos',        sub: 'Real images from Unsplash' },
+    { id: 'pack',    icon: '🎒', label: 'Preparing packing list',       sub: 'Based on weather & traveler ages' }
+  ];
+
+  let genProgressState = null;
+
+  function startGenerationProgress() {
+    const overlay = document.getElementById('genProgressOverlay');
+    const stepsEl = document.getElementById('genProgressSteps');
+    const fillEl  = document.getElementById('genProgressFill');
+    const etaEl   = document.getElementById('genProgressEta');
+    if (!overlay || !stepsEl) return;
+
+    // Reset
+    stepsEl.innerHTML = '';
+    GEN_STEPS.forEach(step => {
+      const el = document.createElement('div');
+      el.className = 'gen-step';
+      el.dataset.step = step.id;
+      el.innerHTML = `
+        <div class="gen-step-icon">${step.icon}</div>
+        <div class="gen-step-text">
+          <span class="gen-step-label">${step.label}</span>
+          <span class="gen-step-subtext">${step.sub}</span>
+        </div>
+      `;
+      stepsEl.appendChild(el);
+    });
+
+    if (fillEl) fillEl.style.width = '0%';
+    if (etaEl) etaEl.textContent = '⏱️ Estimated time: 15 seconds';
+
+    // Show overlay
+    overlay.classList.add('active');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    // Save state for later updates
+    genProgressState = {
+      startedAt: Date.now(),
+      currentIndex: -1,
+      timers: []
+    };
+
+    // Auto-advance steps every ~2 seconds (visual progress)
+    // The real code will override this with explicit setProgressStep() calls
+    GEN_STEPS.forEach((step, i) => {
+      const timer = setTimeout(() => {
+        if (genProgressState && genProgressState.currentIndex < i) {
+          setProgressStep(i);
+        }
+      }, 1500 + i * 2000);
+      genProgressState.timers.push(timer);
+    });
+  }
+
+  function setProgressStep(stepIdOrIndex) {
+    if (!genProgressState) return;
+
+    const idx = typeof stepIdOrIndex === 'number'
+      ? stepIdOrIndex
+      : GEN_STEPS.findIndex(s => s.id === stepIdOrIndex);
+
+    if (idx < 0) return;
+    genProgressState.currentIndex = idx;
+
+    // Mark prior steps as done, current as active
+    document.querySelectorAll('.gen-step').forEach((el, i) => {
+      el.classList.toggle('done',   i < idx);
+      el.classList.toggle('active', i === idx);
+    });
+
+    // Update progress bar
+    const pct = Math.round(((idx + 0.5) / GEN_STEPS.length) * 100);
+    const fillEl = document.getElementById('genProgressFill');
+    if (fillEl) fillEl.style.width = `${pct}%`;
+
+    // Update ETA
+    const elapsed = (Date.now() - genProgressState.startedAt) / 1000;
+    const remaining = Math.max(3, 15 - elapsed);
+    const etaEl = document.getElementById('genProgressEta');
+    if (etaEl) {
+      etaEl.textContent = elapsed < 3
+        ? '⏱️ Estimated time: 15 seconds'
+        : `⏱️ Elapsed: ${Math.round(elapsed)}s • Almost there…`;
+    }
+  }
+
+  function finishGenerationProgress() {
+    if (!genProgressState) return;
+
+    // Cancel any pending auto-advance timers
+    genProgressState.timers.forEach(t => clearTimeout(t));
+
+    // Mark all steps done
+    document.querySelectorAll('.gen-step').forEach(el => {
+      el.classList.remove('active');
+      el.classList.add('done');
+    });
+
+    const fillEl = document.getElementById('genProgressFill');
+    if (fillEl) fillEl.style.width = '100%';
+
+    const subtitle = document.getElementById('genProgressSubtitle');
+    if (subtitle) subtitle.textContent = '✓ Your trip is ready!';
+
+    const etaEl = document.getElementById('genProgressEta');
+    if (etaEl) etaEl.textContent = '🎉 Opening your itinerary…';
+
+    // Hide after a short delay so users see the completion
+    setTimeout(() => {
+      const overlay = document.getElementById('genProgressOverlay');
+      if (overlay) {
+        overlay.classList.remove('active');
+        overlay.setAttribute('aria-hidden', 'true');
+      }
+      genProgressState = null;
+    }, 700);
+  }
+
+  function failGenerationProgress(message) {
+    if (!genProgressState) return;
+
+    genProgressState.timers.forEach(t => clearTimeout(t));
+
+    const subtitle = document.getElementById('genProgressSubtitle');
+    if (subtitle) subtitle.textContent = '⚠️ ' + (message || 'Something went wrong');
+
+    const etaEl = document.getElementById('genProgressEta');
+    if (etaEl) etaEl.textContent = 'Closing…';
+
+    setTimeout(() => {
+      const overlay = document.getElementById('genProgressOverlay');
+      if (overlay) {
+        overlay.classList.remove('active');
+        overlay.setAttribute('aria-hidden', 'true');
+      }
+      genProgressState = null;
+    }, 1500);
+  }
+
   // ==========================================================================
   // 1b. Transportation cost estimates (per person)
   // ==========================================================================
@@ -2586,6 +2735,7 @@ async function fetchForecastForDestination(lat, lng, days) {
     if (window.__tripcraftServicesReady) {
       await window.__tripcraftServicesReady;
     }
+    startGenerationProgress(); 
     const dest = formData.destination.trim();
     const cityName = dest.split(',')[0].trim();
     const duration = parseInt(formData.duration, 10) || 5;
@@ -2610,6 +2760,7 @@ async function fetchForecastForDestination(lat, lng, days) {
 
     if (window.BudgetService?.getRange) {
       try {
+        setProgressStep('geo');
         showToast('🌍 Fetching live economic data…');
         range = await window.BudgetService.getRange(dest, budgetPref);
         if (range && range.source) budgetSource = range.source;
@@ -2666,6 +2817,7 @@ async function fetchForecastForDestination(lat, lng, days) {
 const meta = window.__selectedDestination;
 
 if (meta && typeof meta.lat === 'number' && typeof meta.lng === 'number' && window.POIService) {
+  setProgressStep('pois'); 
   showToast('🗺️ Finding real places to visit…');
 
   const [pois, weather] = await Promise.all([
@@ -2752,7 +2904,7 @@ if (generatedDays.length === 0) {
     const destinationMeta = structured
       ? { lat: structured.lat, lng: structured.lng, geonameId: structured.geonameId, countryCode: structured.countryCode }
       : null;
-
+ setProgressStep('stays'); 
     const liveWeather = window.__selectedDestinationWeather;
     const weatherBlock = liveWeather
       ? {
@@ -2884,6 +3036,7 @@ if (generatedDays.length === 0) {
     renderCustomizeConsole();
     renderPacking();
     switchTab('itinerary');
+finishGenerationProgress();
 
     showToast(`✓ Generated complete ${duration}-day plan for ${dest}!`);
   }
@@ -3150,6 +3303,7 @@ if (window.__tripcraftPOICache && nextTrip &&
 
         } catch (err) {
           console.error('[app] Trip generation failed:', err);
+          failGenerationProgress(err.message);
           showToast('⚠ Could not generate trip: ' + (err.message || 'Unknown error'));
         } finally {
           if (submitBtn) {
