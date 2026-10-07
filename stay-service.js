@@ -43,7 +43,7 @@
     'mexico city': 'value', 'oran': 'value', 'algiers': 'value',
     'kathmandu': 'value', 'hanoi': 'value', 'manila': 'value',
     'tbilisi': 'value', 'yerevan': 'value', 'baku': 'value',
-    'cairo': 'value', 'casablanca': 'value', 'tunis': 'value',
+    'casablanca': 'value', 'tunis': 'value',
     'jaipur': 'value', 'goa': 'value', 'bali': 'value', 'phuket': 'value'
   };
 
@@ -352,8 +352,7 @@
       const spec = PROPERTY_TYPES.find(p => p.type === propType);
       if (!spec) continue;
 
-      // Compute nightly rate based on property tier + budget multiplier
-           // Compute nightly rate — vary by index so all 3 stays differ
+      // Compute nightly rate — vary by index so all 3 stays differ
       let baseRate;
       if (spec.tier === 'high') {
         baseRate = rateRange.high;
@@ -388,7 +387,7 @@
   }
 
   // =========================================================================
-  // 9. Build a single stay object
+  // 9. Stay image pool
   // =========================================================================
    const STAY_IMAGE_POOL = [
     'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format',
@@ -503,9 +502,7 @@
       console.log('[stay-service] Tier cache cleared');
     } catch {}
   }
-    // ---------------------------------------------------------------------
-  // Variation images (used if the trip doesn't provide enough)
-  // ---------------------------------------------------------------------
+    
   // =========================================================================
   // Public API
   // =========================================================================
