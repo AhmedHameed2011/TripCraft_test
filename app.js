@@ -11,8 +11,9 @@
   // ==========================================================================
   const __servicePromises = (function loadServicesDynamically() {
     const services = [
-      { name: 'stay-service.js', global: 'StayService' }
-    ];
+  { name: 'stay-image-service.js', global: 'StayImageService' },
+  { name: 'stay-service.js', global: 'StayService' }
+];
 
     const promises = services.map(svc => {
       if (window[svc.global]) return Promise.resolve();
@@ -2791,13 +2792,14 @@ if (generatedDays.length === 0) {
       weather: weatherBlock,
       destinationMeta: destinationMeta,
       currentPace: 'balanced',
-      stays: (window.StayService && window.StayService.generateStays)
+     stays: (window.StayService && window.StayService.generateStays)
   ? window.StayService.generateStays(
       {
         destination: dest,
         days: generatedDays,
         budgetTier: budgetPref,
-        heroImage: destImg
+        heroImage: destImg,
+        pois: window.__tripcraftPOICache?.pois || []   // 👈 PASS POIS
       },
       { total: totalTravelers, adults, children, seniors }
     )
@@ -2848,6 +2850,28 @@ if (generatedDays.length === 0) {
       ]
     };
 
+    // ── Fetch real images for each stay (async, non-blocking) ──
+    if (window.StayImageService?.fetchStayImages && newTrip.stays?.length > 0) {
+      window.StayImageService.fetchStayImages(newTrip.stays, cityName)
+        .then(images => {
+          images.forEach((img, i) => {
+            if (newTrip.stays[i] && img.url) {
+              newTrip.stays[i].image = img.url;
+              newTrip.stays[i].imageSource = img.source;
+              newTrip.stays[i].photographer = img.photographer;
+              newTrip.stays[i].photoUrl = img.photoUrl;
+            }
+          });
+          // Re-render stays tab with real images
+          renderStays();
+          console.log('[app] Stay images updated');
+        })
+        .catch(err => {
+          console.warn('[app] Stay image fetch failed:', err.message);
+        });
+    }
+
+   
     PRESET_TRIPS.unshift(newTrip);
     currentTripIndex = 0;
     activeDayIndex = 0;

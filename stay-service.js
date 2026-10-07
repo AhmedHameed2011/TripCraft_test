@@ -319,7 +319,7 @@
   // =========================================================================
   // 8. Generate stay recommendations
   // =========================================================================
-  function generateStays(trip, travelers = { total: 4, adults: 2, children: 2, seniors: 0 }) {
+    function generateStays(trip, travelers = { total: 4, adults: 2, children: 2, seniors: 0 }) {
     const destination = trip.destination || 'Destination';
     const cityName = destination.split(',')[0].trim();
     const country = (destination.split(',')[1] || '').trim();
@@ -330,7 +330,6 @@
     const rateRange = RATE_RANGES[tier] || RATE_RANGES.default;
     const budgetMult = BUDGET_MULTIPLIERS[budget] || BUDGET_MULTIPLIERS.moderate;
 
-    // Pick 3 varied property types based on budget tier
     let propertyPool;
     if (budget === 'luxury') {
       propertyPool = ['Luxury Hotel', 'Boutique Hotel', 'Heritage Property'];
@@ -340,10 +339,16 @@
       propertyPool = ['Boutique Hotel', 'Family Suite Hotel', 'Apartment Hotel', 'Heritage Property'];
     }
 
+    // 👇 Extract real neighborhoods from POIs if available
+    let realNeighborhoods = [];
+    if (trip.pois && trip.pois.length > 0 && window.StayImageService) {
+      realNeighborhoods = window.StayImageService.extractNeighborhoods(trip.pois, cityName);
+      console.log('[stay-service] Extracted neighborhoods:', realNeighborhoods);
+    }
+
     const stays = [];
     const usedTypes = new Set();
 
-    // Select 3 distinct property types
     for (let i = 0; i < 3 && i < propertyPool.length; i++) {
       let propType = propertyPool.find(p => !usedTypes.has(p));
       if (!propType) propType = propertyPool[i];
@@ -352,29 +357,29 @@
       const spec = PROPERTY_TYPES.find(p => p.type === propType);
       if (!spec) continue;
 
-      // Compute nightly rate — vary by index so all 3 stays differ
       let baseRate;
-      if (spec.tier === 'high') {
-        baseRate = rateRange.high;
-      } else if (spec.tier === 'low') {
-        baseRate = rateRange.low;
-      } else {
-        // Stagger mid-tier across low/mid/high for variety
+      if (spec.tier === 'high') baseRate = rateRange.high;
+      else if (spec.tier === 'low') baseRate = rateRange.low;
+      else {
         const midTiers = [rateRange.low, rateRange.mid, rateRange.high];
         baseRate = midTiers[i % midTiers.length];
       }
 
-      // Add slight randomization (±8%) so prices feel organic
       const jitter = 0.92 + Math.random() * 0.16;
       const nightlyRate = Math.round(baseRate * budgetMult.mid * jitter);
 
-      // Build the stay
+      // Pick a neighborhood (real one preferred)
+      const usedNeighborhood =
+        realNeighborhoods[i] ||
+        realNeighborhoods[i % realNeighborhoods.length] ||
+        neighborhood;
+
       stays.push(buildStay({
         index: i,
         spec,
         cityName,
         country,
-        neighborhood,
+        neighborhood: usedNeighborhood,  // 👈 use real neighborhood
         nightlyRate,
         travelers,
         trip,
@@ -398,25 +403,24 @@
     'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=800&auto=format'
   ];
 
-  function buildStay({ index, spec, cityName, country, neighborhood, nightlyRate, travelers, trip, detectedTier }) {
+    function buildStay({ index, spec, cityName, country, neighborhood, nightlyRate, travelers, trip, detectedTier }) {
     const id = `stay-${cityName.toLowerCase().replace(/\s+/g, '-')}-${index}-${Date.now()}`;
 
-    // Vary the area label
-    const areaLabels = [
-      neighborhood,
-      `${neighborhood} District`,
-      `${cityName} Center`
-    ];
-    const area = areaLabels[index % areaLabels.length];
+    // Generate a realistic hotel name using the neighborhood
+    let name;
+    if (window.StayImageService?.generateHotelName) {
+      name = window.StayImageService.generateHotelName(neighborhood, spec.type, index);
+    } else {
+      name = spec.namePattern(cityName, neighborhood);
+    }
 
-    // More realistic ratings
+    // Rating
     const baseRating = 4.4 + Math.random() * 0.5;
     const rating = baseRating.toFixed(2);
 
-    // Pick 4 varied features
+    // Features
     const features = shuffle(spec.featurePool).slice(0, 4);
 
-    // Accessibility features
     const accessibilityFeatures = [];
     if (travelers.children > 0) accessibilityFeatures.push('👶 Stroller-Friendly');
     if (travelers.seniors > 0) accessibilityFeatures.push('♿ Accessible Rooms');
@@ -426,19 +430,25 @@
 
     const allFeatures = [...new Set([...accessibilityFeatures, ...features])].slice(0, 5);
 
+    // Image — use the rotating pool as a temporary placeholder.
+    // The image service will replace it after fetching.
+    const image = (window.StayImageService?.FALLBACK_POOL?.[index % 6]) ||
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format';
+
     return {
       id,
-      name: spec.namePattern(cityName, area),
+      name,
       type: spec.type,
-      neighborhood: `${area}${country ? ', ' + country : ''}`,
-      image: STAY_IMAGE_POOL[index % STAY_IMAGE_POOL.length] || trip.heroImage,
+      neighborhood: `${neighborhood}${country ? ', ' + country : ''}`,
+      image,
+      imageSource: 'pending', // will become 'unsplash' | 'cache' | 'fallback'
       rating,
       pricePerNight: nightlyRate,
       detectedTier,
       fitBanner: buildFitBanner(travelers, spec.type),
       features: allFeatures,
       bookingUrl: buildBookingSearchUrl(cityName, spec.type),
-      description: spec.descPattern(cityName, area)
+      description: spec.descPattern(cityName, neighborhood)
     };
   }
 
