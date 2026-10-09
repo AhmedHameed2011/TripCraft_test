@@ -454,6 +454,77 @@
     return ids;
   }
 
+    // =========================================================================
+  // FALLBACK ALTERNATIVES GENERATOR
+  // Used when live POI data is unavailable (blocked networks, small cities)
+  // Generates plausible alternatives based on trip context
+  // =========================================================================
+  function generateFallbackAlternatives(currentPOI, slot, cityName, neighborhood) {
+    const city = cityName || 'City';
+    const area = neighborhood || city;
+
+    // Templates by slot
+    const templates = {
+      morning: [
+        { name: `${area} Historic Walking Tour`,       category: 'Heritage',    icon: '🏛️', cost: 12, indoor: false },
+        { name: `${area} Morning Market Visit`,        category: 'Market',      icon: '🥘', cost: 0,  indoor: false },
+        { name: `${city} Museum of Local History`,     category: 'Museum',      icon: '🏛️', cost: 15, indoor: true  },
+        { name: `${area} Gardens & Parks`,             category: 'Park',        icon: '🌳', cost: 0,  indoor: false },
+        { name: `Old ${city} Landmarks Walk`,          category: 'Attraction',  icon: '🗿', cost: 8,  indoor: false },
+        { name: `${city} Cathedral & Old Quarter`,     category: 'Religious',   icon: '🕌', cost: 0,  indoor: false }
+      ],
+      lunch: [
+        { name: `${area} Traditional Restaurant`,      category: 'Restaurant',  icon: '🍽️', cost: 18, indoor: true  },
+        { name: `${city} Street Food Corner`,          category: 'Market',      icon: '🥘', cost: 10, indoor: false },
+        { name: `${area} Family Kitchen`,              category: 'Restaurant',  icon: '🍽️', cost: 22, indoor: true  },
+        { name: `Old ${city} Bistro`,                  category: 'Restaurant',  icon: '🍽️', cost: 25, indoor: true  },
+        { name: `${city} Central Cafe`,                category: 'Restaurant',  icon: '☕', cost: 12, indoor: true  },
+        { name: `${area} Local Food Hall`,             category: 'Market',      icon: '🥘', cost: 15, indoor: true  }
+      ],
+      afternoon: [
+        { name: `${city} Art Gallery`,                 category: 'Art Gallery', icon: '🖼️', cost: 12, indoor: true  },
+        { name: `${area} Shopping District`,           category: 'Shopping Mall', icon: '🛍️', cost: 0, indoor: true  },
+        { name: `${city} Aquarium & Science Center`,   category: 'Aquarium',    icon: '🐠', cost: 20, indoor: true  },
+        { name: `${area} Botanical Gardens`,           category: 'Park',        icon: '🌳', cost: 5,  indoor: false },
+        { name: `${city} Cultural Center`,             category: 'Museum',      icon: '🏛️', cost: 18, indoor: true  },
+        { name: `Old ${city} Fort`,                    category: 'Fort',        icon: '🏰', cost: 10, indoor: false }
+      ],
+      evening: [
+        { name: `${area} Sunset Promenade`,            category: 'Viewpoint',   icon: '🌇', cost: 0,  indoor: false },
+        { name: `${city} Dinner & Skyline Views`,      category: 'Restaurant',  icon: '🍽️', cost: 35, indoor: true  },
+        { name: `Old ${city} Harbor Walk`,             category: 'Viewpoint',   icon: '🌊', cost: 0,  indoor: false },
+        { name: `${area} Theater & Show`,              category: 'Theatre',     icon: '🎭', cost: 25, indoor: true  },
+        { name: `${city} Night Market`,                category: 'Market',      icon: '🏮', cost: 15, indoor: false },
+        { name: `${area} Riverside Dining`,            category: 'Restaurant',  icon: '🍽️', cost: 40, indoor: true  }
+      ]
+    };
+
+    const pool = templates[slot] || templates.morning;
+
+    // Sort so same-category items come first
+    const sorted = [...pool].sort((a, b) => {
+      const aMatch = a.category === (currentPOI?.category || '') ? 1 : 0;
+      const bMatch = b.category === (currentPOI?.category || '') ? 1 : 0;
+      return bMatch - aMatch;
+    });
+
+    // Convert to POI-shape and assign IDs
+    return sorted.slice(0, 4).map((item, i) => ({
+      id: `fallback-${slot}-${Date.now()}-${i}`,
+      name: item.name,
+      category: item.category.toLowerCase().replace(/\s+/g, '_'),
+      icon: item.icon,
+      slot: slot,
+      cost: item.cost,
+      indoor: item.indoor,
+      familyFriendly: true,
+      lat: null,
+      lng: null,
+      address: '',
+      openingHours: null,
+      isFallback: true
+    }));
+  }
   // =========================================================================
   // 9. Public API
   // =========================================================================

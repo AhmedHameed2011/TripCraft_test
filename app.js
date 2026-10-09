@@ -2518,19 +2518,20 @@ async function renderSwapAlternates(dayIdx, slot) {
   }
 
   // ── 3. Find alternatives ────────────────────────────────────────
+    // ── 3. Find alternatives (real POIs OR fallback) ───────────────
   let alternatives = [];
 
+  const currentPOI = {
+    id: currentActivity._poiId || null,
+    category: currentActivity.category,
+    slot: slot,
+    indoor: currentActivity.weatherBadge?.includes('Indoor')
+  };
+
+  // Try real POIs first
   if (cache && cache.pois && cache.pois.length > 0 && window.POIService) {
     const usedIds = window.POIService.collectUsedPOIIds(trip);
 
-    const currentPOI = {
-      id: currentActivity._poiId || null,
-      category: currentActivity.category,
-      slot: slot,
-      indoor: currentActivity.weatherBadge?.includes('Indoor')
-    };
-
-    // Compute the weekday of the selected day for opening-hours awareness
     let weekday = null;
     if (trip.startDate) {
       const start = new Date(trip.startDate);
@@ -2541,7 +2542,6 @@ async function renderSwapAlternates(dayIdx, slot) {
       weekday = new Date().toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase().slice(0, 3);
     }
 
-    // Pass weekday if the service supports it, otherwise 3-arg form
     try {
       alternatives = window.POIService.findAlternatives(
         currentPOI,
@@ -2557,9 +2557,24 @@ async function renderSwapAlternates(dayIdx, slot) {
       );
     }
 
-    console.log('[swap] Found', alternatives.length, 'alternatives for', trip.destination, slot);
+    console.log('[swap] Real POIs found:', alternatives.length);
   }
 
+  // 👇 If no real POIs, use fallback generator
+  if (alternatives.length === 0 && window.POIService?.generateFallbackAlternatives) {
+    const cityName = (trip.destination || '').split(',')[0].trim();
+    const neighborhood = trip.days[dayIdx]?.neighborhood || cityName;
+
+    alternatives = window.POIService.generateFallbackAlternatives(
+      currentPOI,
+      slot,
+      cityName,
+      neighborhood
+    );
+
+    console.log('[swap] Using fallback alternatives:', alternatives.length);
+  }
+  
   // ── 4. Render empty state or results ────────────────────────────
   container.innerHTML = '';
 
