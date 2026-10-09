@@ -193,6 +193,7 @@
   function generateHotelName(neighborhood, propertyType, index, cityName, landmarks) {
     const c = cityName || 'City';
 
+    const safeLandmarks = Array.isArray(landmarks) && landmarks.length > 0 ? landmarks : [];
     // Prefer real landmarks for name generation
     let n;
     if (landmarks && landmarks.length > 0) {

@@ -343,10 +343,16 @@
     let realLandmarks = [];
     let realNeighborhoods = [];
     if (trip.pois && trip.pois.length > 0 && window.StayImageService) {
-      realLandmarks = window.StayImageService.extractLandmarks(trip.pois, cityName);
-      realNeighborhoods = window.StayImageService.extractNeighborhoods(trip.pois, cityName);
-      console.log('[stay-service] Extracted landmarks:', realLandmarks);
-      console.log('[stay-service] Extracted neighborhoods:', realNeighborhoods);
+      try {
+        realLandmarks = window.StayImageService.extractLandmarks(trip.pois, cityName) || [];
+        realNeighborhoods = window.StayImageService.extractNeighborhoods(trip.pois, cityName) || [];
+        console.log('[stay-service] Extracted landmarks:', realLandmarks);
+        console.log('[stay-service] Extracted neighborhoods:', realNeighborhoods);
+      } catch (err) {
+        console.warn('[stay-service] Landmark extraction failed:', err.message);
+        realLandmarks = [];
+        realNeighborhoods = [];
+      }
     }
 
     const stays = [];
@@ -371,10 +377,9 @@
       const jitter = 0.92 + Math.random() * 0.16;
       const nightlyRate = Math.round(baseRate * budgetMult.mid * jitter);
 
-      // Pick neighborhood (real one preferred, else generic)
       const usedNeighborhood =
         realNeighborhoods[i] ||
-        realNeighborhoods[i % realNeighborhoods.length] ||
+        realNeighborhoods[i % Math.max(1, realNeighborhoods.length)] ||
         neighborhood;
 
       stays.push(buildStay({
@@ -387,7 +392,7 @@
         travelers,
         trip,
         detectedTier: tier,
-        landmarks: realLandmarks    // 👈 pass landmarks
+        landmarks: realLandmarks    // 👈 ALWAYS PASS THIS
       }));
     }
 
@@ -407,19 +412,27 @@
     'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=800&auto=format'
   ];
 
-    function buildStay({ index, spec, cityName, country, neighborhood, nightlyRate, travelers, trip, detectedTier }) {
+   function buildStay({ index, spec, cityName, country, neighborhood, nightlyRate, travelers, trip, detectedTier, landmarks }) {
     const id = `stay-${cityName.toLowerCase().replace(/\s+/g, '-')}-${index}-${Date.now()}`;
 
-    // Generate a realistic hotel name using the neighborhood
-        let name;
+    // 👇 Defensive: ensure landmarks is always an array
+    const safeLandmarks = Array.isArray(landmarks) ? landmarks : [];
+
+    // Generate a realistic hotel name
+    let name;
     if (window.StayImageService?.generateHotelName) {
-      name = window.StayImageService.generateHotelName(
-        neighborhood,      // fallback if no landmarks
-        spec.type,
-        index,
-        cityName,
-        landmarks          // 👈 NEW — real landmarks from OSM
-      );
+      try {
+        name = window.StayImageService.generateHotelName(
+          neighborhood,
+          spec.type,
+          index,
+          cityName,
+          safeLandmarks
+        );
+      } catch (err) {
+        console.warn('[stay-service] Name generation failed:', err.message);
+        name = spec.namePattern(cityName, neighborhood);
+      }
     } else {
       name = spec.namePattern(cityName, neighborhood);
     }
@@ -440,8 +453,7 @@
 
     const allFeatures = [...new Set([...accessibilityFeatures, ...features])].slice(0, 5);
 
-    // Image — use the rotating pool as a temporary placeholder.
-    // The image service will replace it after fetching.
+    // Image placeholder
     const image = (window.StayImageService?.FALLBACK_POOL?.[index % 6]) ||
       'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format';
 
@@ -451,7 +463,7 @@
       type: spec.type,
       neighborhood: `${neighborhood}${country ? ', ' + country : ''}`,
       image,
-      imageSource: 'pending', // will become 'unsplash' | 'cache' | 'fallback'
+      imageSource: 'pending',
       rating,
       pricePerNight: nightlyRate,
       detectedTier,
