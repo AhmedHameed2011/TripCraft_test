@@ -3208,13 +3208,7 @@ if (window.__tripcraftPOICache && nextTrip &&
       });
     }
 
-    const btnNewTripInline = document.getElementById('btnNewTripInline');
-    if (btnNewTripInline && modalNewTrip) {
-      btnNewTripInline.addEventListener('click', () => {
-        modalNewTrip.classList.add('active');
-      });
-    }
-
+  
     if (btnCloseNewTripModal && modalNewTrip) {
       btnCloseNewTripModal.addEventListener('click', () => {
         modalNewTrip.classList.remove('active');
