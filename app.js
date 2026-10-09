@@ -2165,7 +2165,9 @@ if (sample.destinationMeta?.lat && sample.destinationMeta?.lng && window.POIServ
     const dayWeatherAdaptationText = document.getElementById('dayWeatherAdaptationText');
     if (dayWeatherAdaptationText) dayWeatherAdaptationText.textContent = day.weatherPlan;
 
-    renderTransitCard();
+       // Delay transit fetch to avoid competing with POI fetch for Overpass API
+    setTimeout(() => renderTransitCard(), 5000);
+    
 
     const container = document.getElementById('timelineCardsContainer');
     if (!container) return;

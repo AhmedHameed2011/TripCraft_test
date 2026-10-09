@@ -100,14 +100,23 @@
       'museum', 'heritage', 'religious', 'park', 'shopping_mall'
     ]);
 
-    const scored = pois
+       const scored = pois
       .filter(p => LANDMARK_CATEGORIES.has(p.category))
       .map(p => {
-        const name = (p.name || '').trim();
-        if (!name || name.length > 50 || name.length < 3) return null;
+        // Prefer English name from tags when available
+        const tags = p.tags || {};
+        const name = (tags['name:en'] || p.name || '').trim();
+        if (!name || name.length > 60 || name.length < 3) return null;
 
-        // Skip names that look like generic placeholders
-        if (/^(unnamed|unknown|attraction|museum)\b/i.test(name)) return null;
+        // Skip names in non-Latin scripts (Cyrillic, Arabic, Chinese, etc.)
+        // unless there's no English alternative
+        const hasLatin = /[A-Za-z]/.test(name);
+        if (!hasLatin && tags['name:en']) {
+          // Use English
+        } else if (!hasLatin) {
+          // No English available — skip to avoid non-Latin names in the UI
+          return null;
+        }
 
         let score = 0;
         score += (p.cost || 0) * 2;           // paid attractions weigh more
@@ -165,12 +174,16 @@
       .trim();
 
     // Trim trailing descriptive words
-    const trailingNoise = [
+       const trailingNoise = [
       'Hotel', 'Resort', 'Tower', 'Towers', 'Complex',
       'Building', 'Center', 'Centre', 'Plaza', 'Square',
       'Park', 'Gardens', 'Garden', 'Monorail', 'Station',
-      'Bridge', 'Parking', 'Terminal', 'Interchange'
+      'Bridge', 'Parking', 'Terminal', 'Interchange',
+      'Sanctuary', 'Reserve', 'Wildlife', 'Nature',
+      'Conservation', 'Protected', 'Area', 'Zone',
+      'Museum', 'Gallery', 'District', 'Quarter', 'Neighborhood'
     ];
+
     const words = name.split(' ');
     while (words.length > 2 && trailingNoise.includes(words[words.length - 1])) {
       words.pop();
