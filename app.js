@@ -2751,6 +2751,12 @@ async function fetchForecastForDestination(lat, lng, days) {
       await window.__tripcraftServicesReady;
     }
     startGenerationProgress(); 
+        // Clear stale stay name cache so new names are generated
+    try {
+      localStorage.removeItem('tripcraft_stay_images_v1');
+      console.log('[app] Cleared stale stay cache for fresh generation');
+    } catch {}
+    
     const dest = formData.destination.trim();
     const cityName = dest.split(',')[0].trim();
     const duration = parseInt(formData.duration, 10) || 5;

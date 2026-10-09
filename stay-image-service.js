@@ -192,24 +192,18 @@
   // =========================================================================
   function generateHotelName(neighborhood, propertyType, index, cityName, landmarks) {
     const c = cityName || 'City';
-
     const safeLandmarks = Array.isArray(landmarks) && landmarks.length > 0 ? landmarks : [];
-    // Prefer real landmarks for name generation
-        // ============================================================
+
+    // ============================================================
     // Pick the base name for the hotel — with multiple fallbacks
     // ============================================================
     let n;
-
-    // Priority 1: Real landmarks from OSM
     if (safeLandmarks.length > 0) {
       n = safeLandmarks[index % safeLandmarks.length];
-    }
-    // Priority 2: Real neighborhood (if it's not generic)
-    else if (neighborhood && !isGenericNeighborhood(neighborhood) && neighborhood !== c) {
+    } else if (neighborhood && !isGenericNeighborhood(neighborhood) && neighborhood !== c) {
       n = neighborhood;
-    }
-    // Priority 3: Creative city-based variants (varied per city + index)
-    else {
+    } else {
+      // 👇 Creative city-based variants (deterministic per city)
       const cityVariants = [
         `${c} Central`,
         `Old ${c}`,
@@ -222,12 +216,19 @@
         `${c} Old Town`,
         `${c} Downtown`,
         `${c} Waterfront`,
-        `${c} Gardens`
+        `${c} Gardens`,
+        `${c} Bay`,
+        `${c} District`,
+        `${c} Quarter`,
+        `${c} Peninsula`
       ];
       const cityHash = simpleHash(c);
       n = cityVariants[(cityHash + index * 3) % cityVariants.length];
     }
 
+    // ============================================================
+    // Expanded pattern pools — 10+ options per property type
+    // ============================================================
     const patterns = {
       'Luxury Hotel': [
         `The ${n} Grand`,
@@ -235,42 +236,71 @@
         `${n} Royal Hotel`,
         `The ${n} Imperial`,
         `${n} Prestige Hotel`,
-        `The Grand ${n}`
+        `The Grand ${n}`,
+        `${n} Crown Plaza`,
+        `The ${n} Regency`,
+        `${n} Golden Suites`,
+        `The ${n} Signature`
       ],
       'Boutique Hotel': [
         `${n} Boutique Hotel`,
         `The ${n} House`,
         `${n} Design Hotel`,
         `The ${n} Atelier`,
-        `${n} Art Hotel`
+        `${n} Art Hotel`,
+        `The ${n} Loft`,
+        `${n} Studio Suites`,
+        `The ${n} Corner`,
+        `${n} Hideaway`,
+        `The ${n} Edition`
       ],
       'Family Suite Hotel': [
         `${n} Family Suites`,
         `${n} Residence Suites`,
         `The ${n} Family Hotel`,
         `${n} Garden Suites`,
-        `The ${n} Residences`
+        `The ${n} Residences`,
+        `${n} Comfort Suites`,
+        `${n} Parkside Suites`,
+        `The ${n} Family Inn`,
+        `${n} Courtyard Suites`,
+        `${n} Sunshine Suites`
       ],
       'Apartment Hotel': [
         `${n} Apartments`,
         `${n} Loft Residences`,
         `${n} Serviced Apartments`,
         `The ${n} Residences`,
-        `${n} City Flats`
+        `${n} City Flats`,
+        `${n} Urban Suites`,
+        `The ${n} Living`,
+        `${n} Skyline Apartments`,
+        `${n} Central Residences`,
+        `The ${n} Urban Collection`
       ],
       'Heritage Property': [
         `${n} Heritage House`,
         `The ${n} Historic Inn`,
         `${n} Heritage Hotel`,
         `${n} Old House`,
-        `${n} Manor`
+        `${n} Manor`,
+        `The ${n} Estate`,
+        `${n} Heritage Retreat`,
+        `The ${n} Colonial Inn`,
+        `${n} Vintage Hotel`,
+        `The ${n} Story House`
       ],
       'Budget Inn': [
         `${n} Comfort Inn`,
         `${n} Lodge`,
         `${n} Budget Rooms`,
         `The ${n} Inn`,
-        `${n} Guesthouse`
+        `${n} Guesthouse`,
+        `${n} Smart Stay`,
+        `The ${n} Value Inn`,
+        `${n} Express Hotel`,
+        `${n} Budget Suites`,
+        `The ${n} Basic Inn`
       ]
     };
 
