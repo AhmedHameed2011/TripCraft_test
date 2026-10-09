@@ -3,7 +3,9 @@
  * Fetches real attractions, malls, heritage sites, parks, museums,
  * and restaurants for any destination, then builds a day-by-day itinerary.
  *
- * Uses split parallel queries to avoid Overpass 504 timeouts.
+ * Uses sequential batched queries with retry logic to respect
+ * Overpass rate limits and avoid 504/429 timeouts.
+ *
  * Also provides swap-alternative helpers used by app.js.
  *
  * No API key required. Data © OpenStreetMap contributors (ODbL).
@@ -15,7 +17,9 @@
   // Configuration
   // =========================================================================
   const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
-  const FETCH_TIMEOUT_MS = 45000;   // 45 seconds per batch
+  const FETCH_TIMEOUT_MS = 30000;   // 30s per batch
+  const BATCH_DELAY_MS = 2000;      // 2s between batches
+  const RETRY_DELAY_MS = 8000;      // 8s before retrying failed batches
   const CACHE_TTL = 60 * 60 * 1000; // 1 hour
   const cache = new Map();
 
@@ -46,7 +50,7 @@
   };
 
   // =========================================================================
-  // 1. Fetch POIs — split into 3 parallel batches
+  // 1. Fetch POIs — sequential batches with retry
   // =========================================================================
   async function fetchPOIs(lat, lng, radiusMeters = 20000) {
     if (typeof lat !== 'number' || typeof lng !== 'number') return [];
@@ -57,10 +61,10 @@
       return cached.data;
     }
 
-    // 👇 Split into 3 smaller queries to avoid 504 gateway timeouts
+    // 3 smaller queries — each stays under Overpass's rate limit
     const queries = [
-      // Batch A: Tourism & landmarks (the most important)
-      `[out:json][timeout:30];
+      // Batch A: Tourism & landmarks (most important for hotel names)
+      `[out:json][timeout:60];
        (
          node["tourism"~"museum|attraction|theme_park|viewpoint|zoo|aquarium|art_gallery"]["name"](around:${radiusMeters},${lat},${lng});
          node["historic"~"castle|fort|monument|ruins|archaeological_site"]["name"](around:${radiusMeters},${lat},${lng});
@@ -68,7 +72,7 @@
        out body 100;`,
 
       // Batch B: Parks, malls, cultural venues
-      `[out:json][timeout:30];
+      `[out:json][timeout:60];
        (
          node["shop"="mall"]["name"](around:${radiusMeters},${lat},${lng});
          node["leisure"~"park|water_park"]["name"](around:${radiusMeters},${lat},${lng});
@@ -77,32 +81,69 @@
        out body 60;`,
 
       // Batch C: Restaurants & food
-      `[out:json][timeout:30];
+      `[out:json][timeout:60];
        (
          node["amenity"~"restaurant|cafe|fast_food"]["name"](around:${radiusMeters},${lat},${lng});
        );
        out body 60;`
     ];
 
-    console.log('[poi-service] Fetching', queries.length, 'batches in parallel...');
+    console.log('[poi-service] Fetching', queries.length, 'batches sequentially...');
     const batchStart = Date.now();
 
-    const batchResults = await Promise.allSettled(
-      queries.map(q => fetchBatch(q, lat, lng))
-    );
+    const batchResults = [];
+
+    // ---- Sequential fetch with delays to respect rate limits ----
+    for (let i = 0; i < queries.length; i++) {
+      const batchLabel = String.fromCharCode(65 + i);
+      console.log(`[poi-service] Fetching batch ${batchLabel}...`);
+
+      try {
+        const result = await fetchBatch(queries[i], lat, lng);
+        batchResults.push({ status: 'fulfilled', value: result });
+        console.log(`[poi-service] ✓ Batch ${batchLabel}: ${result.elements?.length || 0} elements`);
+      } catch (err) {
+        batchResults.push({ status: 'rejected', reason: err });
+        console.warn(`[poi-service] ✗ Batch ${batchLabel} failed:`, err.message);
+      }
+
+      // Wait between batches (except after the last one)
+      if (i < queries.length - 1) {
+        await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+      }
+    }
+
+    // ---- Retry failed batches once after a longer delay ----
+    const failedCount = batchResults.filter(r => r.status === 'rejected').length;
+    if (failedCount > 0 && batchResults.some(r => r.status === 'fulfilled')) {
+      console.log(`[poi-service] ${failedCount} batch(es) failed. Waiting ${RETRY_DELAY_MS}ms before retry...`);
+      await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+
+      for (let i = 0; i < queries.length; i++) {
+        if (batchResults[i].status === 'rejected') {
+          const batchLabel = String.fromCharCode(65 + i);
+          console.log(`[poi-service] Retrying batch ${batchLabel}...`);
+          try {
+            const result = await fetchBatch(queries[i], lat, lng);
+            batchResults[i] = { status: 'fulfilled', value: result };
+            console.log(`[poi-service] ✓ Retry ${batchLabel}: ${result.elements?.length || 0} elements`);
+          } catch (err) {
+            console.warn(`[poi-service] ✗ Retry ${batchLabel} failed:`, err.message);
+          }
+          await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+        }
+      }
+    }
 
     const elapsed = Date.now() - batchStart;
     const succeeded = batchResults.filter(r => r.status === 'fulfilled').length;
     console.log(`[poi-service] ${succeeded}/${queries.length} batches succeeded in ${elapsed}ms`);
 
-    // Merge all elements from successful batches
+    // ---- Merge all elements from successful batches ----
     const allElements = [];
-    batchResults.forEach((r, i) => {
+    batchResults.forEach(r => {
       if (r.status === 'fulfilled' && r.value?.elements) {
         allElements.push(...r.value.elements);
-        console.log(`[poi-service] Batch ${String.fromCharCode(65 + i)}: ${r.value.elements.length} elements`);
-      } else if (r.status === 'rejected') {
-        console.warn(`[poi-service] Batch ${String.fromCharCode(65 + i)} failed:`, r.reason?.message);
       }
     });
 
@@ -151,7 +192,7 @@
 
       const text = await res.text();
 
-      // Detect XML error pages (Overpass returns XML on errors)
+      // Detect XML error pages
       if (text.trim().startsWith('<')) {
         throw new Error('Overpass returned XML — gateway timeout or query error');
       }
@@ -496,7 +537,6 @@
 
   // =========================================================================
   // 9. Fallback alternatives generator
-  // Used when live POI data is unavailable
   // =========================================================================
   function generateFallbackAlternatives(currentPOI, slot, cityName, neighborhood) {
     const city = cityName || 'City';
