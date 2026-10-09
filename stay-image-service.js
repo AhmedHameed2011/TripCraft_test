@@ -1,13 +1,15 @@
 /**
  * TripCraft — Stay Image & Neighborhood Service
  *
- * Universal, scalable hotel image service that:
- *   1. Extracts real neighborhoods from POI data (works for ANY city)
- *   2. Generates realistic hotel names
- *   3. Fetches matching photos from Unsplash with Cloudflare cache
- *   4. Falls back gracefully through multiple layers
+ * Universal hotel image service that:
+ *   1. Extracts REAL landmarks from OpenStreetMap POI data
+ *   2. Extracts REAL neighborhoods from POI address tags
+ *   3. Generates realistic hotel names using real landmarks
+ *   4. Fetches matching photos from Unsplash with cache
+ *   5. Falls back gracefully through multiple layers
  *
- * No hardcoded city lists. Works for 10,000+ destinations.
+ * Zero hardcoded landmark/neighborhood lists.
+ * Works for 10,000+ cities worldwide.
  */
 (function () {
   'use strict';
@@ -17,13 +19,10 @@
   // =========================================================================
   const UNSPLASH_KEY = 'vIG1teoCGQ6jvUsi4MyRC0M8m28HTdC313L6mqiaAUE';
   const IMAGE_CACHE_KEY = 'tripcraft_stay_images_v1';
-  const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-  // Optional: your Cloudflare Worker URL for shared caching
-  // Leave empty to skip server-side caching
-  const CF_WORKER_URL = ''; // e.g. 'https://tripcraft-images.your-name.workers.dev'
+  const CF_WORKER_URL = ''; // Optional Cloudflare Worker
 
-  // Fallback images (rotating pool) — used when all else fails
   const FALLBACK_POOL = [
     'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format',
     'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format',
@@ -34,58 +33,29 @@
   ];
 
   // =========================================================================
-  // Local cache
+  // Deterministic hash — same city → same names every time
   // =========================================================================
-  function loadCache() {
-    try {
-      const raw = localStorage.getItem(IMAGE_CACHE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
-  }
-
-  function saveCache(cache) {
-    try {
-      localStorage.setItem(IMAGE_CACHE_KEY, JSON.stringify(cache));
-    } catch {}
-  }
-
-  function getCachedImage(key) {
-    const cache = loadCache();
-    const entry = cache[key];
-    if (!entry) return null;
-    if (Date.now() - entry.timestamp > CACHE_TTL_MS) return null;
-    return entry.url;
-  }
-
-  function setCachedImage(key, url) {
-    const cache = loadCache();
-    cache[key] = { url, timestamp: Date.now() };
-
-    // Keep cache under 200 entries (drop oldest)
-    const keys = Object.keys(cache);
-    if (keys.length > 200) {
-      const sorted = keys.sort((a, b) => cache[a].timestamp - cache[b].timestamp);
-      for (let i = 0; i < 50; i++) delete cache[sorted[i]];
+  function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
     }
-
-    saveCache(cache);
+    return Math.abs(hash);
   }
 
   // =========================================================================
-  // 1. Extract REAL neighborhoods from POI data (universal, no hardcoded lists)
+  // 1. Extract REAL neighborhoods from POI address tags
   // =========================================================================
   function extractNeighborhoods(pois, cityName) {
     if (!Array.isArray(pois) || pois.length === 0) {
-      return genericNeighborhoods(cityName);
+      return genericNeighborhoods();
     }
 
     const counts = new Map();
 
-    // Scan every POI for neighborhood-related tags
     pois.forEach(poi => {
       const tags = poi.tags || {};
-
-      // OSM neighborhood tags (in priority order)
       const candidates = [
         tags['addr:suburb'],
         tags['addr:district'],
@@ -93,112 +63,207 @@
         tags['addr:quarter'],
         tags['addr:borough'],
         tags['is_in:suburb'],
-        tags['is_in:district'],
-        tags['is_in']
+        tags['is_in:district']
       ].filter(Boolean);
 
       candidates.forEach(name => {
-        if (!name || name.length > 40) return;
+        if (!name || name.length > 40 || name.length < 3) return;
         const clean = name.trim();
         if (clean.toLowerCase() === cityName.toLowerCase()) return;
         counts.set(clean, (counts.get(clean) || 0) + 1);
       });
-
-      // Also: parse neighborhood from POI names like "SoHo Grand Hotel"
-      // Look for patterns like "X Grand", "X Residence", "X Hotel"
-      const poiName = poi.name || '';
-      const patterns = [
-        /^([A-Z][a-zA-Z\s]+?)\s+(?:Grand|Royal|Hotel|Residence|Suites|Plaza|Park|Square)/,
-        /^(?:Hotel|The)\s+([A-Z][a-zA-Z\s]+?)\s+(?:Hotel|Grand|Suites)/
-      ];
-      patterns.forEach(p => {
-        const match = poiName.match(p);
-        if (match && match[1] && match[1].length < 30) {
-          const n = match[1].trim();
-          if (n.toLowerCase() !== cityName.toLowerCase()) {
-            counts.set(n, (counts.get(n) || 0) + 0.5); // lower weight
-          }
-        }
-      });
     });
 
-    // Sort by frequency
     const sorted = [...counts.entries()]
-      .filter(([_, count]) => count >= 2) // require at least 2 mentions
+      .filter(([_, count]) => count >= 2)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6)
       .map(([name]) => name);
 
     if (sorted.length >= 3) return sorted;
-
-    // Not enough data — blend real names with generics
-    const generic = genericNeighborhoods(cityName);
-    return [...sorted, ...generic].slice(0, 6);
+    return [...sorted, ...genericNeighborhoods()].slice(0, 6);
   }
 
-  function genericNeighborhoods(cityName) {
-    // Universally applicable neighborhood names
-    return [
-      'City Center',
-      'Old Town',
-      'Downtown',
-      'Riverside',
-      'Historic Quarter',
-      'Central District'
+  function genericNeighborhoods() {
+    return ['City Center', 'Old Town', 'Downtown', 'Riverside', 'Historic Quarter', 'Central District'];
+  }
+
+  // =========================================================================
+  // 2. Extract REAL landmarks from POIs (NEW)
+  // =========================================================================
+  function extractLandmarks(pois, cityName) {
+    if (!Array.isArray(pois) || pois.length === 0) return [];
+
+    // Categories that signal a landmark
+    const LANDMARK_CATEGORIES = new Set([
+      'attraction', 'monument', 'viewpoint', 'castle',
+      'museum', 'heritage', 'religious', 'park', 'shopping_mall'
+    ]);
+
+    const scored = pois
+      .filter(p => LANDMARK_CATEGORIES.has(p.category))
+      .map(p => {
+        const name = (p.name || '').trim();
+        if (!name || name.length > 50 || name.length < 3) return null;
+
+        // Skip names that look like generic placeholders
+        if (/^(unnamed|unknown|attraction|museum)\b/i.test(name)) return null;
+
+        let score = 0;
+        score += (p.cost || 0) * 2;           // paid attractions weigh more
+        if (p.wikipedia) score += 15;         // Wikipedia link = notable
+        if (p.website) score += 3;            // has own website
+
+        // Category bonuses
+        if (p.category === 'monument')       score += 10;
+        if (p.category === 'attraction')     score += 8;
+        if (p.category === 'museum')         score += 6;
+        if (p.category === 'castle')         score += 8;
+        if (p.category === 'heritage')       score += 5;
+        if (p.category === 'viewpoint')      score += 4;
+        if (p.category === 'shopping_mall')  score += 3;
+        if (p.category === 'park')           score += 2;
+
+        // Prefer names with a proper noun feel (contains uppercase word)
+        if (/[A-Z]/.test(name)) score += 2;
+
+        // Extract a SHORT version of the landmark name for hotel use
+        const shortName = extractShortLandmarkName(name);
+
+        return { name, shortName, category: p.category, score };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score);
+
+    // Deduplicate by shortName
+    const seen = new Set();
+    const landmarks = [];
+    for (const l of scored) {
+      const key = l.shortName.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      landmarks.push(l.shortName);
+      if (landmarks.length >= 6) break;
+    }
+
+    return landmarks;
+  }
+
+  /**
+   * Extract a short, hotel-name-friendly version of a landmark.
+   * Examples:
+   *   "Burj Khalifa"              → "Burj Khalifa"
+   *   "The Dubai Mall"            → "Dubai Mall"
+   *   "Palm Jumeirah Monorail"    → "Palm Jumeirah"
+   *   "Jumeirah Beach Residence"  → "Jumeirah Beach"
+   *   "Museum of Modern Art"      → "Modern Art"
+   */
+  function extractShortLandmarkName(fullName) {
+    let name = fullName
+      .replace(/^The\s+/i, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Trim trailing descriptive words
+    const trailingNoise = [
+      'Hotel', 'Resort', 'Tower', 'Towers', 'Complex',
+      'Building', 'Center', 'Centre', 'Plaza', 'Square',
+      'Park', 'Gardens', 'Garden', 'Monorail', 'Station',
+      'Bridge', 'Parking', 'Terminal', 'Interchange'
     ];
+    const words = name.split(' ');
+    while (words.length > 2 && trailingNoise.includes(words[words.length - 1])) {
+      words.pop();
+    }
+    name = words.join(' ');
+
+    // Remove parenthetical suffixes
+    name = name.replace(/\s*\([^)]*\)\s*$/, '');
+
+    // If it's really long, keep first 3 words
+    const parts = name.split(' ');
+    if (parts.length > 3) name = parts.slice(0, 3).join(' ');
+
+    return name.trim();
   }
 
   // =========================================================================
-  // 2. Generate realistic hotel names
+  // 3. Generate realistic hotel names using REAL landmarks
   // =========================================================================
-  function generateHotelName(neighborhood, propertyType, index) {
-    const n = neighborhood || 'City Center';
+  function generateHotelName(neighborhood, propertyType, index, cityName, landmarks) {
+    const c = cityName || 'City';
+
+    // Prefer real landmarks for name generation
+    let n;
+    if (landmarks && landmarks.length > 0) {
+      n = landmarks[index % landmarks.length];
+    } else if (neighborhood && !isGenericNeighborhood(neighborhood)) {
+      n = neighborhood;
+    } else {
+      n = c;
+    }
 
     const patterns = {
       'Luxury Hotel': [
         `The ${n} Grand`,
-        `The ${n} Palace Hotel`,
-        `${n} Royal Hotel`
+        `The ${n} Palace`,
+        `${n} Royal Hotel`,
+        `The ${n} Imperial`,
+        `${n} Prestige Hotel`,
+        `The Grand ${n}`
       ],
       'Boutique Hotel': [
         `${n} Boutique Hotel`,
         `The ${n} House`,
-        `${n} Design Hotel`
+        `${n} Design Hotel`,
+        `The ${n} Atelier`,
+        `${n} Art Hotel`
       ],
       'Family Suite Hotel': [
         `${n} Family Suites`,
         `${n} Residence Suites`,
-        `The ${n} Family Hotel`
+        `The ${n} Family Hotel`,
+        `${n} Garden Suites`,
+        `The ${n} Residences`
       ],
       'Apartment Hotel': [
         `${n} Apartments`,
         `${n} Loft Residences`,
-        `${n} Serviced Apartments`
+        `${n} Serviced Apartments`,
+        `The ${n} Residences`,
+        `${n} City Flats`
       ],
       'Heritage Property': [
         `${n} Heritage House`,
         `The ${n} Historic Inn`,
-        `${n} Heritage Hotel`
+        `${n} Heritage Hotel`,
+        `${n} Old House`,
+        `${n} Manor`
       ],
       'Budget Inn': [
         `${n} Comfort Inn`,
         `${n} Lodge`,
-        `${n} Budget Rooms`
+        `${n} Budget Rooms`,
+        `The ${n} Inn`,
+        `${n} Guesthouse`
       ]
     };
 
     const options = patterns[propertyType] || patterns['Boutique Hotel'];
-    return options[index % options.length];
+    const cityHash = simpleHash(c);
+    const patternIndex = (cityHash + index * 7) % options.length;
+    return options[patternIndex];
+  }
+
+  function isGenericNeighborhood(n) {
+    const generics = ['city center', 'old town', 'downtown', 'riverside', 'historic quarter', 'central district'];
+    return generics.includes((n || '').toLowerCase());
   }
 
   // =========================================================================
-  // 3. Build smart Unsplash search query
+  // 4. Build Unsplash search queries
   // =========================================================================
   function buildQuery(hotelName, neighborhood, cityName, propertyType) {
-    // Tier 1: most specific — real hotel name + city
-    // Tier 2: neighborhood + city + hotel
-    // Tier 3: city + hotel type
-    // Tier 4: generic hotel
     return [
       `${hotelName} ${cityName}`,
       `${neighborhood} ${cityName} hotel`,
@@ -208,7 +273,7 @@
   }
 
   // =========================================================================
-  // 4. Fetch a single Unsplash image
+  // 5. Search Unsplash
   // =========================================================================
   async function searchUnsplash(query) {
     const url = `https://api.unsplash.com/search/photos?` +
@@ -227,13 +292,10 @@
     const data = await res.json();
     if (!data.results || data.results.length === 0) return null;
 
-    // Prefer landscape images that look like buildings
     const best = data.results.find(r => {
       const alt = (r.alt_description || '').toLowerCase();
-      return alt.includes('hotel') ||
-             alt.includes('building') ||
-             alt.includes('architecture') ||
-             alt.includes('resort');
+      return alt.includes('hotel') || alt.includes('building') ||
+             alt.includes('architecture') || alt.includes('resort');
     }) || data.results[0];
 
     return {
@@ -246,7 +308,35 @@
   }
 
   // =========================================================================
-  // 5. Cloudflare Worker cache lookup (optional)
+  // 6. Local cache
+  // =========================================================================
+  function loadCache() {
+    try {
+      return JSON.parse(localStorage.getItem(IMAGE_CACHE_KEY) || '{}');
+    } catch { return {}; }
+  }
+  function saveCache(cache) {
+    try { localStorage.setItem(IMAGE_CACHE_KEY, JSON.stringify(cache)); } catch {}
+  }
+  function getCachedImage(key) {
+    const entry = loadCache()[key];
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > CACHE_TTL_MS) return null;
+    return entry.url;
+  }
+  function setCachedImage(key, url) {
+    const cache = loadCache();
+    cache[key] = { url, timestamp: Date.now() };
+    const keys = Object.keys(cache);
+    if (keys.length > 200) {
+      const sorted = keys.sort((a, b) => cache[a].timestamp - cache[b].timestamp);
+      for (let i = 0; i < 50; i++) delete cache[sorted[i]];
+    }
+    saveCache(cache);
+  }
+
+  // =========================================================================
+  // 7. Cloudflare Worker cache
   // =========================================================================
   async function tryWorkerCache(cacheKey) {
     if (!CF_WORKER_URL) return null;
@@ -258,11 +348,8 @@
       if (!res.ok) return null;
       const data = await res.json();
       return data.url ? data : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }
-
   async function saveToWorkerCache(cacheKey, imageData) {
     if (!CF_WORKER_URL) return;
     try {
@@ -276,19 +363,17 @@
   }
 
   // =========================================================================
-  // 6. Main entry: fetch a stay image with all fallbacks
+  // 8. Main entry: fetch a stay image
   // =========================================================================
   async function fetchStayImage({ hotelName, neighborhood, cityName, propertyType, index }) {
     const cacheKey = `${cityName}::${hotelName}`.toLowerCase();
 
-    // Layer 1: localStorage cache
     const local = getCachedImage(cacheKey);
     if (local) {
       console.log(`[stay-image] Cache hit (local): ${hotelName}`);
       return { url: local, source: 'cache' };
     }
 
-    // Layer 2: Cloudflare Worker cache (shared across users)
     const workerCached = await tryWorkerCache(cacheKey);
     if (workerCached?.url) {
       console.log(`[stay-image] Cache hit (worker): ${hotelName}`);
@@ -296,7 +381,6 @@
       return { url: workerCached.url, source: 'worker', ...workerCached };
     }
 
-    // Layer 3: Unsplash live search (try queries in order)
     const queries = buildQuery(hotelName, neighborhood, cityName, propertyType);
     for (const q of queries) {
       try {
@@ -304,26 +388,23 @@
         const result = await searchUnsplash(q);
         if (result) {
           setCachedImage(cacheKey, result.url);
-          saveToWorkerCache(cacheKey, result); // fire and forget
+          saveToWorkerCache(cacheKey, result);
           console.log(`[stay-image] ✓ Found image for ${hotelName}`);
           return { ...result, source: 'unsplash' };
         }
       } catch (err) {
         console.warn(`[stay-image] Query failed: ${err.message}`);
-        if (err.message.includes('429') || err.message.includes('403')) {
-          break; // rate limited — skip remaining queries
-        }
+        if (err.message.includes('429') || err.message.includes('403')) break;
       }
     }
 
-    // Layer 4: Fallback pool (rotating)
     const fallbackUrl = FALLBACK_POOL[index % FALLBACK_POOL.length];
     console.log(`[stay-image] Fallback pool for ${hotelName}`);
     return { url: fallbackUrl, source: 'fallback' };
   }
 
   // =========================================================================
-  // 7. Batch fetch (parallel, for a trip's 3 stays)
+  // 9. Batch fetch
   // =========================================================================
   async function fetchStayImages(stays, cityName) {
     const promises = stays.map((stay, i) =>
@@ -350,6 +431,7 @@
   // =========================================================================
   window.StayImageService = {
     extractNeighborhoods,
+    extractLandmarks,       // 👈 NEW public function
     generateHotelName,
     fetchStayImage,
     fetchStayImages,

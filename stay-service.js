@@ -319,7 +319,7 @@
   // =========================================================================
   // 8. Generate stay recommendations
   // =========================================================================
-    function generateStays(trip, travelers = { total: 4, adults: 2, children: 2, seniors: 0 }) {
+   function generateStays(trip, travelers = { total: 4, adults: 2, children: 2, seniors: 0 }) {
     const destination = trip.destination || 'Destination';
     const cityName = destination.split(',')[0].trim();
     const country = (destination.split(',')[1] || '').trim();
@@ -339,10 +339,13 @@
       propertyPool = ['Boutique Hotel', 'Family Suite Hotel', 'Apartment Hotel', 'Heritage Property'];
     }
 
-    // 👇 Extract real neighborhoods from POIs if available
+    // 👇 Extract real landmarks AND neighborhoods from POIs
+    let realLandmarks = [];
     let realNeighborhoods = [];
     if (trip.pois && trip.pois.length > 0 && window.StayImageService) {
+      realLandmarks = window.StayImageService.extractLandmarks(trip.pois, cityName);
       realNeighborhoods = window.StayImageService.extractNeighborhoods(trip.pois, cityName);
+      console.log('[stay-service] Extracted landmarks:', realLandmarks);
       console.log('[stay-service] Extracted neighborhoods:', realNeighborhoods);
     }
 
@@ -368,7 +371,7 @@
       const jitter = 0.92 + Math.random() * 0.16;
       const nightlyRate = Math.round(baseRate * budgetMult.mid * jitter);
 
-      // Pick a neighborhood (real one preferred)
+      // Pick neighborhood (real one preferred, else generic)
       const usedNeighborhood =
         realNeighborhoods[i] ||
         realNeighborhoods[i % realNeighborhoods.length] ||
@@ -379,11 +382,12 @@
         spec,
         cityName,
         country,
-        neighborhood: usedNeighborhood,  // 👈 use real neighborhood
+        neighborhood: usedNeighborhood,
         nightlyRate,
         travelers,
         trip,
-        detectedTier: tier
+        detectedTier: tier,
+        landmarks: realLandmarks    // 👈 pass landmarks
       }));
     }
 
@@ -407,9 +411,15 @@
     const id = `stay-${cityName.toLowerCase().replace(/\s+/g, '-')}-${index}-${Date.now()}`;
 
     // Generate a realistic hotel name using the neighborhood
-    let name;
+        let name;
     if (window.StayImageService?.generateHotelName) {
-      name = window.StayImageService.generateHotelName(neighborhood, spec.type, index);
+      name = window.StayImageService.generateHotelName(
+        neighborhood,      // fallback if no landmarks
+        spec.type,
+        index,
+        cityName,
+        landmarks          // 👈 NEW — real landmarks from OSM
+      );
     } else {
       name = spec.namePattern(cityName, neighborhood);
     }
