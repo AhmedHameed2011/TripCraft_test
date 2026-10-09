@@ -3,11 +3,8 @@
  * Fetches real attractions, malls, heritage sites, parks, museums,
  * and restaurants for any destination, then builds a day-by-day itinerary.
  *
- * Also provides swap-alternative helpers used by app.js for the
- * "Swap Activity" feature in the Customize tab.
- *
- * Works on personal devices / open networks.
- * On restricted corporate networks, gracefully returns empty arrays.
+ * Uses split parallel queries to avoid Overpass 504 timeouts.
+ * Also provides swap-alternative helpers used by app.js.
  *
  * No API key required. Data © OpenStreetMap contributors (ODbL).
  */
@@ -18,9 +15,9 @@
   // Configuration
   // =========================================================================
   const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
-  const FETCH_TIMEOUT_MS = 10000;      // 10s — fail fast if blocked
-  const CACHE_TTL = 60 * 60 * 1000;    // 1 hour
-  const cache = new Map();             // key → { data, timestamp }
+  const FETCH_TIMEOUT_MS = 45000;   // 45 seconds per batch
+  const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+  const cache = new Map();
 
   // =========================================================================
   // Category rules
@@ -49,7 +46,7 @@
   };
 
   // =========================================================================
-  // 1. Fetch POIs from Overpass — with fast failure
+  // 1. Fetch POIs — split into 3 parallel batches
   // =========================================================================
   async function fetchPOIs(lat, lng, radiusMeters = 20000) {
     if (typeof lat !== 'number' || typeof lng !== 'number') return [];
@@ -60,19 +57,83 @@
       return cached.data;
     }
 
-    const query = `
-      [out:json][timeout:25];
-      (
-        node["tourism"~"museum|attraction|theme_park|viewpoint|zoo|aquarium|art_gallery"]["name"](around:${radiusMeters},${lat},${lng});
-        node["historic"~"castle|fort|monument|ruins|archaeological_site"]["name"](around:${radiusMeters},${lat},${lng});
-        node["shop"="mall"]["name"](around:${radiusMeters},${lat},${lng});
-        node["leisure"~"park|water_park"]["name"](around:${radiusMeters},${lat},${lng});
-        node["amenity"~"cinema|theatre|marketplace"]["name"](around:${radiusMeters},${lat},${lng});
-        node["amenity"~"restaurant|cafe|fast_food"]["name"](around:${radiusMeters},${lat},${lng});
-      );
-      out body 200;
-    `;
+    // 👇 Split into 3 smaller queries to avoid 504 gateway timeouts
+    const queries = [
+      // Batch A: Tourism & landmarks (the most important)
+      `[out:json][timeout:30];
+       (
+         node["tourism"~"museum|attraction|theme_park|viewpoint|zoo|aquarium|art_gallery"]["name"](around:${radiusMeters},${lat},${lng});
+         node["historic"~"castle|fort|monument|ruins|archaeological_site"]["name"](around:${radiusMeters},${lat},${lng});
+       );
+       out body 100;`,
 
+      // Batch B: Parks, malls, cultural venues
+      `[out:json][timeout:30];
+       (
+         node["shop"="mall"]["name"](around:${radiusMeters},${lat},${lng});
+         node["leisure"~"park|water_park"]["name"](around:${radiusMeters},${lat},${lng});
+         node["amenity"~"cinema|theatre|marketplace"]["name"](around:${radiusMeters},${lat},${lng});
+       );
+       out body 60;`,
+
+      // Batch C: Restaurants & food
+      `[out:json][timeout:30];
+       (
+         node["amenity"~"restaurant|cafe|fast_food"]["name"](around:${radiusMeters},${lat},${lng});
+       );
+       out body 60;`
+    ];
+
+    console.log('[poi-service] Fetching', queries.length, 'batches in parallel...');
+    const batchStart = Date.now();
+
+    const batchResults = await Promise.allSettled(
+      queries.map(q => fetchBatch(q, lat, lng))
+    );
+
+    const elapsed = Date.now() - batchStart;
+    const succeeded = batchResults.filter(r => r.status === 'fulfilled').length;
+    console.log(`[poi-service] ${succeeded}/${queries.length} batches succeeded in ${elapsed}ms`);
+
+    // Merge all elements from successful batches
+    const allElements = [];
+    batchResults.forEach((r, i) => {
+      if (r.status === 'fulfilled' && r.value?.elements) {
+        allElements.push(...r.value.elements);
+        console.log(`[poi-service] Batch ${String.fromCharCode(65 + i)}: ${r.value.elements.length} elements`);
+      } else if (r.status === 'rejected') {
+        console.warn(`[poi-service] Batch ${String.fromCharCode(65 + i)} failed:`, r.reason?.message);
+      }
+    });
+
+    if (allElements.length === 0) {
+      console.warn('[poi-service] All batches failed — no POIs available');
+      return [];
+    }
+
+    const pois = allElements
+      .filter(el => el.tags && (el.tags.name || el.tags['name:en']))
+      .map(el => normalizePOI(el))
+      .filter(Boolean);
+
+    // Deduplicate by name
+    const seen = new Set();
+    const unique = pois.filter(p => {
+      const k = p.name.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
+    cache.set(key, { data: unique, timestamp: Date.now() });
+    console.log(`[poi-service] Total unique POIs: ${unique.length}`);
+    return unique;
+  }
+
+  // =========================================================================
+  // Helper: fetch a single batch with proper error handling
+  // =========================================================================
+  async function fetchBatch(query, lat, lng) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -87,44 +148,24 @@
       clearTimeout(timeoutId);
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const text = await res.text();
 
-      // Detect XML error pages
+      // Detect XML error pages (Overpass returns XML on errors)
       if (text.trim().startsWith('<')) {
-        console.warn('[poi-service] Overpass returned XML — likely blocked');
-        return [];
+        throw new Error('Overpass returned XML — gateway timeout or query error');
       }
 
-      const data = JSON.parse(text);
-
-      const pois = (data.elements || [])
-        .filter(el => el.tags && (el.tags.name || el.tags['name:en']))
-        .map(el => normalizePOI(el))
-        .filter(Boolean);
-
-      // Deduplicate by name
-      const seen = new Set();
-      const unique = pois.filter(p => {
-        const k = p.name.toLowerCase();
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      });
-
-      cache.set(key, { data: unique, timestamp: Date.now() });
-      console.log('[poi-service] Loaded', unique.length, 'POIs');
-      return unique;
+      return JSON.parse(text);
 
     } catch (err) {
       clearTimeout(timeoutId);
-      // Silent failure — this is expected on restricted networks
-      console.warn('[poi-service] Fetch failed (this is OK on restricted networks):', err.message);
-      return [];
+      throw err;
     }
   }
 
   // =========================================================================
-  // 2. Normalize raw OSM node
+  // 2. Normalize raw OSM node → TripCraft POI object
   // =========================================================================
   function normalizePOI(el) {
     const tags = el.tags || {};
@@ -134,9 +175,11 @@
     const rules = CATEGORY_RULES[category];
     if (!rules) return null;
 
+    const name = tags.name || tags['name:en'];
+
     return {
       id: `osm-${el.id}`,
-      name: tags.name || tags['name:en'],
+      name,
       category,
       icon: rules.icon,
       slot: rules.slot,
@@ -148,7 +191,9 @@
       address: buildAddress(tags),
       openingHours: tags.opening_hours || null,
       openingHoursParsed: tags.opening_hours ? parseOpeningHours(tags.opening_hours) : null,
-      website: tags.website || null
+      website: tags.website || null,
+      wikipedia: tags.wikipedia || null,
+      tags                          // keep raw tags for landmark extraction
     };
   }
 
@@ -326,7 +371,6 @@
   // =========================================================================
   function parseOpeningHours(raw) {
     if (!raw) return null;
-
     const str = raw.trim();
     if (str === '24/7') return { is24_7: true, days: null, raw: str };
 
@@ -334,7 +378,6 @@
       mo: 'mon', tu: 'tue', we: 'wed', th: 'thu',
       fr: 'fri', sa: 'sat', su: 'sun'
     };
-
     const days = { mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] };
     const rules = str.split(';').map(r => r.trim()).filter(Boolean);
 
@@ -353,11 +396,8 @@
         if (tm) ranges.push([`${tm[1]}:${tm[2]}`, `${tm[3]}:${tm[4]}`]);
       }
 
-      for (const day of expandedDays) {
-        days[day].push(...ranges);
-      }
+      for (const day of expandedDays) days[day].push(...ranges);
     }
-
     return { is24_7: false, days, raw: str };
   }
 
@@ -370,7 +410,7 @@
       if (part.includes('-')) {
         const [start, end] = part.split('-').map(s => s.trim());
         const startIdx = dayKeys.indexOf(start);
-        const endIdx = dayKeys.indexOf(end);
+        const endIdx   = dayKeys.indexOf(end);
         if (startIdx === -1 || endIdx === -1) continue;
 
         let i = startIdx;
@@ -454,65 +494,60 @@
     return ids;
   }
 
-    // =========================================================================
-  // FALLBACK ALTERNATIVES GENERATOR
-  // Used when live POI data is unavailable (blocked networks, small cities)
-  // Generates plausible alternatives based on trip context
+  // =========================================================================
+  // 9. Fallback alternatives generator
+  // Used when live POI data is unavailable
   // =========================================================================
   function generateFallbackAlternatives(currentPOI, slot, cityName, neighborhood) {
     const city = cityName || 'City';
     const area = neighborhood || city;
 
-    // Templates by slot
     const templates = {
       morning: [
-        { name: `${area} Historic Walking Tour`,       category: 'Heritage',    icon: '🏛️', cost: 12, indoor: false },
-        { name: `${area} Morning Market Visit`,        category: 'Market',      icon: '🥘', cost: 0,  indoor: false },
-        { name: `${city} Museum of Local History`,     category: 'Museum',      icon: '🏛️', cost: 15, indoor: true  },
-        { name: `${area} Gardens & Parks`,             category: 'Park',        icon: '🌳', cost: 0,  indoor: false },
-        { name: `Old ${city} Landmarks Walk`,          category: 'Attraction',  icon: '🗿', cost: 8,  indoor: false },
-        { name: `${city} Cathedral & Old Quarter`,     category: 'Religious',   icon: '🕌', cost: 0,  indoor: false }
+        { name: `${area} Historic Walking Tour`,    category: 'heritage',     icon: '🏛️', cost: 12, indoor: false },
+        { name: `${area} Morning Market Visit`,     category: 'market',       icon: '🥘', cost: 0,  indoor: false },
+        { name: `${city} Museum of Local History`,  category: 'museum',       icon: '🏛️', cost: 15, indoor: true  },
+        { name: `${area} Gardens & Parks`,          category: 'park',         icon: '🌳', cost: 0,  indoor: false },
+        { name: `Old ${city} Landmarks Walk`,       category: 'attraction',   icon: '🗿', cost: 8,  indoor: false },
+        { name: `${city} Cathedral & Old Quarter`,  category: 'religious',    icon: '🕌', cost: 0,  indoor: false }
       ],
       lunch: [
-        { name: `${area} Traditional Restaurant`,      category: 'Restaurant',  icon: '🍽️', cost: 18, indoor: true  },
-        { name: `${city} Street Food Corner`,          category: 'Market',      icon: '🥘', cost: 10, indoor: false },
-        { name: `${area} Family Kitchen`,              category: 'Restaurant',  icon: '🍽️', cost: 22, indoor: true  },
-        { name: `Old ${city} Bistro`,                  category: 'Restaurant',  icon: '🍽️', cost: 25, indoor: true  },
-        { name: `${city} Central Cafe`,                category: 'Restaurant',  icon: '☕', cost: 12, indoor: true  },
-        { name: `${area} Local Food Hall`,             category: 'Market',      icon: '🥘', cost: 15, indoor: true  }
+        { name: `${area} Traditional Restaurant`,   category: 'restaurant',   icon: '🍽️', cost: 18, indoor: true  },
+        { name: `${city} Street Food Corner`,       category: 'market',       icon: '🥘', cost: 10, indoor: false },
+        { name: `${area} Family Kitchen`,           category: 'restaurant',   icon: '🍽️', cost: 22, indoor: true  },
+        { name: `Old ${city} Bistro`,               category: 'restaurant',   icon: '🍽️', cost: 25, indoor: true  },
+        { name: `${city} Central Cafe`,             category: 'restaurant',   icon: '☕', cost: 12, indoor: true  },
+        { name: `${area} Local Food Hall`,          category: 'market',       icon: '🥘', cost: 15, indoor: true  }
       ],
       afternoon: [
-        { name: `${city} Art Gallery`,                 category: 'Art Gallery', icon: '🖼️', cost: 12, indoor: true  },
-        { name: `${area} Shopping District`,           category: 'Shopping Mall', icon: '🛍️', cost: 0, indoor: true  },
-        { name: `${city} Aquarium & Science Center`,   category: 'Aquarium',    icon: '🐠', cost: 20, indoor: true  },
-        { name: `${area} Botanical Gardens`,           category: 'Park',        icon: '🌳', cost: 5,  indoor: false },
-        { name: `${city} Cultural Center`,             category: 'Museum',      icon: '🏛️', cost: 18, indoor: true  },
-        { name: `Old ${city} Fort`,                    category: 'Fort',        icon: '🏰', cost: 10, indoor: false }
+        { name: `${city} Art Gallery`,              category: 'art_gallery',  icon: '🖼️', cost: 12, indoor: true  },
+        { name: `${area} Shopping District`,        category: 'shopping_mall', icon: '🛍️', cost: 0,  indoor: true  },
+        { name: `${city} Aquarium & Science Center`, category: 'aquarium',    icon: '🐠', cost: 20, indoor: true  },
+        { name: `${area} Botanical Gardens`,        category: 'park',         icon: '🌳', cost: 5,  indoor: false },
+        { name: `${city} Cultural Center`,          category: 'museum',       icon: '🏛️', cost: 18, indoor: true  },
+        { name: `Old ${city} Fort`,                 category: 'fort',         icon: '🏰', cost: 10, indoor: false }
       ],
       evening: [
-        { name: `${area} Sunset Promenade`,            category: 'Viewpoint',   icon: '🌇', cost: 0,  indoor: false },
-        { name: `${city} Dinner & Skyline Views`,      category: 'Restaurant',  icon: '🍽️', cost: 35, indoor: true  },
-        { name: `Old ${city} Harbor Walk`,             category: 'Viewpoint',   icon: '🌊', cost: 0,  indoor: false },
-        { name: `${area} Theater & Show`,              category: 'Theatre',     icon: '🎭', cost: 25, indoor: true  },
-        { name: `${city} Night Market`,                category: 'Market',      icon: '🏮', cost: 15, indoor: false },
-        { name: `${area} Riverside Dining`,            category: 'Restaurant',  icon: '🍽️', cost: 40, indoor: true  }
+        { name: `${area} Sunset Promenade`,         category: 'viewpoint',    icon: '🌇', cost: 0,  indoor: false },
+        { name: `${city} Dinner & Skyline Views`,   category: 'restaurant',   icon: '🍽️', cost: 35, indoor: true  },
+        { name: `Old ${city} Harbor Walk`,          category: 'viewpoint',    icon: '🌊', cost: 0,  indoor: false },
+        { name: `${area} Theater & Show`,           category: 'theatre',      icon: '🎭', cost: 25, indoor: true  },
+        { name: `${city} Night Market`,             category: 'market',       icon: '🏮', cost: 15, indoor: false },
+        { name: `${area} Riverside Dining`,         category: 'restaurant',   icon: '🍽️', cost: 40, indoor: true  }
       ]
     };
 
     const pool = templates[slot] || templates.morning;
-
-    // Sort so same-category items come first
     const sorted = [...pool].sort((a, b) => {
       const aMatch = a.category === (currentPOI?.category || '') ? 1 : 0;
       const bMatch = b.category === (currentPOI?.category || '') ? 1 : 0;
       return bMatch - aMatch;
     });
 
-    // Convert to POI-shape and assign IDs
     return sorted.slice(0, 4).map((item, i) => ({
       id: `fallback-${slot}-${Date.now()}-${i}`,
       name: item.name,
-      category: item.category.toLowerCase().replace(/\s+/g, '_'),
+      category: item.category,
       icon: item.icon,
       slot: slot,
       cost: item.cost,
@@ -525,8 +560,9 @@
       isFallback: true
     }));
   }
+
   // =========================================================================
-  // 9. Public API
+  // Public API
   // =========================================================================
   window.POIService = {
     fetchPOIs,
@@ -537,6 +573,8 @@
     collectUsedPOIIds,
     parseOpeningHours,
     isOpenDuring,
-    CATEGORY_RULES
+    generateFallbackAlternatives,
+    CATEGORY_RULES,
+    OVERPASS_ENDPOINT
   };
 })();
