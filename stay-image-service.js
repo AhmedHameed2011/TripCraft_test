@@ -195,13 +195,37 @@
 
     const safeLandmarks = Array.isArray(landmarks) && landmarks.length > 0 ? landmarks : [];
     // Prefer real landmarks for name generation
+        // ============================================================
+    // Pick the base name for the hotel — with multiple fallbacks
+    // ============================================================
     let n;
-    if (landmarks && landmarks.length > 0) {
-      n = landmarks[index % landmarks.length];
-    } else if (neighborhood && !isGenericNeighborhood(neighborhood)) {
+
+    // Priority 1: Real landmarks from OSM
+    if (safeLandmarks.length > 0) {
+      n = safeLandmarks[index % safeLandmarks.length];
+    }
+    // Priority 2: Real neighborhood (if it's not generic)
+    else if (neighborhood && !isGenericNeighborhood(neighborhood) && neighborhood !== c) {
       n = neighborhood;
-    } else {
-      n = c;
+    }
+    // Priority 3: Creative city-based variants (varied per city + index)
+    else {
+      const cityVariants = [
+        `${c} Central`,
+        `Old ${c}`,
+        `${c} Prime`,
+        `New ${c}`,
+        `The ${c} Collection`,
+        `${c} Heights`,
+        `${c} Harbour`,
+        `${c} Square`,
+        `${c} Old Town`,
+        `${c} Downtown`,
+        `${c} Waterfront`,
+        `${c} Gardens`
+      ];
+      const cityHash = simpleHash(c);
+      n = cityVariants[(cityHash + index * 3) % cityVariants.length];
     }
 
     const patterns = {
