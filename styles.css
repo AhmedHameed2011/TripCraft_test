@@ -2632,3 +2632,65 @@ html[data-theme="light"] .gen-progress-overlay {
   .gen-step { font-size: 0.78rem; padding: 0.55rem 0.7rem; }
   .gen-step-icon { width: 22px; height: 22px; font-size: 0.8rem; }
 }
+
+/* ==========================================================================
+   Google Translate Widget
+   ========================================================================== */
+.google-translate-container {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Style the widget to match TripCraft's look */
+.google-translate-container .goog-te-gadget {
+  font-family: var(--font-body) !important;
+  font-size: 0.85rem !important;
+  color: var(--text-secondary) !important;
+}
+
+.google-translate-container .goog-te-gadget-simple {
+  background: var(--bg-surface-elevated) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-pill) !important;
+  padding: 0.35rem 0.85rem !important;
+  color: var(--text-primary) !important;
+}
+
+.google-translate-container .goog-te-gadget-simple:hover {
+  background: var(--bg-surface-hover) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.google-translate-container .goog-te-menu-value {
+  color: var(--text-primary) !important;
+}
+
+.google-translate-container .goog-te-menu-value span {
+  color: var(--text-primary) !important;
+}
+
+/* Hide Google's banner that appears at top */
+body {
+  top: 0 !important;
+}
+.goog-te-banner-frame {
+  display: none !important;
+}
+#goog-gt-tt, .goog-te-balloon-frame {
+  display: none !important;
+}
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure dropdown menus are readable */
+.goog-te-menu-frame {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+  border-radius: 12px !important;
+}
+
+/* Prevent Google Translate from translating specific things */
+.notranslate {
+  /* Add this class to elements you don't want translated */
+}

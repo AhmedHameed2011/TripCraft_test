@@ -2208,8 +2208,8 @@ if (sample.destinationMeta?.lat && sample.destinationMeta?.lng && window.POIServ
           <div class="slot-top-row">
             <div class="slot-name-group">
               <h4 class="dual-name-title">
-                ${localName ? `<span class="local-script-name">${localName}</span>` : ''}
-                <span class="english-trans-name">${englishName}</span>
+                ${localName ? `<span class="local-script-name notranslate">${localName}</span>` : ''}
+                <span class="english-trans-name notranslate">${englishName}</span>
               </h4>
             </div>
             <span class="slot-category-badge">${s.slotData.category || ''}</span>
@@ -2288,12 +2288,12 @@ if (sample.destinationMeta?.lat && sample.destinationMeta?.lng && window.POIServ
       card.innerHTML = `
         <div class="stay-image-wrap">
           <img src="${stay.image}" alt="${stay.name}" loading="lazy">
-          <span class="stay-badge-overlay badge badge-primary">${stay.neighborhood}</span>
+          <span class="stay-badge-overlay badge badge-primary notranslate">${stay.neighborhood}</span>
           <span class="stay-rating-overlay">★ ${stay.rating}</span>
         </div>
         <div class="stay-body">
           <div class="stay-header-row">
-            <h3 class="stay-title">${stay.name}</h3>
+            <h3 class="stay-title notranslate">${stay.name}</h3>
             <div class="stay-rate">${formatMoney(stay.pricePerNight)}<span class="stay-rate-sub"> ${t('perNight')}</span></div>
           </div>
           <div class="stay-fit-banner">${stay.fitBanner}</div>
@@ -3132,6 +3132,14 @@ finishGenerationProgress();
     if (langSelect) {
       langSelect.value = currentLang;
       langSelect.addEventListener('change', (e) => {
+
+        // Disable Google Translate when using your own translations
+        const gtSelect = document.querySelector('.goog-te-combo');
+        if (gtSelect) {
+          gtSelect.value = 'en';  // Reset Google Translate
+          gtSelect.dispatchEvent(new Event('change'));
+        }
+
         applyLanguage(e.target.value);
         showToast(`Language updated to ${e.target.options[e.target.selectedIndex].text}`);
       });
