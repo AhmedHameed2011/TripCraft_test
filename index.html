@@ -1,22 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" data-theme="dark">
 
-<!-- Google Translate Widget -->
-<script type="text/javascript">
-function googleTranslateElementInit() {
-  new google.translate.TranslateElement(
-    {
-      pageLanguage: 'en',
-      includedLanguages: 'en,ar,es,fr,ja,de,it,pt,ru,zh-CN,hi,tr,ko,nl,pl,sv',
-      layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-      autoDisplay: false
-    },
-    'google_translate_element'
-  );
-}
-</script>
-<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-
 
 <head>
   <meta charset="UTF-8">
@@ -32,6 +16,22 @@ function googleTranslateElementInit() {
     rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
+
+    <!-- Google Translate fallback for 100+ additional languages -->
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      window.googleTranslateReady = true;
+      new google.translate.TranslateElement(
+        {
+          pageLanguage: 'en',
+          includedLanguages: 'en,ar,es,fr,ja,de,it,pt,ru,zh-CN,zh-TW,hi,tr,ko,nl,pl,sv,no,da,fi,el,he,th,vi,id,ms,tl,uk,cs,hu,ro,bg,hr,sk,sl,et,lv,lt,is,fa,ur,bn,tam,te,ml,kn,mr,gu,pa,sw,am,yo,ig,zu,ha,af,sr,bs,mk,sq,hy,ka,az,kk,uz,ky,tg,mn,ne,si,my,km,lo'
+        },
+        'google_translate_element'
+      );
+    }
+  </script>
+  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
 </head>
 
 <body>
@@ -101,7 +101,7 @@ function googleTranslateElementInit() {
           </button>
         </div>
 
-        <div class="dropdown-control">
+                <div class="dropdown-control">
           <label for="langSelect" class="sr-only">Language</label>
           <div class="select-pill-wrapper">
             <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -116,9 +116,13 @@ function googleTranslateElementInit() {
               <option value="fr">Français (FR)</option>
               <option value="ja">日本語 (JA)</option>
               <option value="de">Deutsch (DE)</option>
+              <option value="__more__">🌍 More languages…</option>
             </select>
           </div>
         </div>
+
+        <!-- Google Translate Widget (hidden, opened programmatically) -->
+        <div id="google_translate_element" class="google-translate-hidden" aria-hidden="true"></div>
 
         <div class="dropdown-control">
           <label for="currencySelect" class="sr-only">Currency</label>

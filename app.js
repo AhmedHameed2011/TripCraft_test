@@ -1447,6 +1447,157 @@
     window.dispatchEvent(new CustomEvent('tripcraft:langChanged', { detail: { lang } }));
   }
 
+    // ==========================================================================
+  // Google Translate Integration (Fallback for 100+ languages)
+  // ==========================================================================
+
+  /**
+   * Open a modal containing the Google Translate widget
+   */
+  function openGoogleTranslatePicker() {
+    // Close any existing modal
+    document.querySelectorAll('.google-translate-modal').forEach(m => m.remove());
+
+    // Build the modal
+    const modal = document.createElement('div');
+    modal.className = 'google-translate-modal';
+    modal.innerHTML = `
+      <div class="google-translate-modal-content">
+        <button class="google-translate-modal-close" aria-label="Close">&times;</button>
+        <h3 class="google-translate-modal-title">🌍 More Languages</h3>
+        <p class="google-translate-modal-subtitle">
+          Select from 100+ additional languages powered by Google Translate.
+        </p>
+        <div id="google_translate_mount"></div>
+        <div class="google-translate-modal-info">
+          💡 <strong>Note:</strong> Auto-translations are provided by Google.
+          For the highest quality, use one of our curated languages
+          (English, العربية, Español, Français, 日本語, Deutsch).
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close handlers
+    const close = () => modal.remove();
+    modal.querySelector('.google-translate-modal-close').addEventListener('click', close);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    });
+
+    const esc = (e) => {
+      if (e.key === 'Escape') {
+        close();
+        document.removeEventListener('keydown', esc);
+      }
+    };
+    document.addEventListener('keydown', esc);
+
+    // Move the Google Translate widget into the modal
+    const widget = document.getElementById('google_translate_element');
+    const mount = modal.querySelector('#google_translate_mount');
+
+    if (widget && mount) {
+      widget.classList.remove('google-translate-hidden');
+      mount.appendChild(widget);
+    } else {
+      // Widget not loaded yet — show fallback
+      if (mount) {
+        mount.innerHTML = `
+          <div style="padding: 1rem; background: var(--bg-surface-elevated); border-radius: 8px; color: var(--text-secondary); font-size: 0.85rem;">
+            ⏳ Loading translation service… Please try again in a moment.
+          </div>
+        `;
+      }
+    }
+
+    // Listen for Google Translate changes
+    setTimeout(() => {
+      attachGoogleTranslateListener();
+    }, 500);
+  }
+
+  /**
+   * Attach a listener to detect when the user picks a Google-translated language
+   */
+  function attachGoogleTranslateListener() {
+    const gtSelect = document.querySelector('.goog-te-combo');
+    if (!gtSelect) return;
+
+    // Avoid attaching twice
+    if (gtSelect.dataset.tripcraftListener === 'true') return;
+    gtSelect.dataset.tripcraftListener = 'true';
+
+    gtSelect.addEventListener('change', (e) => {
+      const newLang = e.target.value;
+      if (newLang && newLang !== 'en') {
+        // Note the user is now using Google Translate
+        localStorage.setItem('tripcraft_gt_lang', newLang);
+
+        // Reset our own language to English so we don't double-translate
+        currentLang = 'en';
+        localStorage.setItem('tripcraft_lang', 'en');
+        document.documentElement.lang = 'en';
+        document.documentElement.dir = 'ltr';
+
+        // Close the modal after a delay
+        setTimeout(() => {
+          document.querySelectorAll('.google-translate-modal').forEach(m => m.remove());
+          showToast(`🌍 Translating page via Google Translate…`);
+        }, 800);
+      } else if (newLang === 'en') {
+        // User reverted to English
+        localStorage.removeItem('tripcraft_gt_lang');
+      }
+    });
+  }
+
+  /**
+   * Reset Google Translate to show the original English page
+   */
+  function resetGoogleTranslate() {
+    localStorage.removeItem('tripcraft_gt_lang');
+
+    // Find and reset the Google Translate select
+    const gtSelect = document.querySelector('.goog-te-combo');
+    if (gtSelect && gtSelect.value && gtSelect.value !== 'en') {
+      gtSelect.value = 'en';
+      gtSelect.dispatchEvent(new Event('change'));
+
+      // Google Translate sometimes reloads the page via a cookie
+      // Use the official reset method
+      const frame = document.querySelector('.goog-te-banner-frame');
+      if (frame) frame.style.display = 'none';
+
+      // Clear Google's translation cookie
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+    }
+  }
+
+  /**
+   * Auto-restore Google Translate state on page load
+   */
+  function restoreGoogleTranslateIfNeeded() {
+    const saved = localStorage.getItem('tripcraft_gt_lang');
+    if (saved && saved !== 'en') {
+      console.log('[i18n] Restoring Google Translate:', saved);
+      // Wait for the widget to load, then set the language
+      const tryRestore = (attempts) => {
+        if (attempts <= 0) return;
+        const gtSelect = document.querySelector('.goog-te-combo');
+        if (gtSelect) {
+          gtSelect.value = saved;
+          gtSelect.dispatchEvent(new Event('change'));
+        } else {
+          setTimeout(() => tryRestore(attempts - 1), 300);
+        }
+      };
+      tryRestore(20);
+    }
+  }
+
   // ==========================================================================
   // 3. Trips Data Store
   // ==========================================================================
@@ -1737,6 +1888,7 @@ if (sample.destinationMeta?.lat && sample.destinationMeta?.lng && window.POIServ
       if (heroWeatherBadge) heroWeatherBadge.style.display = 'none';
       if (heroTransportBadge) heroTransportBadge.style.display = 'none';
       if (heroTitle) heroTitle.textContent = t('heroWelcomeTitle');
+
       if (heroSubtitle) heroSubtitle.textContent = t('heroWelcomeSub');
       if (metricTravelers) metricTravelers.textContent = '—';
       if (metricStay) metricStay.textContent = '—';
@@ -1790,7 +1942,10 @@ if (sample.destinationMeta?.lat && sample.destinationMeta?.lng && window.POIServ
     if (heroWeatherHumidity) heroWeatherHumidity.textContent = trip.weather?.humidity ? `💧 ${trip.weather.humidity}%` : '';
     if (heroWeatherWind)     heroWeatherWind.textContent     = trip.weather?.windSpeed ? `💨 ${trip.weather.windSpeed} ${trip.weather.windUnit || 'km/h'}` : '';
 
-    if (heroTitle) heroTitle.textContent = trip.title;
+        if (heroTitle) {
+      heroTitle.textContent = trip.title;
+      heroTitle.classList.add('notranslate');
+    }
     if (heroSubtitle) heroSubtitle.textContent = trip.subtitle;
     if (metricTravelers) metricTravelers.textContent = trip.travelers?.summary || '';
     if (metricStay && trip.stays && trip.stays.length > 0) metricStay.textContent = trip.stays[0].name;
@@ -2207,7 +2362,7 @@ if (sample.destinationMeta?.lat && sample.destinationMeta?.lng && window.POIServ
         <div class="slot-content-column">
           <div class="slot-top-row">
             <div class="slot-name-group">
-              <h4 class="dual-name-title">
+              <h4 class="dual-name-title notranslate">
                 ${localName ? `<span class="local-script-name notranslate">${localName}</span>` : ''}
                 <span class="english-trans-name notranslate">${englishName}</span>
               </h4>
@@ -3127,20 +3282,26 @@ finishGenerationProgress();
       });
     }
 
-    // Language select
+        // Language select
     const langSelect = document.getElementById('langSelect');
     if (langSelect) {
       langSelect.value = currentLang;
       langSelect.addEventListener('change', (e) => {
+        const value = e.target.value;
 
-        // Disable Google Translate when using your own translations
-        const gtSelect = document.querySelector('.goog-te-combo');
-        if (gtSelect) {
-          gtSelect.value = 'en';  // Reset Google Translate
-          gtSelect.dispatchEvent(new Event('change'));
+        // Intercept the "More languages" option
+        if (value === '__more__') {
+          // Reset select to current language
+          e.target.value = currentLang;
+          openGoogleTranslatePicker();
+          return;
         }
 
-        applyLanguage(e.target.value);
+        // User picked one of our curated languages
+        // Reset Google Translate if it was active
+        resetGoogleTranslate();
+
+        applyLanguage(value);
         showToast(`Language updated to ${e.target.options[e.target.selectedIndex].text}`);
       });
     }
@@ -3540,7 +3701,11 @@ if (window.__tripcraftPOICache && nextTrip &&
     }, { passive: true });
 
     // Initial render
+       // Initial render
     applyLanguage(currentLang);
+
+    // Restore Google Translate state if previously enabled
+    setTimeout(restoreGoogleTranslateIfNeeded, 1500);
 
     // Boot: retry-based trip hydration
     (async () => {
