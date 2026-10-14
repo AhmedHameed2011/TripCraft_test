@@ -2792,23 +2792,151 @@ body {
   line-height: 1.5;
 }
 
-/* Hide Google's default top banner and tooltip */
+/* ==========================================================================
+   Google Translate — Full Integration (Aggressive Hiding + Mobile Optimized)
+   ========================================================================== */
+
+/* --- 1. Hide Google's default top banner & tooltip completely --- */
 body {
   top: 0 !important;
+  position: static !important;
+  min-height: 100vh;
 }
-.goog-te-banner-frame {
+
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+iframe[id*="goog-te-banner"] {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: fixed !important;
+  left: -99999px !important;
+  top: -99999px !important;
+  z-index: -1 !important;
 }
+
+/* Kill the top-spacer that Google injects */
+body > .skiptranslate {
+  display: none !important;
+  height: 0 !important;
+}
+
+/* Kill the tooltip / "show original" popup */
 #goog-gt-tt,
-.goog-te-balloon-frame {
+.goog-te-balloon-frame,
+#goog-gt-vt {
   display: none !important;
+  visibility: hidden !important;
 }
+
+/* Kill highlighted translation backgrounds */
 .goog-text-highlight {
   background: none !important;
   box-shadow: none !important;
+  border: none !important;
 }
 
-/* Style the Google Translate dropdown inside the modal */
+/* --- 2. Hidden container for the widget (only appears inside our modal) --- */
+.google-translate-hidden,
+.google-translate-hidden * {
+  position: absolute !important;
+  left: -99999px !important;
+  top: -99999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* --- 3. Modal container --- */
+.google-translate-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 20, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9600;
+  padding: 1.5rem;
+  animation: fadeInOverlay 0.2s ease-out;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.google-translate-modal-content {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-elevated);
+  position: relative;
+}
+
+.google-translate-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.google-translate-modal-close:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.google-translate-modal-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+  color: var(--text-primary);
+}
+
+.google-translate-modal-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+}
+
+.google-translate-modal-info {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  line-height: 1.5;
+}
+
+/* --- 4. Style the Google Translate widget inside our modal --- */
 #google_translate_element .goog-te-gadget {
   font-family: var(--font-body) !important;
   color: var(--text-secondary) !important;
@@ -2825,6 +2953,8 @@ body {
   width: 100% !important;
   text-align: left !important;
   font-size: 0.95rem !important;
+  min-height: 48px !important;
+  box-sizing: border-box !important;
 }
 
 #google_translate_element .goog-te-gadget-simple:hover {
@@ -2849,8 +2979,122 @@ body {
   vertical-align: middle;
 }
 
-/* Hide branding "Powered by Google" text where possible */
+/* Hide the "Powered by Google" tagline */
 #google_translate_element .goog-te-gadget > span {
   color: var(--text-tertiary) !important;
   font-size: 0.72rem !important;
+}
+
+/* --- 5. "Auto-translated" badge --- */
+.gt-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem 0.35rem 0.75rem;
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+}
+
+.gt-active-badge button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.gt-active-badge button:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* --- 6. Mobile optimizations --- */
+@media (max-width: 640px) {
+  /* Modal as bottom sheet */
+  .google-translate-modal {
+    align-items: flex-end;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .google-translate-modal-content {
+    border-radius: 24px 24px 0 0;
+    padding: 1.5rem 1.15rem calc(1.25rem + env(safe-area-inset-bottom, 0));
+    max-width: 100%;
+    max-height: 88vh;
+    animation: slideUpModal 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes slideUpModal {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  .google-translate-modal-content::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: var(--border-strong);
+    border-radius: 2px;
+    margin: -0.5rem auto 1rem;
+    opacity: 0.6;
+  }
+
+  .google-translate-modal-close {
+    width: 36px;
+    height: 36px;
+    top: 1rem;
+    right: 1rem;
+  }
+
+  .google-translate-modal-title {
+    font-size: 1rem;
+  }
+
+  .google-translate-modal-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .google-translate-modal-info {
+    font-size: 0.72rem;
+    padding: 0.65rem 0.85rem;
+  }
+
+  /* Bigger touch target on mobile */
+  #google_translate_element .goog-te-gadget-simple {
+    padding: 0.9rem 1rem !important;
+    font-size: 1rem !important;
+    min-height: 52px !important;
+  }
+
+  #google_translate_element .goog-te-menu-value {
+    font-size: 1rem !important;
+  }
+
+  /* Badge shrinks on mobile */
+  .gt-active-badge {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.5rem 0.3rem 0.6rem;
+  }
+
+  /* Prevent Google from pushing body down on iOS Safari */
+  body {
+    position: static !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
 }
